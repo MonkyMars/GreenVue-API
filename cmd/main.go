@@ -27,6 +27,7 @@ func main() {
 		WriteTimeout:      5 * time.Second,
 		IdleTimeout:       120 * time.Second,
 		ReduceMemoryUsage: true,
+		Prefork:           true,
 	})
 
 	app.Use(cors.New())
