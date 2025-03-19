@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cache"
+	// "github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/etag"
@@ -41,13 +41,13 @@ func main() {
 		Level: compress.LevelBestSpeed,
 	}))
 	app.Use(recover.New())
-	app.Use(cache.New(cache.Config{
-		Next: func(c *fiber.Ctx) bool {
-			return c.Method() != fiber.MethodGet
-		},
-		Expiration:   time.Minute,
-		CacheControl: true,
-	}))
+	// app.Use(cache.New(cache.Config{
+	// 	Next: func(c *fiber.Ctx) bool {
+	// 		return c.Method() != fiber.MethodGet
+	// 	},
+	// 	Expiration:   time.Minute,
+	// 	CacheControl: true,
+	// }))
 	app.Use(etag.New(etag.Config{
 		Weak: true,
 	}))
@@ -57,10 +57,12 @@ func main() {
 	})
 
 	app.Get("/listings", listings.GetListings)
+	app.Get("/listings/:id", listings.GetListingById)
+	app.Get("/listings/category/:category", nil)
 	app.Post("/listings", listings.PostListing)
 	app.Post("/upload/listing_image", listings.UploadHandler)
 	// app.Delete("/listings/:id", listings.DeleteListing) - not implemented yet
 	// TODO: Implement DeleteListing
 
-	app.Listen(":8080")
+	app.Listen(":8081")
 }

@@ -1,0 +1,3 @@
+DOCKER BUILD: docker build -t greentrade-backend .
+DOCKER RUN: docker run -p 8081:8081 --env-file .env.local --name greentrade-container greentrade-backend
+GO RUN: go run cmd/main.go
