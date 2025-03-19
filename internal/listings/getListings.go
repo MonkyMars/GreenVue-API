@@ -9,7 +9,7 @@ import (
 
 func GetListings(c *fiber.Ctx) error {
 	client := db.NewSupabaseClient()
-	data, err := client.Query("listings", "select=*,seller:sellers(*)")
+	data, err := client.Query("listings", "select=*")
 
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{

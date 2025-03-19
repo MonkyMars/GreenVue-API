@@ -45,7 +45,7 @@ func main() {
 		Next: func(c *fiber.Ctx) bool {
 			return c.Method() != fiber.MethodGet
 		},
-		Expiration:   10 * time.Minute,
+		Expiration:   time.Minute,
 		CacheControl: true,
 	}))
 	app.Use(etag.New(etag.Config{

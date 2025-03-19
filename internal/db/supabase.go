@@ -20,33 +20,20 @@ type Seller struct { // this struct is used in the supabase database: Seller.
 }
 
 type Listing struct { // this struct is used in the supabase database: Listing.
-	ID            int      `json:"id,omitempty"`
+	ID            int64    `json:"id,omitempty"`
 	CreatedAt     string   `json:"created_at,omitempty"`
 	Description   string   `json:"description"`
 	Category      string   `json:"category"`
 	Condition     string   `json:"condition"`
-	Price         int      `json:"price"`
+	Price         int64    `json:"price"`
 	Location      string   `json:"location"`
+	EcoScore      float32  `json:"ecoScore"`
 	EcoAttributes []string `json:"ecoAttributes"`
 	Negotiable    bool     `json:"negotiable"`
 	Title         string   `json:"title"`
-	SellerID      int      `json:"seller_id"`
+	Seller        Seller   `json:"seller"`
 	ImageUrl      []string `json:"imageUrl"`
 }
-
-// type ExpectedListing struct { // this struct is expected from the frontend.
-// 	ID            int      `json:"id,omitempty"`
-// 	CreatedAt     string   `json:"created_at,omitempty"`
-// 	Description   string   `json:"description"`
-// 	Category      string   `json:"category"`
-// 	Condition     string   `json:"condition"`
-// 	Price         int      `json:"price"`
-// 	Location      string   `json:"location"`
-// 	EcoAttributes []string `json:"ecoAttributes"`
-// 	Negotiable    bool     `json:"negotiable"`
-// 	Title         string   `json:"title"`
-// 	Seller        Seller   `json:"seller"`
-// }
 
 type SupabaseClient struct {
 	URL       string

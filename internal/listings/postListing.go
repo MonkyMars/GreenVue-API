@@ -1,7 +1,6 @@
 package listings
 
 import (
-	"encoding/json"
 	"fmt"
 	"greentrade-eu/internal/db"
 
@@ -26,8 +25,9 @@ func PostListing(c *fiber.Ctx) error {
 		Category      string                 `json:"category"`
 		Condition     string                 `json:"condition"`
 		Location      string                 `json:"location"`
-		Price         int                    `json:"price"`
+		Price         int64                  `json:"price"`
 		Negotiable    bool                   `json:"negotiable"`
+		EcoScore      float32                `json:"ecoScore"`
 		EcoAttributes []string               `json:"ecoAttributes"`
 		ImageUrl      map[string]interface{} `json:"imageUrl"`
 		Seller        db.Seller              `json:"seller"`
@@ -48,6 +48,7 @@ func PostListing(c *fiber.Ctx) error {
 	price := payload.Price
 	negotiable := payload.Negotiable
 	ecoAttributes := payload.EcoAttributes
+	ecoScore := payload.EcoScore
 
 	// Handle imageUrl safely with proper type assertion
 	var imageUrl []string
@@ -69,37 +70,37 @@ func PostListing(c *fiber.Ctx) error {
 
 	seller := payload.Seller
 	log.Printf("Processed imageUrl: %v", imageUrl)
-
+	log.Printf("EcoScore: %v", ecoScore)
 	// Check if seller exists
-	exists, sellerID, err := client.IsSellerInDB(seller)
-	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
-			"error": "Failed to check if seller exists: " + err.Error(),
-		})
-	}
+	// exists, sellerID, err := client.IsSellerInDB(seller)
+	// if err != nil {
+	// 	return c.Status(500).JSON(fiber.Map{
+	// 		"error": "Failed to check if seller exists: " + err.Error(),
+	// 	})
+	// }
 
-	// Create seller if doesn't exist
-	if !exists {
-		sellerData, err := json.Marshal(seller)
-		if err != nil {
-			return c.Status(500).JSON(fiber.Map{
-				"error": "Failed to marshal seller data: " + err.Error(),
-			})
-		}
+	// // Create seller if doesn't exist
+	// if !exists {
+	// 	sellerData, err := json.Marshal(seller)
+	// 	if err != nil {
+	// 		return c.Status(500).JSON(fiber.Map{
+	// 			"error": "Failed to marshal seller data: " + err.Error(),
+	// 		})
+	// 	}
 
-		resp, err := client.PostRaw("sellers", sellerData)
-		if err != nil {
-			return c.Status(500).JSON(fiber.Map{
-				"error": "Failed to create seller: " + err.Error(),
-			})
-		}
+	// 	resp, err := client.PostRaw("sellers", sellerData)
+	// 	if err != nil {
+	// 		return c.Status(500).JSON(fiber.Map{
+	// 			"error": "Failed to create seller: " + err.Error(),
+	// 		})
+	// 	}
 
-		var newSeller []db.Seller
-		if err := json.Unmarshal(resp, &newSeller); err != nil || len(newSeller) == 0 {
-			return c.Status(500).JSON(fiber.Map{"error": "Failed to parse seller response"})
-		}
-		sellerID = newSeller[0].ID
-	}
+	// 	var newSeller []db.Seller
+	// 	if err := json.Unmarshal(resp, &newSeller); err != nil || len(newSeller) == 0 {
+	// 		return c.Status(500).JSON(fiber.Map{"error": "Failed to parse seller response"})
+	// 	}
+	// 	sellerID = newSeller[0].ID
+	// }
 
 	// Create the listing
 	listing := db.Listing{
@@ -108,11 +109,12 @@ func PostListing(c *fiber.Ctx) error {
 		Condition:     condition,
 		Price:         price,
 		Location:      location,
+		EcoScore:      ecoScore,
 		EcoAttributes: ecoAttributes,
 		Negotiable:    negotiable,
 		Title:         title,
 		ImageUrl:      imageUrl,
-		SellerID:      sellerID,
+		Seller:        seller,
 	}
 
 	// Post the listing to Supabase
