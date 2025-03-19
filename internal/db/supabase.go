@@ -13,10 +13,10 @@ import (
 )
 
 type Seller struct { // this struct is used in the supabase database: Seller.
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
-	Rating   int    `json:"rating"`
-	Verified bool   `json:"verified"`
+	ID       int     `json:"id"`
+	Name     string  `json:"name"`
+	Rating   float32 `json:"rating"`
+	Verified bool    `json:"verified"`
 }
 
 type Listing struct { // this struct is used in the supabase database: Listing.
@@ -31,21 +31,22 @@ type Listing struct { // this struct is used in the supabase database: Listing.
 	Negotiable    bool     `json:"negotiable"`
 	Title         string   `json:"title"`
 	SellerID      int      `json:"seller_id"`
+	ImageUrl      []string `json:"imageUrl"`
 }
 
-type ExpectedListing struct { // this struct is expected from the frontend.
-	ID            int      `json:"id,omitempty"`
-	CreatedAt     string   `json:"created_at,omitempty"`
-	Description   string   `json:"description"`
-	Category      string   `json:"category"`
-	Condition     string   `json:"condition"`
-	Price         int      `json:"price"`
-	Location      string   `json:"location"`
-	EcoAttributes []string `json:"ecoAttributes"`
-	Negotiable    bool     `json:"negotiable"`
-	Title         string   `json:"title"`
-	Seller        Seller   `json:"seller"`
-}
+// type ExpectedListing struct { // this struct is expected from the frontend.
+// 	ID            int      `json:"id,omitempty"`
+// 	CreatedAt     string   `json:"created_at,omitempty"`
+// 	Description   string   `json:"description"`
+// 	Category      string   `json:"category"`
+// 	Condition     string   `json:"condition"`
+// 	Price         int      `json:"price"`
+// 	Location      string   `json:"location"`
+// 	EcoAttributes []string `json:"ecoAttributes"`
+// 	Negotiable    bool     `json:"negotiable"`
+// 	Title         string   `json:"title"`
+// 	Seller        Seller   `json:"seller"`
+// }
 
 type SupabaseClient struct {
 	URL       string

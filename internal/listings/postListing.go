@@ -4,59 +4,71 @@ import (
 	"encoding/json"
 	"fmt"
 	"greentrade-eu/internal/db"
+
+	// "greentrade-eu/lib"
 	"log"
 	"mime/multipart"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	storage "github.com/supabase-community/storage-go"
 )
 
 func PostListing(c *fiber.Ctx) error {
 	client := db.NewSupabaseClient()
 
-	// Parse multipart form
-	form, err := c.MultipartForm()
-	if err != nil {
+	// Parse JSON payload
+	var payload struct {
+		Title         string                 `json:"title"`
+		Description   string                 `json:"description"`
+		Category      string                 `json:"category"`
+		Condition     string                 `json:"condition"`
+		Location      string                 `json:"location"`
+		Price         int                    `json:"price"`
+		Negotiable    bool                   `json:"negotiable"`
+		EcoAttributes []string               `json:"ecoAttributes"`
+		ImageUrl      map[string]interface{} `json:"imageUrl"`
+		Seller        db.Seller              `json:"seller"`
+	}
+
+	if err := c.BodyParser(&payload); err != nil {
 		return c.Status(400).JSON(fiber.Map{
-			"error": "Failed to parse multipart form: " + err.Error(),
+			"error": "Failed to parse JSON body: " + err.Error(),
 		})
 	}
 
-	// Extract listing data from form fields
-	title := form.Value["title"][0]
-	description := form.Value["description"][0]
-	category := form.Value["category"][0]
-	condition := form.Value["condition"][0]
-	location := form.Value["location"][0]
+	// Extract fields from parsed JSON
+	title := payload.Title
+	description := payload.Description
+	category := payload.Category
+	condition := payload.Condition
+	location := payload.Location
+	price := payload.Price
+	negotiable := payload.Negotiable
+	ecoAttributes := payload.EcoAttributes
 
-	priceStr := form.Value["price"][0]
-	price, err := strconv.Atoi(priceStr)
-	if err != nil {
-		return c.Status(400).JSON(fiber.Map{
-			"error": "Invalid price format: " + err.Error(),
-		})
+	// Handle imageUrl safely with proper type assertion
+	var imageUrl []string
+	if payload.ImageUrl != nil {
+		if urls, exists := payload.ImageUrl["urls"]; exists && urls != nil {
+			// Try to handle the case where urls is a []interface{}
+			if urlsArray, ok := urls.([]interface{}); ok {
+				for _, item := range urlsArray {
+					if str, ok := item.(string); ok {
+						imageUrl = append(imageUrl, str)
+					}
+				}
+			} else {
+				// Log what type it actually is for debugging
+				log.Printf("urls is not []interface{} but %T: %v", urls, urls)
+			}
+		}
 	}
 
-	negotiableStr := form.Value["negotiable"][0]
-	negotiable := negotiableStr == "true"
-
-	var ecoAttributes []string
-	if err := json.Unmarshal([]byte(form.Value["ecoAttributes"][0]), &ecoAttributes); err != nil {
-		return c.Status(400).JSON(fiber.Map{
-			"error": "Invalid ecoAttributes format: " + err.Error(),
-		})
-	}
-
-	// Parse seller data
-	var seller db.Seller
-	if err := json.Unmarshal([]byte(form.Value["seller"][0]), &seller); err != nil {
-		return c.Status(400).JSON(fiber.Map{
-			"error": "Invalid seller data: " + err.Error(),
-		})
-	}
+	seller := payload.Seller
+	log.Printf("Processed imageUrl: %v", imageUrl)
 
 	// Check if seller exists
 	exists, sellerID, err := client.IsSellerInDB(seller)
@@ -99,6 +111,7 @@ func PostListing(c *fiber.Ctx) error {
 		EcoAttributes: ecoAttributes,
 		Negotiable:    negotiable,
 		Title:         title,
+		ImageUrl:      imageUrl,
 		SellerID:      sellerID,
 	}
 
@@ -110,16 +123,8 @@ func PostListing(c *fiber.Ctx) error {
 		})
 	}
 
-	// Parse the created listing to get its ID
-	var createdListing db.Listing
-	if err := json.Unmarshal(listingData, &createdListing); err != nil {
-		return c.Status(500).JSON(fiber.Map{
-			"error": "Failed to parse created listing: " + err.Error(),
-		})
-	}
-
 	response := map[string]any{
-		"listing": createdListing,
+		"listing": listingData,
 	}
 
 	return c.JSON(response)
@@ -142,11 +147,10 @@ func sanitizeFilename(filename string) string {
 }
 
 func UploadHandler(c *fiber.Ctx) error {
-	// Parse listing ID
-	listingID := c.FormValue("listing_id")
-	if listingID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Missing listing_id"})
-	}
+	// Parse listing title
+	listingTitle := c.FormValue("listing_title")
+
+	fileName := fmt.Sprintf("%s-%s", listingTitle, uuid.New().String())
 
 	// Parse files from request
 	files, err := c.MultipartForm()
@@ -155,7 +159,6 @@ func UploadHandler(c *fiber.Ctx) error {
 	}
 
 	uploadedURLs := []string{}
-	client := db.NewSupabaseClient()
 
 	for _, file := range files.File["file"] { // Supports multiple files under "file"
 		src, err := file.Open()
@@ -165,18 +168,12 @@ func UploadHandler(c *fiber.Ctx) error {
 		defer src.Close()
 
 		// Upload to Supabase
-		publicURL, err := uploadToSupabase(file.Filename, src)
+		publicURL, err := uploadToSupabase(sanitizeFilename(fileName), src)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Upload failed: " + err.Error()})
 		}
 
 		uploadedURLs = append(uploadedURLs, publicURL)
-	}
-
-	// Update listing with image URLs
-	_, err = client.PATCH("listings", listingID, fiber.Map{"image_urls": uploadedURLs})
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update listing"})
 	}
 
 	// Return all uploaded URLs
