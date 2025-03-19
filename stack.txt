@@ -1,0 +1,6 @@
+Langauge: GO
+Server: Fiber
+Backend hosting: Railway
+Database: Supabase
+Images: Supabase buckets
+Container: Docker

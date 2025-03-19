@@ -1,0 +1,25 @@
+Relations:
+
+Seller:
+ID
+Name
+Rating
+Verified
+
+Listings:
+ID
+CreatedAt
+Description
+Category
+Condition
+Price
+Location
+EcoAttributes
+Negotiable
+Title
+Seller: Foreignkey to Seller 
+
+
+Paths:
+GET /listings
+POST /listings
