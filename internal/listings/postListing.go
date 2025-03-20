@@ -3,7 +3,6 @@ package listings
 import (
 	"greentrade-eu/internal/db"
 	"log"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -93,20 +92,4 @@ func PostListing(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(response)
-}
-
-func sanitizeFilename(filename string) string {
-	replacer := strings.NewReplacer(
-		" ", "_",
-		"/", "_",
-		"\\", "_",
-		":", "_",
-		"*", "_",
-		"?", "_",
-		"\"", "_",
-		"<", "_",
-		">", "_",
-		"|", "_",
-	)
-	return replacer.Replace(filename)
 }

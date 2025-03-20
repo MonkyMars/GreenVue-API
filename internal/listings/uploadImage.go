@@ -13,6 +13,8 @@ import (
 	"mime/multipart"
 	"os"
 
+	"greentrade-eu/lib"
+
 	"github.com/chai2010/webp"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -22,7 +24,7 @@ import (
 
 func UploadHandler(c *fiber.Ctx) error {
 	listingTitle := c.FormValue("listing_title")
-	fileName := fmt.Sprintf("%s-%s.webp", listingTitle, uuid.New().String())
+	fileName := fmt.Sprintf("%s-%s.webp", lib.SanitizeFilename(listingTitle), uuid.New().String())
 
 	files, err := c.MultipartForm()
 	log.Printf("Files: %T", files)

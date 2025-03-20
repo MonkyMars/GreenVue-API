@@ -1,6 +1,9 @@
 # Use a smaller Go base image
 FROM golang:1.24.1-alpine AS builder
 
+# Install build dependencies
+RUN apk add --no-cache gcc musl-dev libwebp-dev
+
 # Set the working directory
 WORKDIR /app
 
@@ -23,7 +26,7 @@ RUN GOOS=linux GOARCH=amd64 go build -o server ./cmd
 FROM alpine:latest
 
 # Install necessary dependencies for the application to run
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates libwebp
 
 # Set the working directory
 WORKDIR /app
