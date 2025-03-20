@@ -107,6 +107,31 @@ func (s *SupabaseClient) POST(table string, data Listing) ([]byte, error) {
 	return body, nil
 }
 
+func (s *SupabaseClient) DELETE(table, id string) ([]byte, error) {
+	url := fmt.Sprintf("%s/rest/v1/%s", s.URL, table)
+
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("apikey", s.APIKey)
+	req.Header.Add("Authorization", "Bearer "+s.APIKey)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return respBody, nil
+}
+
 func (s *SupabaseClient) UploadImage(filename, bucket string, image []byte) ([]byte, error) {
 	url := fmt.Sprintf("%s/storage/v1/object/%s/%s", s.URL, bucket, filename)
 	fmt.Printf("Uploading to URL: %s\n", url)
