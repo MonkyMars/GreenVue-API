@@ -61,7 +61,7 @@ func main() {
 	app.Get("/listings/category/:category", nil)
 	app.Post("/listings", listings.PostListing)
 	app.Post("/upload/listing_image", listings.UploadHandler)
-	// app.Delete("/listings/:id", listings.DeleteListing) - not implemented yet
+	app.Delete("/listings/:id", listings.DeleteListingById)
 	// TODO: Implement DeleteListing
 
 	app.Listen(":8081")
