@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
+
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -213,43 +215,6 @@ func (s *SupabaseClient) PATCH(table, ID string, query fiber.Map) ([]byte, error
 	return respBody, nil
 }
 
-func (s *SupabaseClient) IsSellerInDB(seller Seller) (bool, int, error) {
-	url := fmt.Sprintf("%s/rest/v1/sellers?id=eq.%d", s.URL, seller.ID)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return false, 0, err
-	}
-
-	req.Header.Add("apikey", s.APIKey)
-	req.Header.Add("Authorization", "Bearer "+s.APIKey)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return false, 0, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return false, 0, err
-	}
-
-	var sellers []Seller
-	if err := json.Unmarshal(body, &sellers); err != nil {
-		return false, 0, err
-	}
-
-	// Check if the array has elements before accessing index 0
-	if len(sellers) > 0 {
-		return true, sellers[0].ID, nil
-	}
-
-	// If sellers array is empty, return false with ID 0
-	return false, 0, nil
-}
-
 func (s *SupabaseClient) PostRaw(table string, jsonData []byte) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s", s.URL, table)
 
@@ -277,6 +242,39 @@ func (s *SupabaseClient) PostRaw(table string, jsonData []byte) ([]byte, error) 
 
 	if resp.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("supabase error: %s", string(body))
+	}
+
+	return body, nil
+}
+
+func (s *SupabaseClient) SignUp(name, email, password string) ([]byte, error) {
+	url := fmt.Sprintf("%s/auth/v1/signup", s.URL)
+
+	payload := fmt.Sprintf(`{"email":"%s","password":"%s"}`, email, password)
+	req, err := http.NewRequest("POST", url, strings.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("apikey", s.APIKey)
+	req.Header.Add("Authorization", "Bearer "+s.APIKey)
+	req.Header.Add("Prefer", "return=representation")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+
+	log.Println(body)
+
+	if err != nil {
+		return nil, err
 	}
 
 	return body, nil
