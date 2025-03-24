@@ -1,6 +1,7 @@
 package main
 
 import (
+	"greentrade-eu/internal/auth"
 	"greentrade-eu/internal/listings"
 	"log"
 	"time"
@@ -62,6 +63,10 @@ func main() {
 	app.Post("/listings", listings.PostListing)
 	app.Post("/upload/listing_image", listings.UploadHandler)
 	app.Delete("/listings/:id", listings.DeleteListingById)
+
+	app.Post("/auth/login", auth.LoginUser)
+	app.Post("/auth/register", auth.RegisterUser)
+
 	// TODO: Implement DeleteListing
 
 	app.Listen(":8081")

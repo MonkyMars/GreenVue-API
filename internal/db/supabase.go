@@ -1,14 +1,13 @@
 package db
 
 import (
+	"greentrade-eu/lib"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
-
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -247,35 +246,158 @@ func (s *SupabaseClient) PostRaw(table string, jsonData []byte) ([]byte, error) 
 	return body, nil
 }
 
-func (s *SupabaseClient) SignUp(name, email, password string) ([]byte, error) {
+func (s *SupabaseClient) SignUp(email, password string) (*lib.User, error) {
 	url := fmt.Sprintf("%s/auth/v1/signup", s.URL)
 
-	payload := fmt.Sprintf(`{"email":"%s","password":"%s"}`, email, password)
-	req, err := http.NewRequest("POST", url, strings.NewReader(payload))
+	// Create request payload
+	payload, err := json.Marshal(map[string]string{
+		"email":    email,
+		"password": password,
+	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("apikey", s.APIKey)
-	req.Header.Add("Authorization", "Bearer "+s.APIKey)
-	req.Header.Add("Prefer", "return=representation")
+	// Create HTTP request
+	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
 
+	// Set headers
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("apikey", s.APIKey)
+	req.Header.Set("Authorization", "Bearer "+s.APIKey)
+	req.Header.Set("Prefer", "return=representation")
+
+	// Send request
 	client := &http.Client{}
 	resp, err := client.Do(req)
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
+	// Read response body
 	body, err := io.ReadAll(resp.Body)
-
-	log.Println(body)
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	return body, nil
+	 // log.Println("Supabase Response:", string(body)) // Debugging
+
+	// Check for HTTP errors
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("failed to sign up user: %s", string(body))
+	}
+
+	// Parse JSON response
+	var user lib.User
+	if err := json.Unmarshal(body, &user); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &user, nil
+}
+
+type User struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+func (s *SupabaseClient) InsertUser(name, userID string) error {
+	url := fmt.Sprintf("%s/rest/v1/users", s.URL)
+
+	// Create request payload
+	payload, err := json.Marshal(User{
+		ID:   userID,
+		Name: name,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	// Create HTTP request
+	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set headers
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("apikey", s.APIKey)
+	req.Header.Set("Authorization", "Bearer "+s.APIKey)
+	req.Header.Set("Prefer", "return=minimal") // No need for full response
+
+	// Send request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Check for HTTP errors
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("failed to insert user: %s", string(body))
+	}
+
+	return nil
+}
+
+func (s *SupabaseClient) Login(email, password string) (*lib.AuthResponse, error) {
+	url := fmt.Sprintf("%s/auth/v1/token?grant_type=password", s.URL)
+
+	// Create request payload
+	payload, err := json.Marshal(map[string]string{
+		"email":    email,
+		"password": password,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	// Create HTTP request
+	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set headers
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("apikey", s.APIKey)
+	req.Header.Set("Authorization", "Bearer "+s.APIKey)
+
+	// Send request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Check for HTTP errors
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to login: %s", string(body))
+	}
+
+	// Parse JSON response
+	var authResp lib.AuthResponse
+	if err := json.Unmarshal(body, &authResp); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &authResp, nil
 }
