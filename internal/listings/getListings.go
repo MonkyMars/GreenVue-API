@@ -1,6 +1,7 @@
 package listings
 
 import (
+	"fmt"
 	"encoding/json"
 	"greentrade-eu/internal/db"
 
@@ -30,7 +31,8 @@ func GetListings(c *fiber.Ctx) error {
 func GetListingById(c *fiber.Ctx) error {
 	client := db.NewSupabaseClient()
 	listingID := c.Params("id")
-	data, err := client.Query("listings", "select=*&id=eq."+listingID)
+	query := fmt.Sprintf("select=*&id=eq.%s", listingID)
+	data, err := client.Query("listings", query)
 
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{

@@ -14,6 +14,7 @@ func RegisterUser(c *fiber.Ctx) error {
 		Name     string `json:"name"`
 		Email    string `json:"email"`
 		Password string `json:"password"`
+		Location string `json:"location"`
 	}
 
 	// Parse JSON request body
@@ -38,9 +39,15 @@ func RegisterUser(c *fiber.Ctx) error {
 		})
 	}
 
+	parsedPayload := db.User{
+		ID:       user.ID,
+		Name:     payload.Name,
+		Email:    payload.Email,
+		Location: payload.Location,
+	}
+
 	// Insert user into the database
-	err = client.InsertUser(payload.Name, user.ID)
-	
+	err = client.InsertUser(parsedPayload)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"error": "Failed to store user in database: " + err.Error(),
@@ -53,4 +60,3 @@ func RegisterUser(c *fiber.Ctx) error {
 		"userId":  user.ID,
 	})
 }
-

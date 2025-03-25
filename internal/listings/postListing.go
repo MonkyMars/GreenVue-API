@@ -2,8 +2,7 @@ package listings
 
 import (
 	"greentrade-eu/internal/db"
-	"log"
-
+	
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -53,17 +52,17 @@ func PostListing(c *fiber.Ctx) error {
 						imageUrl = append(imageUrl, str)
 					}
 				}
-			} else {
-				// Log what type it actually is for debugging
-				log.Printf("urls is not []interface{} but %T: %v", urls, urls)
+			}
+		} else {
+			// Try to handle the case where urls is a string
+			if url, ok := urls.(string); ok {
+				imageUrl = append(imageUrl, url)
 			}
 		}
 	}
 
 	seller := payload.Seller
-	log.Printf("Processed imageUrl: %v", imageUrl)
-	log.Printf("EcoScore: %v", ecoScore)
-
+	
 	// Create the listing
 	listing := db.Listing{
 		Description:   description,

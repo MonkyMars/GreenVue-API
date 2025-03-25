@@ -1,10 +1,10 @@
 package db
 
 import (
-	"greentrade-eu/lib"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"greentrade-eu/lib"
 	"io"
 	"net/http"
 	"os"
@@ -14,7 +14,7 @@ import (
 )
 
 type Seller struct { // this struct is used in the supabase database: Seller.
-	ID       int     `json:"id"`
+	ID       int64   `json:"id"`
 	Name     string  `json:"name"`
 	Rating   float32 `json:"rating"`
 	Verified bool    `json:"verified"`
@@ -264,7 +264,7 @@ func (s *SupabaseClient) SignUp(email, password string) (*lib.User, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set headers
+	// Set headers (You might only need one authentication method: apikey OR Authorization)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("apikey", s.APIKey)
 	req.Header.Set("Authorization", "Bearer "+s.APIKey)
@@ -284,14 +284,12 @@ func (s *SupabaseClient) SignUp(email, password string) (*lib.User, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	 // log.Println("Supabase Response:", string(body)) // Debugging
-
 	// Check for HTTP errors
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("failed to sign up user: %s", string(body))
 	}
 
-	// Parse JSON response
+	// Parse JSON response (Ensure that this matches the actual Supabase user response structure)
 	var user lib.User
 	if err := json.Unmarshal(body, &user); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
@@ -300,19 +298,26 @@ func (s *SupabaseClient) SignUp(email, password string) (*lib.User, error) {
 	return &user, nil
 }
 
+
+
 type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Location string `json:"location"`
 }
 
-func (s *SupabaseClient) InsertUser(name, userID string) error {
+func (s *SupabaseClient) InsertUser(user User) error {
 	url := fmt.Sprintf("%s/rest/v1/users", s.URL)
 
 	// Create request payload
 	payload, err := json.Marshal(User{
-		ID:   userID,
-		Name: name,
+		ID:   user.ID,
+		Name: user.Name,
+		Email: user.Email,
+		Location: user.Location,
 	})
+
 	if err != nil {
 		return fmt.Errorf("failed to marshal request body: %w", err)
 	}
