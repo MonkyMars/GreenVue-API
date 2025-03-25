@@ -1,35 +1,41 @@
-# Build stage (minimal dependencies)
+# Use a smaller Go base image
 FROM golang:1.24.1-alpine AS builder
 
-# Set CGO_ENABLED=0 for a fully static binary
-ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
+# Install build dependencies
+RUN apk add --no-cache gcc musl-dev libwebp-dev
 
 # Set the working directory
 WORKDIR /app
 
-# Copy go.mod and go.sum first for caching
+# Copy the .env.local file
+COPY .env.local .env.local
+
+# Copy the go.mod and go.sum first to leverage Docker cache
 COPY go.mod go.sum ./
 
 # Download dependencies
 RUN go mod tidy
 
-# Copy the source code
+# Copy the entire source code
 COPY . .
 
-# Build the application statically
-RUN go build -o server ./cmd
+# Build the application for production
+RUN GOOS=linux GOARCH=amd64 go build -o server ./cmd
 
-# Final minimal image
-FROM scratch
+# Create a smaller final image
+FROM alpine:latest
 
-# Set working directory
+# Install necessary dependencies for the application to run
+RUN apk add --no-cache ca-certificates libwebp
+
+# Set the working directory
 WORKDIR /app
 
-# Copy built binary from the builder stage
-COPY --from=builder /app/server /app/server
+# Copy the built binary from the builder stage
+COPY --from=builder /app/server /app/
 
-# Expose port
+# Expose the port
 EXPOSE 8081
 
 # Run the server
-CMD ["/app/server"]
+CMD ["./server"]
