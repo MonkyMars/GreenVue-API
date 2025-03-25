@@ -406,3 +406,30 @@ func (s *SupabaseClient) Login(email, password string) (*lib.AuthResponse, error
 
 	return &authResp, nil
 }
+
+func (s *SupabaseClient) InsertSeller(ID, description string) error {
+	url := fmt.Sprintf("%s/rest/v1/sellers", s.URL)
+
+	req, err := http.NewRequest("POST", url, strings.NewReader(fmt.Sprintf(`{"id": "%s", "description": "%s"}`, ID, description)))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("apikey", s.APIKey)
+	req.Header.Set("Authorization", "Bearer "+s.APIKey)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("failed to insert seller: %s", resp.Status)
+	}
+
+	return nil
+}
