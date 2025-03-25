@@ -18,7 +18,7 @@ func LoginUser(c *fiber.Ctx) error {
 	// Parse JSON request body
 	if err := c.BodyParser(&payload); err != nil {
 		return c.Status(400).JSON(fiber.Map{
-			"error": "Invalid JSON payload: " + err.Error(),
+			"error": "Invalid JSON payload: ",
 		})
 	}
 
@@ -31,9 +31,10 @@ func LoginUser(c *fiber.Ctx) error {
 
 	// Authenticate user
 	authResp, err := client.Login(payload.Email, payload.Password)
+
 	if err != nil {
 		return c.Status(401).JSON(fiber.Map{
-			"error": "Invalid credentials: " + err.Error(),
+			"error": "Invalid credentials",
 		})
 	}
 

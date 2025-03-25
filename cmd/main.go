@@ -69,6 +69,7 @@ func main() {
 	// Auth
 	app.Post("/auth/login", auth.LoginUser)
 	app.Post("/auth/register", auth.RegisterUser)
+	app.Get("/auth/user/:id", auth.GetUserById)
 
 	// Sellers
 	app.Get("/sellers", seller.GetSellers)

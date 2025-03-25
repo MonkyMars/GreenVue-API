@@ -1,8 +1,8 @@
 package listings
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"greentrade-eu/internal/db"
 
 	"github.com/gofiber/fiber/v2"

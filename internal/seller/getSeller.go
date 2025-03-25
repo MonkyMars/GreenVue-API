@@ -1,10 +1,11 @@
 package seller
 
 import (
-	"greentrade-eu/internal/db"
-	"github.com/gofiber/fiber/v2"
 	"encoding/json"
 	"fmt"
+	"greentrade-eu/internal/db"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 func GetSellers(c *fiber.Ctx) error {
@@ -25,7 +26,7 @@ func GetSellers(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(sellers)
-};
+}
 
 func GetSellerById(c *fiber.Ctx) error {
 	client := db.NewSupabaseClient()
@@ -53,4 +54,4 @@ func GetSellerById(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(sellers[0])
-};
+}

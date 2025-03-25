@@ -14,7 +14,7 @@ import (
 )
 
 type Seller struct { // this struct is used in the supabase database: Seller.
-	ID       int64   `json:"id"`
+	ID       string  `json:"id"`
 	Name     string  `json:"name"`
 	Rating   float32 `json:"rating"`
 	Verified bool    `json:"verified"`
@@ -298,13 +298,14 @@ func (s *SupabaseClient) SignUp(email, password string) (*lib.User, error) {
 	return &user, nil
 }
 
-
-
 type User struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Location string `json:"location"`
+	ID         string `json:"id"`
+	Email      string `json:"email"`
+	Name       string `json:"name"`
+	Location   string `json:"location"`
+	IsSeller   bool   `json:"isSeller"`
+	ProfileUrl string `json:"profileUrl"`
+	CreatedAt  string `json:"created_at"`
 }
 
 func (s *SupabaseClient) InsertUser(user User) error {
@@ -312,10 +313,12 @@ func (s *SupabaseClient) InsertUser(user User) error {
 
 	// Create request payload
 	payload, err := json.Marshal(User{
-		ID:   user.ID,
-		Name: user.Name,
-		Email: user.Email,
-		Location: user.Location,
+		ID:         user.ID,
+		Name:       user.Name,
+		Email:      user.Email,
+		Location:   user.Location,
+		CreatedAt:  user.CreatedAt,
+		ProfileUrl: fmt.Sprintf("http://localhost:3000/profile/%s", user.ID), // TODO: Update with actual URL
 	})
 
 	if err != nil {
@@ -395,7 +398,7 @@ func (s *SupabaseClient) Login(email, password string) (*lib.AuthResponse, error
 
 	// Check for HTTP errors
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to login: %s", string(body))
+		return nil, fmt.Errorf("login failed: %s", string(body))
 	}
 
 	// Parse JSON response
@@ -424,7 +427,7 @@ func (s *SupabaseClient) InsertSeller(ID, description string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
@@ -432,4 +435,57 @@ func (s *SupabaseClient) InsertSeller(ID, description string) error {
 	}
 
 	return nil
+}
+
+func (s *SupabaseClient) GetUserById(userId string) (User, error) {
+	// Validate userId is not empty
+	if userId == "" {
+		return User{}, fmt.Errorf("user ID cannot be empty")
+	}
+
+	url := fmt.Sprintf("%s/rest/v1/users?id=eq.%s", s.URL, userId)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return User{}, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Add("apikey", s.APIKey)
+	req.Header.Add("Authorization", "Bearer "+s.APIKey)
+	req.Header.Add("Prefer", "return=representation")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("Error sending request: %v\n", err)
+		return User{}, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return User{}, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	// Handle HTTP error responses
+	if resp.StatusCode >= 400 {
+		return User{}, fmt.Errorf("API error (%d): %s", resp.StatusCode, string(body))
+	}
+
+	// Try to unmarshal as array first
+	var users []User
+	if err := json.Unmarshal(body, &users); err != nil {
+		// If array unmarshal fails, try as single object
+		var user User
+		if err := json.Unmarshal(body, &user); err != nil {
+			return User{}, fmt.Errorf("failed to parse response: %w", err)
+		}
+		return user, nil
+	}
+
+	if len(users) == 0 {
+		return User{}, fmt.Errorf("user not found with ID: %s", userId)
+	}
+
+	return users[0], nil
 }
