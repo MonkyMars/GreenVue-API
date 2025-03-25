@@ -318,7 +318,7 @@ func (s *SupabaseClient) InsertUser(user User) error {
 		Email:      user.Email,
 		Location:   user.Location,
 		CreatedAt:  user.CreatedAt,
-		ProfileUrl: fmt.Sprintf("http://localhost:3000/profile/%s", user.ID), // TODO: Update with actual URL
+		ProfileUrl: fmt.Sprintf("%s/profile/%s", os.Getenv("PRODUCTION_URL"), user.ID),
 	})
 
 	if err != nil {
