@@ -3,6 +3,7 @@ package main
 import (
 	"greentrade-eu/internal/auth"
 	"greentrade-eu/internal/listings"
+	"greentrade-eu/internal/seller"
 	"log"
 	"time"
 
@@ -57,6 +58,7 @@ func main() {
 		return c.JSON(fiber.Map{"message": "OK"})
 	})
 
+	// Listings
 	app.Get("/listings", listings.GetListings)
 	app.Get("/listings/:id", listings.GetListingById)
 	app.Get("/listings/category/:category", nil)
@@ -64,10 +66,16 @@ func main() {
 	app.Post("/upload/listing_image", listings.UploadHandler)
 	app.Delete("/listings/:id", listings.DeleteListingById)
 
+
+	// Auth
 	app.Post("/auth/login", auth.LoginUser)
 	app.Post("/auth/register", auth.RegisterUser)
 
-	// TODO: Implement DeleteListing
+	// Sellers
+	app.Get("/sellers", seller.GetSellers)
+	app.Get("/sellers/:id", seller.GetSellerById)
+	app.Post("/sellers", seller.CreateSeller)
 
+	// Listen on port 8081
 	app.Listen(":8081")
 }
