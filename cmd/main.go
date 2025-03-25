@@ -76,6 +76,11 @@ func main() {
 	app.Get("/sellers/:id", seller.GetSellerById)
 	app.Post("/sellers", seller.CreateSeller)
 
+	// Prevents 404 spam for favicon.ico
+	app.Get("/favicon.ico", func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusNoContent) // 204 No Content
+	})
+
 	// Listen on port 8081
 	app.Listen(":8081")
 }
