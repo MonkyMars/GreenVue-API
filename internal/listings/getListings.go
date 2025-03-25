@@ -59,7 +59,7 @@ func GetListingById(c *fiber.Ctx) error {
 func GetListingByCategory(c *fiber.Ctx) error {
 	client := db.NewSupabaseClient()
 	category := c.Params("category")
-	data, err := client.Query("listings", "select=*&limit=4&category=eq."+category)
+	data, err := client.Query("listings", "select=*&category=eq."+category)
 
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
