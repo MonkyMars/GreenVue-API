@@ -63,13 +63,13 @@ func UploadHandler(c *fiber.Ctx) error {
 		uploadedURLs = append(uploadedURLs, publicURL)
 	}
 
-	// Return the list of uploaded URLs to the frontend. 
+	// Return the list of uploaded URLs to the frontend.
 	return c.JSON(fiber.Map{"urls": uploadedURLs})
 }
 
 func convertToWebP(file multipart.File) (*bytes.Buffer, error) {
 	// Ensures we read from the beginning of the file
-	file.Seek(0, 0) 
+	file.Seek(0, 0)
 
 	// Decode image
 	img, format, err := image.Decode(file)

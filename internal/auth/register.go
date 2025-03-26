@@ -2,7 +2,8 @@ package auth
 
 import (
 	"greentrade-eu/internal/db"
-	
+	"greentrade-eu/lib"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -31,8 +32,19 @@ func RegisterUser(c *fiber.Ctx) error {
 		})
 	}
 
-	// Register user in Supabase Auth
-	user, err := client.SignUp(payload.Email, payload.Password)
+	valid, reason := lib.UsernameValidation(payload.Name)
+	if !valid {
+		return c.Status(400).JSON(fiber.Map{
+			"error": reason,
+		})
+	}
+
+	sanitizedEmail := lib.SanitizeInput(payload.Email)
+	sanitizedUser := lib.SanitizeInput(payload.Name)
+
+	// no need to validate username and email since it happens on the frontend.
+
+	user, err := client.SignUp(sanitizedEmail, payload.Password)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"error": "Failed to register user: " + err.Error(),
@@ -41,9 +53,9 @@ func RegisterUser(c *fiber.Ctx) error {
 
 	parsedPayload := db.User{
 		ID:       user.ID,
-		Name:     payload.Name,
-		Email:    payload.Email,
-		Location: payload.Location,
+		Name:     sanitizedUser,
+		Email:    sanitizedEmail,
+		Location: lib.SanitizeInput(payload.Location),
 	}
 
 	// Insert user into the database

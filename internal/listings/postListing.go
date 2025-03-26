@@ -2,7 +2,8 @@ package listings
 
 import (
 	"greentrade-eu/internal/db"
-	
+	"greentrade-eu/lib"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -62,10 +63,10 @@ func PostListing(c *fiber.Ctx) error {
 	}
 
 	seller := payload.Seller
-	
+
 	// Create the listing
 	listing := db.Listing{
-		Description:   description,
+		Description:   lib.SanitizeInput(description),
 		Category:      category,
 		Condition:     condition,
 		Price:         price,
@@ -73,7 +74,7 @@ func PostListing(c *fiber.Ctx) error {
 		EcoScore:      ecoScore,
 		EcoAttributes: ecoAttributes,
 		Negotiable:    negotiable,
-		Title:         title,
+		Title:         lib.SanitizeInput(title),
 		ImageUrl:      imageUrl,
 		Seller:        seller,
 	}

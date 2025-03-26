@@ -2,6 +2,7 @@ package auth
 
 import (
 	"greentrade-eu/internal/db"
+	"greentrade-eu/lib"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -30,7 +31,7 @@ func LoginUser(c *fiber.Ctx) error {
 	}
 
 	// Authenticate user
-	authResp, err := client.Login(payload.Email, payload.Password)
+	authResp, err := client.Login(lib.SanitizeInput(payload.Email), lib.SanitizeInput(payload.Password))
 
 	if err != nil {
 		return c.Status(401).JSON(fiber.Map{
