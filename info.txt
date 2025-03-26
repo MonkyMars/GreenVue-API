@@ -7,6 +7,10 @@ Container: Docker
 
 TODO:
 
+Error handling:
+
+Introduce consistent error handling.
+
 User Management:
 
 No endpoints to update user profiles
