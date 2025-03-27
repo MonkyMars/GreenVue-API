@@ -5,6 +5,8 @@ import (
 	"greentrade-eu/lib/errors"
 
 	"github.com/gofiber/fiber/v2"
+
+	"fmt"
 )
 
 func GetUserById(c *fiber.Ctx) error {
@@ -16,10 +18,18 @@ func GetUserById(c *fiber.Ctx) error {
 
 	client := db.NewSupabaseClient()
 
-	// Get user by ID
+	// Get user by ID (safely handle errors)
 	user, err := client.GetUserById(userId)
 	if err != nil {
-		return errors.DatabaseError("Failed to fetch user: " + err.Error())
+		// Check for specific "not found" error message
+		if err.Error() == fmt.Sprintf("user not found with ID: %s", userId) {
+			return errors.NotFound("User not found")
+		}
+		return errors.InternalServerError("Failed to fetch user")
+	}
+
+	if user.ID == "" {
+		return errors.NotFound("User not found")
 	}
 
 	return errors.SuccessResponse(c, fiber.Map{
@@ -31,8 +41,7 @@ func GetUserByAccessToken(c *fiber.Ctx) error {
 	accessToken := c.Get("Authorization")
 
 	if accessToken == "" {
-		errors.Unauthorized("Access token is required")
-		return nil
+		return errors.Unauthorized("Access token is required") // RETURN the error
 	}
 
 	client := db.NewSupabaseClient()
@@ -40,13 +49,43 @@ func GetUserByAccessToken(c *fiber.Ctx) error {
 	// Get user by access token
 	user, err := client.GetUserByAccessToken(accessToken)
 	if err != nil {
-		errors.Unauthorized("Invalid access token")
-		return nil
+		return errors.Unauthorized("Invalid access token") // RETURN the error
 	}
 
-	errors.SuccessResponse(c, fiber.Map{
+	// Check if the user exists using zero value comparison or a method provided by the User type
+	if user.ID == "" {
+		return errors.NotFound("User not found") // RETURN the error
+	}
+
+	// Return the success response
+	return errors.SuccessResponse(c, fiber.Map{
 		"user": user,
 	})
+}
 
-	return nil
+func RefreshAccessToken(c *fiber.Ctx) error {
+	refreshToken := c.Get("Authorization")
+
+	if refreshToken == "" {
+		return errors.Unauthorized("Refresh token is required") // RETURN the error
+	}
+
+	client := db.NewSupabaseClient()
+
+	// Refresh access token
+	user, err := client.RefreshAccessToken(refreshToken)
+	if err != nil {
+		return errors.Unauthorized("Invalid refresh token") // RETURN the error
+	}
+
+	if user.ID == "" {
+		return errors.NotFound("User not found") // RETURN the error
+	}
+
+	// Return user and success message
+	return errors.SuccessResponse(c, fiber.Map{ // RETURN the response
+		"user":    user,
+		"success": true,
+		"message": "Access token refreshed successfully",
+	})
 }

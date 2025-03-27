@@ -85,8 +85,8 @@ func main() {
 
 	// Listings
 	app.Get("/listings", listings.GetListings)
-	app.Get("/listings/:id", listings.GetListingById)
 	app.Get("/listings/category/:category", listings.GetListingByCategory)
+	app.Get("/listings/:id", listings.GetListingById)
 	app.Post("/listings", listings.PostListing)
 	app.Post("/upload/listing_image", listings.UploadHandler)
 	app.Delete("/listings/:id", listings.DeleteListingById)

@@ -48,11 +48,9 @@ func ErrorHandler(config ...ErrorResponseConfig) fiber.ErrorHandler {
 	}
 
 	return func(ctx *fiber.Ctx, err error) error {
-		// Get the error that might be wrapped in a *fiber.Error
-		var originalErr = err
-		var fiberErr *fiber.Error
-		if errors.As(err, &fiberErr) {
-			originalErr = fiberErr
+		// Early return if err is nil
+		if err == nil {
+			return nil
 		}
 
 		// Default error response
@@ -66,36 +64,51 @@ func ErrorHandler(config ...ErrorResponseConfig) fiber.ErrorHandler {
 			requestID = "unknown"
 		}
 
-		// Handle AppError type
+		// Handle AppError type - with safe type assertion
 		var appErr *AppError
-		if errors.As(originalErr, &appErr) {
+		if errors.As(err, &appErr) && appErr != nil {
 			statusCode = appErr.StatusCode
 			errorMsg = appErr.Message
 
 			// Only include detailed error info in dev mode or for non-internal errors
 			if cfg.DevMode || !appErr.Internal {
-				errorDetails["error"] = appErr.Err.Error()
+				if appErr.Err != nil {
+					// Safely get error message
+					errorDetails["error"] = appErr.Err.Error()
+				} else {
+					errorDetails["message"] = appErr.Message
+				}
 				if appErr.Field != "" {
 					errorDetails["field"] = appErr.Field
 				}
 			}
 
-			// Log internal server errors
+			// Log internal server errors - with safe logging
 			if appErr.Internal || appErr.StatusCode >= 500 {
-				cfg.Logger("[%s] Error: %v", requestID, appErr.Error())
+				if appErr.Err != nil {
+					// Safe logging that doesn't rely on appErr.Error()
+					cfg.Logger("[%s] Error: %s - %s", requestID, appErr.Message, appErr.Err.Error())
+				} else {
+					cfg.Logger("[%s] Error: %s", requestID, appErr.Message)
+				}
 			}
 		} else {
-			// Handle fiber.Error
-			if fiberErr != nil {
+			// Handle fiber.Error with safe type assertion
+			var fiberErr *fiber.Error
+			if errors.As(err, &fiberErr) && fiberErr != nil {
 				statusCode = fiberErr.Code
 				errorMsg = fiberErr.Message
 			} else {
 				// For other error types, only show details in dev mode
-				if cfg.DevMode {
+				if cfg.DevMode && err != nil {
 					errorMsg = err.Error()
 				}
-				// Always log unexpected errors
-				cfg.Logger("[%s] Unexpected error: %v", requestID, err.Error())
+				// Always log unexpected errors - safely
+				if err != nil {
+					cfg.Logger("[%s] Unexpected error: %s", requestID, err.Error())
+				} else {
+					cfg.Logger("[%s] Unknown error (nil error with non-nil wrapper)", requestID)
+				}
 			}
 		}
 
