@@ -82,7 +82,10 @@ func convertToWebP(file multipart.File) (*bytes.Buffer, error) {
 
 	// Encode to WebP
 	webpBuffer := new(bytes.Buffer)
-	err = webp.Encode(webpBuffer, img, &webp.Options{Quality: 80})
+
+	webpOptions := &webp.Options{Quality: 80}
+	err = webp.Encode(webpBuffer, img, webpOptions)
+
 	if err != nil {
 		log.Println("Error encoding WebP:", err)
 		return nil, err
