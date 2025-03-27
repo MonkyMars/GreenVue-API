@@ -73,20 +73,16 @@ func ErrorHandler(config ...ErrorResponseConfig) fiber.ErrorHandler {
 			// Only include detailed error info in dev mode or for non-internal errors
 			if cfg.DevMode || !appErr.Internal {
 				if appErr.Err != nil {
-					// Safely get error message
 					errorDetails["error"] = appErr.Err.Error()
-				} else {
-					errorDetails["message"] = appErr.Message
 				}
 				if appErr.Field != "" {
 					errorDetails["field"] = appErr.Field
 				}
 			}
 
-			// Log internal server errors - with safe logging
+			// Log internal server errors
 			if appErr.Internal || appErr.StatusCode >= 500 {
 				if appErr.Err != nil {
-					// Safe logging that doesn't rely on appErr.Error()
 					cfg.Logger("[%s] Error: %s - %s", requestID, appErr.Message, appErr.Err.Error())
 				} else {
 					cfg.Logger("[%s] Error: %s", requestID, appErr.Message)
@@ -100,15 +96,11 @@ func ErrorHandler(config ...ErrorResponseConfig) fiber.ErrorHandler {
 				errorMsg = fiberErr.Message
 			} else {
 				// For other error types, only show details in dev mode
-				if cfg.DevMode && err != nil {
+				if cfg.DevMode {
 					errorMsg = err.Error()
 				}
-				// Always log unexpected errors - safely
-				if err != nil {
-					cfg.Logger("[%s] Unexpected error: %s", requestID, err.Error())
-				} else {
-					cfg.Logger("[%s] Unknown error (nil error with non-nil wrapper)", requestID)
-				}
+				// Always log unexpected errors
+				cfg.Logger("[%s] Unexpected error: %s", requestID, err.Error())
 			}
 		}
 
