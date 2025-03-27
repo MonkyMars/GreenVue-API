@@ -26,9 +26,6 @@ func UploadHandler(c *fiber.Ctx) error {
 	// Extract listing title from form data
 	listingTitle := c.FormValue("listing_title")
 
-	// Generate a unique filename
-	fileName := fmt.Sprintf("%s-%s.webp", lib.SanitizeFilename(listingTitle), uuid.New().String())
-
 	// Get files from formdata
 	files, err := c.MultipartForm()
 
@@ -46,7 +43,8 @@ func UploadHandler(c *fiber.Ctx) error {
 		}
 		defer src.Close()
 
-		log.Println(file.Filename)
+		// Generate a unique filename
+		fileName := fmt.Sprintf("%s-%s.webp", lib.SanitizeFilename(listingTitle), uuid.New().String())
 
 		// Convert image to WebP
 		webpData, err := convertToWebP(src)

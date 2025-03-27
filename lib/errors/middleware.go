@@ -66,7 +66,13 @@ func ErrorHandler(config ...ErrorResponseConfig) fiber.ErrorHandler {
 
 		// Handle AppError type - with safe type assertion
 		var appErr *AppError
-		if errors.As(err, &appErr) && appErr != nil {
+		if errors.As(err, &appErr) {
+			// Safety check to prevent nil pointer dereference
+			if appErr == nil {
+				cfg.Logger("[%s] Application error is nil after type assertion", requestID)
+				goto SendResponse
+			}
+
 			statusCode = appErr.StatusCode
 			errorMsg = appErr.Message
 
@@ -91,7 +97,13 @@ func ErrorHandler(config ...ErrorResponseConfig) fiber.ErrorHandler {
 		} else {
 			// Handle fiber.Error with safe type assertion
 			var fiberErr *fiber.Error
-			if errors.As(err, &fiberErr) && fiberErr != nil {
+			if errors.As(err, &fiberErr) {
+				// Safety check for fiber error
+				if fiberErr == nil {
+					cfg.Logger("[%s] Fiber error is nil after type assertion", requestID)
+					goto SendResponse
+				}
+
 				statusCode = fiberErr.Code
 				errorMsg = fiberErr.Message
 			} else {
@@ -104,6 +116,7 @@ func ErrorHandler(config ...ErrorResponseConfig) fiber.ErrorHandler {
 			}
 		}
 
+	SendResponse:
 		// Send JSON response
 		response := fiber.Map{
 			"success": false,

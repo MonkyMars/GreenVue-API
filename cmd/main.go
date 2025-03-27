@@ -9,11 +9,11 @@ import (
 	"log"
 	"os"
 
-	// "strings"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	// "github.com/gofiber/fiber/v2/middleware/cache"
+	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/etag"
@@ -49,7 +49,12 @@ func main() {
 		Format: "[${time}] [${ip}] ${status} - ${method} ${path} - ${latency}\n",
 	}))
 
-	app.Use(cors.New())
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "http://localhost:3000",
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS,PATCH",
+		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
+		AllowCredentials: true,
+	}))
 
 	// Configure custom rate limiter with different limits for different endpoints
 	rateLimiter := errors.NewRateLimiter()
@@ -70,35 +75,35 @@ func main() {
 	app.Use(recover.New())
 
 	// Cache middleware with exclusions for auth and non-GET requests
-	// app.Use(cache.New(cache.Config{
-	// 	Next: func(c *fiber.Ctx) bool {
-	// 		// Don't cache non-GET requests
-	// 		if c.Method() != fiber.MethodGet {
-	// 			return true
-	// 		}
+	app.Use(cache.New(cache.Config{
+		Next: func(c *fiber.Ctx) bool {
+			// Don't cache non-GET requests
+			if c.Method() != fiber.MethodGet {
+				return true
+			}
 
-	// 		path := c.Path()
+			path := c.Path()
 
-	// 		// Don't cache auth-related routes
-	// 		if strings.HasPrefix(path, "/auth") {
-	// 			return true
-	// 		}
+			// Don't cache auth-related routes
+			if strings.HasPrefix(path, "/auth") {
+				return true
+			}
 
-	// 		// Don't cache health checks
-	// 		if path == "/health" || path == "/health/detailed" {
-	// 			return true
-	// 		}
+			// Don't cache health checks
+			if path == "/health" || path == "/health/detailed" {
+				return true
+			}
 
-	// 		// Don't cache favicon
-	// 		if path == "/favicon.ico" {
-	// 			return true
-	// 		}
+			// Don't cache favicon
+			if path == "/favicon.ico" {
+				return true
+			}
 
-	// 		return false
-	// 	},
-	// 	Expiration:   time.Minute,
-	// 	CacheControl: true,
-	// }))
+			return false
+		},
+		Expiration:   time.Minute,
+		CacheControl: true,
+	}))
 
 	app.Use(etag.New(etag.Config{
 		Weak: true,
@@ -112,14 +117,14 @@ func main() {
 	app.Post("/auth/login", auth.LoginUser)
 	app.Post("/auth/register", auth.RegisterUser)
 	app.Post("/auth/refresh", auth.RefreshTokenHandler)
+	app.Get("/listings", listings.GetListings)
+	app.Get("/listings/category/:category", listings.GetListingByCategory)
+	app.Get("/listings/:id", listings.GetListingById)
 
 	// Protected routes
 	protected := app.Group("/api", auth.AuthMiddleware())
 	{
 		// Listings
-		protected.Get("/listings", listings.GetListings)
-		protected.Get("/listings/category/:category", listings.GetListingByCategory)
-		protected.Get("/listings/:id", listings.GetListingById)
 		protected.Post("/listings", listings.PostListing)
 		protected.Post("/upload/listing_image", listings.UploadHandler)
 		protected.Delete("/listings/:id", listings.DeleteListingById)

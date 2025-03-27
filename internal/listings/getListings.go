@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"greentrade-eu/internal/db"
+	"greentrade-eu/lib"
 	"greentrade-eu/lib/errors"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -15,6 +17,10 @@ func GetListings(c *fiber.Ctx) error {
 
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch listings: " + err.Error())
+	}
+
+	if data == nil {
+		return errors.NotFound("No listings found")
 	}
 
 	var listings []db.Listing
@@ -33,11 +39,22 @@ func GetListingById(c *fiber.Ctx) error {
 		return errors.BadRequest("Listing ID is required")
 	}
 
+	if !lib.IsNumeric(listingID) {
+		return errors.BadRequest("Invalid listing ID format - must be a number")
+	}
+
 	query := fmt.Sprintf("select=*&id=eq.%s", listingID)
 	data, err := client.Query("listings", query)
 
 	if err != nil {
+		if strings.Contains(err.Error(), "invalid input syntax") {
+			return errors.BadRequest("Invalid listing ID format")
+		}
 		return errors.DatabaseError("Failed to fetch listing: " + err.Error())
+	}
+
+	if len(data) == 0 || string(data) == "[]" {
+		return errors.NotFound("Listing not found")
 	}
 
 	var listings []db.Listing
