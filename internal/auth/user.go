@@ -28,9 +28,9 @@ func GetUserById(c *fiber.Ctx) error {
 		return errors.InternalServerError("Failed to fetch user")
 	}
 
-	if user.ID == "" {
-		return errors.NotFound("User not found")
-	}
+	// if user.ID == "" {
+	// 	return errors.NotFound("User not found")
+	// }
 
 	return errors.SuccessResponse(c, fiber.Map{
 		"user": user,

@@ -8,10 +8,12 @@ import (
 	"greentrade-eu/lib/errors"
 	"log"
 	"os"
+
+	// "strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cache"
+	// "github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/etag"
@@ -67,13 +69,36 @@ func main() {
 
 	app.Use(recover.New())
 
-	app.Use(cache.New(cache.Config{
-		Next: func(c *fiber.Ctx) bool {
-			return c.Method() != fiber.MethodGet
-		},
-		Expiration:   time.Minute,
-		CacheControl: true,
-	}))
+	// Cache middleware with exclusions for auth and non-GET requests
+	// app.Use(cache.New(cache.Config{
+	// 	Next: func(c *fiber.Ctx) bool {
+	// 		// Don't cache non-GET requests
+	// 		if c.Method() != fiber.MethodGet {
+	// 			return true
+	// 		}
+
+	// 		path := c.Path()
+
+	// 		// Don't cache auth-related routes
+	// 		if strings.HasPrefix(path, "/auth") {
+	// 			return true
+	// 		}
+
+	// 		// Don't cache health checks
+	// 		if path == "/health" || path == "/health/detailed" {
+	// 			return true
+	// 		}
+
+	// 		// Don't cache favicon
+	// 		if path == "/favicon.ico" {
+	// 			return true
+	// 		}
+
+	// 		return false
+	// 	},
+	// 	Expiration:   time.Minute,
+	// 	CacheControl: true,
+	// }))
 
 	app.Use(etag.New(etag.Config{
 		Weak: true,
