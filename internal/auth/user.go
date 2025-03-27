@@ -38,54 +38,28 @@ func GetUserById(c *fiber.Ctx) error {
 }
 
 func GetUserByAccessToken(c *fiber.Ctx) error {
-	accessToken := c.Get("Authorization")
-
-	if accessToken == "" {
-		return errors.Unauthorized("Access token is required") // RETURN the error
+	// Get claims from context (set by AuthMiddleware)
+	claims, ok := c.Locals("user").(*Claims)
+	if !ok {
+		return errors.Unauthorized("Invalid token claims")
 	}
 
 	client := db.NewSupabaseClient()
 
-	// Get user by access token
-	user, err := client.GetUserByAccessToken(accessToken)
+	// Get user by ID from claims
+	user, err := client.GetUserById(claims.UserID)
 	if err != nil {
-		return errors.Unauthorized("Invalid access token") // RETURN the error
+		if err.Error() == fmt.Sprintf("user not found with ID: %s", claims.UserID) {
+			return errors.NotFound("User not found")
+		}
+		return errors.InternalServerError("Failed to fetch user")
 	}
 
-	// Check if the user exists using zero value comparison or a method provided by the User type
 	if user.ID == "" {
-		return errors.NotFound("User not found") // RETURN the error
+		return errors.NotFound("User not found")
 	}
 
-	// Return the success response
 	return errors.SuccessResponse(c, fiber.Map{
 		"user": user,
-	})
-}
-
-func RefreshAccessToken(c *fiber.Ctx) error {
-	refreshToken := c.Get("Authorization")
-
-	if refreshToken == "" {
-		return errors.Unauthorized("Refresh token is required") // RETURN the error
-	}
-
-	client := db.NewSupabaseClient()
-
-	// Refresh access token
-	user, err := client.RefreshAccessToken(refreshToken)
-	if err != nil {
-		return errors.Unauthorized("Invalid refresh token") // RETURN the error
-	}
-
-	if user.ID == "" {
-		return errors.NotFound("User not found") // RETURN the error
-	}
-
-	// Return user and success message
-	return errors.SuccessResponse(c, fiber.Map{ // RETURN the response
-		"user":    user,
-		"success": true,
-		"message": "Access token refreshed successfully",
 	})
 }

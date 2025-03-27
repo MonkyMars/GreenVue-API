@@ -79,28 +79,35 @@ func main() {
 		Weak: true,
 	}))
 
-	// Health checks
+	// Health checks (public)
 	app.Get("/health", health.HealthCheck)
 	app.Get("/health/detailed", health.DetailedHealth)
 
-	// Listings
-	app.Get("/listings", listings.GetListings)
-	app.Get("/listings/category/:category", listings.GetListingByCategory)
-	app.Get("/listings/:id", listings.GetListingById)
-	app.Post("/listings", listings.PostListing)
-	app.Post("/upload/listing_image", listings.UploadHandler)
-	app.Delete("/listings/:id", listings.DeleteListingById)
-
-	// Auth
+	// Public routes
 	app.Post("/auth/login", auth.LoginUser)
 	app.Post("/auth/register", auth.RegisterUser)
-	app.Get("/auth/user/:id", auth.GetUserById)
-	app.Get("/auth/me", auth.GetUserByAccessToken)
+	app.Post("/auth/refresh", auth.RefreshTokenHandler)
 
-	// Sellers
-	app.Get("/sellers", seller.GetSellers)
-	app.Get("/sellers/:id", seller.GetSellerById)
-	app.Post("/sellers", seller.CreateSeller)
+	// Protected routes
+	protected := app.Group("/api", auth.AuthMiddleware())
+	{
+		// Listings
+		protected.Get("/listings", listings.GetListings)
+		protected.Get("/listings/category/:category", listings.GetListingByCategory)
+		protected.Get("/listings/:id", listings.GetListingById)
+		protected.Post("/listings", listings.PostListing)
+		protected.Post("/upload/listing_image", listings.UploadHandler)
+		protected.Delete("/listings/:id", listings.DeleteListingById)
+
+		// User profile
+		protected.Get("/auth/me", auth.GetUserByAccessToken)
+		protected.Get("/auth/user/:id", auth.GetUserById)
+
+		// Sellers
+		protected.Get("/sellers", seller.GetSellers)
+		protected.Get("/sellers/:id", seller.GetSellerById)
+		protected.Post("/sellers", seller.CreateSeller)
+	}
 
 	// Prevents 404 spam for favicon.ico
 	app.Get("/favicon.ico", func(c *fiber.Ctx) error {

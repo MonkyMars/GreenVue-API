@@ -32,17 +32,21 @@ func LoginUser(c *fiber.Ctx) error {
 
 	// Authenticate user
 	authResp, err := client.Login(lib.SanitizeInput(payload.Email), lib.SanitizeInput(payload.Password))
-
 	if err != nil {
-		// Determine if this is a credentials error or a server error
 		return errors.Unauthorized("Invalid credentials")
 	}
 
-	// Return login success response
+	// Generate JWT tokens
+	tokens, err := GenerateTokenPair(authResp.User.ID, authResp.User.Email)
+	if err != nil {
+		return errors.InternalServerError("Failed to generate tokens")
+	}
+
+	// Return login success response with JWT tokens
 	return errors.SuccessResponse(c, fiber.Map{
 		"userId":       authResp.User.ID,
-		"accessToken":  authResp.AccessToken,
-		"refreshToken": authResp.RefreshToken,
-		"expiresIn":    authResp.ExpiresIn,
+		"accessToken":  tokens.AccessToken,
+		"refreshToken": tokens.RefreshToken,
+		"expiresIn":    tokens.ExpiresIn,
 	})
 }
