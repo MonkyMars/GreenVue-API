@@ -2,6 +2,8 @@ package auth
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -23,6 +25,22 @@ type TokenPair struct {
 	AccessToken  string
 	RefreshToken string
 	ExpiresIn    int64
+}
+
+func getJWTSecrets() (access []byte, refresh []byte) {
+	accessSecret := os.Getenv("JWT_ACCESS_SECRET")
+	if accessSecret == "" {
+		// Fallback for development or log a warning
+		accessSecret = "dev-access-secret"
+	}
+
+	refreshSecret := os.Getenv("JWT_REFRESH_SECRET")
+	if refreshSecret == "" {
+		// Fallback for development or log a warning
+		refreshSecret = "dev-refresh-secret"
+	}
+
+	return []byte(accessSecret), []byte(refreshSecret)
 }
 
 // GenerateTokenPair creates a new access token and refresh token
@@ -48,12 +66,13 @@ func GenerateTokenPair(userID, email string) (*TokenPair, error) {
 	})
 
 	// Sign the tokens
-	accessTokenString, err := accessToken.SignedString([]byte("your-secret-key")) // TODO: Move to config
+	accessSecret, refreshSecret := getJWTSecrets()
+	accessTokenString, err := accessToken.SignedString(accessSecret)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshTokenString, err := refreshToken.SignedString([]byte("your-secret-key")) // TODO: Move to config
+	refreshTokenString, err := refreshToken.SignedString(refreshSecret)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +87,11 @@ func GenerateTokenPair(userID, email string) (*TokenPair, error) {
 // ValidateToken validates a JWT token and returns the claims
 func ValidateToken(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte("your-secret-key"), nil // TODO: Move to config
+		accessSecret, _ := getJWTSecrets()
+		if accessSecret == nil {
+			return nil, fmt.Errorf("failed to get JWT secrets")
+		}
+		return accessSecret, nil
 	})
 
 	if err != nil {
