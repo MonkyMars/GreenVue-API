@@ -26,9 +26,6 @@ func UploadHandler(c *fiber.Ctx) error {
 	// Extract listing title from form data
 	listingTitle := c.FormValue("listing_title")
 
-	// Generate a unique filename
-	fileName := fmt.Sprintf("%s-%s.webp", lib.SanitizeFilename(listingTitle), uuid.New().String())
-
 	// Get files from formdata
 	files, err := c.MultipartForm()
 
@@ -46,7 +43,8 @@ func UploadHandler(c *fiber.Ctx) error {
 		}
 		defer src.Close()
 
-		log.Println(file.Filename)
+		// Generate a unique filename
+		fileName := fmt.Sprintf("%s-%s.webp", lib.SanitizeFilename(listingTitle), uuid.New().String())
 
 		// Convert image to WebP
 		webpData, err := convertToWebP(src)
@@ -63,13 +61,13 @@ func UploadHandler(c *fiber.Ctx) error {
 		uploadedURLs = append(uploadedURLs, publicURL)
 	}
 
-	// Return the list of uploaded URLs to the frontend. 
+	// Return the list of uploaded URLs to the frontend.
 	return c.JSON(fiber.Map{"urls": uploadedURLs})
 }
 
 func convertToWebP(file multipart.File) (*bytes.Buffer, error) {
 	// Ensures we read from the beginning of the file
-	file.Seek(0, 0) 
+	file.Seek(0, 0)
 
 	// Decode image
 	img, format, err := image.Decode(file)
@@ -84,7 +82,10 @@ func convertToWebP(file multipart.File) (*bytes.Buffer, error) {
 
 	// Encode to WebP
 	webpBuffer := new(bytes.Buffer)
-	err = webp.Encode(webpBuffer, img, &webp.Options{Quality: 80})
+
+	webpOptions := &webp.Options{Quality: 80}
+	err = webp.Encode(webpBuffer, img, webpOptions)
+
 	if err != nil {
 		log.Println("Error encoding WebP:", err)
 		return nil, err

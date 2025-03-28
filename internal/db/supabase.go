@@ -7,6 +7,7 @@ import (
 	"greentrade-eu/lib"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -489,3 +490,89 @@ func (s *SupabaseClient) GetUserById(userId string) (User, error) {
 
 	return users[0], nil
 }
+
+func (s *SupabaseClient) GetUserByAccessToken(accessToken string) (User, error) {
+	url := fmt.Sprintf("%s/auth/v1/user", s.URL)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return User{}, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Add("apikey", s.APIKey)
+	req.Header.Add("Authorization", "Bearer "+accessToken)
+	req.Header.Add("Prefer", "return=representation")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return User{}, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return User{}, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	// Handle HTTP error responses
+	if resp.StatusCode >= 400 {
+		return User{}, fmt.Errorf("API error (%d): %s", resp.StatusCode, string(body))
+	}
+
+	// Try to unmarshal as array first
+	var users []User
+	if err := json.Unmarshal(body, &users); err != nil {
+		// If array unmarshal fails, try as single object
+		var user User
+		if err := json.Unmarshal(body, &user); err != nil {
+			return User{}, fmt.Errorf("failed to parse response: %w", err)
+		}
+		return user, nil
+	}
+
+	if len(users) == 0 {
+		return User{}, fmt.Errorf("user not found with access token: %s", accessToken)
+	}
+
+	return users[0], nil
+}
+
+func (s *SupabaseClient) RefreshAccessToken(refreshToken string) (User, error) {
+	encodedRefreshToken := url.QueryEscape(refreshToken)
+	url := fmt.Sprintf("%s/auth/v1/token?grant_type=refresh_token&refresh_token=%s", s.URL, encodedRefreshToken)
+
+	req, err := http.NewRequest("POST", url, nil)
+	if err != nil {
+		return User{}, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Add("apikey", s.APIKey)
+	req.Header.Add("Authorization", "Bearer "+s.APIKey)
+	req.Header.Add("Prefer", "return=representation")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return User{}, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return User{}, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	// Handle HTTP error responses
+	if resp.StatusCode >= 400 {
+		return User{}, fmt.Errorf("API error (%d): %s", resp.StatusCode, string(body))
+	}
+
+	// Parse JSON response
+	var user User
+	if err := json.Unmarshal(body, &user); err != nil {
+		return User{}, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return user, nil
+};

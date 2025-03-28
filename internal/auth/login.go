@@ -2,6 +2,8 @@ package auth
 
 import (
 	"greentrade-eu/internal/db"
+	"greentrade-eu/lib"
+	"greentrade-eu/lib/errors"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -17,33 +19,34 @@ func LoginUser(c *fiber.Ctx) error {
 
 	// Parse JSON request body
 	if err := c.BodyParser(&payload); err != nil {
-		return c.Status(400).JSON(fiber.Map{
-			"error": "Invalid JSON payload: ",
-		})
+		return errors.BadRequest("Invalid request format")
 	}
 
 	// Validate required fields
-	if payload.Email == "" || payload.Password == "" {
-		return c.Status(400).JSON(fiber.Map{
-			"error": "Email and password are required",
-		})
+	if err := errors.ValidateFields(map[string]string{
+		"email":    payload.Email,
+		"password": payload.Password,
+	}); err != nil {
+		return err
 	}
 
 	// Authenticate user
-	authResp, err := client.Login(payload.Email, payload.Password)
-
+	authResp, err := client.Login(lib.SanitizeInput(payload.Email), lib.SanitizeInput(payload.Password))
 	if err != nil {
-		return c.Status(401).JSON(fiber.Map{
-			"error": "Invalid credentials",
-		})
+		return errors.Unauthorized("Invalid credentials")
 	}
 
-	// Return login success response
-	return c.Status(200).JSON(fiber.Map{
-		"message":      "Login successful",
+	// Generate JWT tokens
+	tokens, err := GenerateTokenPair(authResp.User.ID, authResp.User.Email)
+	if err != nil {
+		return errors.InternalServerError("Failed to generate tokens")
+	}
+
+	// Return login success response with JWT tokens
+	return errors.SuccessResponse(c, fiber.Map{
 		"userId":       authResp.User.ID,
-		"accessToken":  authResp.AccessToken,
-		"refreshToken": authResp.RefreshToken,
-		"expiresIn":    authResp.ExpiresIn,
+		"accessToken":  tokens.AccessToken,
+		"refreshToken": tokens.RefreshToken,
+		"expiresIn":    tokens.ExpiresIn,
 	})
 }
