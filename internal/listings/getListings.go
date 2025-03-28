@@ -13,13 +13,19 @@ import (
 
 func GetListings(c *fiber.Ctx) error {
 	client := db.NewSupabaseClient()
-	data, err := client.Query("listings", "select=*")
+
+	limit := c.Query("limit")
+	if limit == "" {
+		limit = "50" // Default limit if not provided
+	}
+
+	data, err := client.Query("listings", "select=*&limit="+limit)
 
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch listings: " + err.Error())
 	}
 
-	if data == nil {
+	if len(data) == 0 || string(data) == "[]" {
 		return errors.NotFound("No listings found")
 	}
 
