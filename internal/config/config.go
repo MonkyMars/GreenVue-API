@@ -30,7 +30,7 @@ func LoadConfig() *Config {
 	cfg := &Config{}
 
 	// Server config
-	cfg.Server.Port = getEnv("SERVER_PORT", "8081")
+	cfg.Server.Port = getEnv("SERVER_PORT", "8082")
 	cfg.Server.ReadTimeout = getDurationEnv("SERVER_READ_TIMEOUT", 5*time.Second)
 	cfg.Server.WriteTimeout = getDurationEnv("SERVER_WRITE_TIMEOUT", 5*time.Second)
 	cfg.Server.IdleTimeout = getDurationEnv("SERVER_IDLE_TIMEOUT", 120*time.Second)
