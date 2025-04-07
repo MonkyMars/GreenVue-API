@@ -2,6 +2,7 @@ package listings
 
 import (
 	"fmt"
+	"greentrade-eu/lib/errors"
 	"image"
 	_ "image/gif"  // register GIF format
 	_ "image/jpeg" // register JPEG format
@@ -30,7 +31,7 @@ func UploadHandler(c *fiber.Ctx) error {
 	files, err := c.MultipartForm()
 
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Failed to parse form-data"})
+		return errors.BadRequest("Failed to parse form data: " + err.Error())
 	}
 
 	uploadedURLs := []string{}
