@@ -63,7 +63,7 @@ func UploadHandler(c *fiber.Ctx) error {
 	}
 
 	// Return the list of uploaded URLs to the frontend.
-	return c.JSON(fiber.Map{"urls": uploadedURLs})
+	return errors.SuccessResponse(c, uploadedURLs)
 }
 
 func convertToWebP(file multipart.File) (*bytes.Buffer, error) {
