@@ -300,13 +300,12 @@ func (s *SupabaseClient) SignUp(email, password string) (*lib.User, error) {
 }
 
 type User struct {
-	ID         string `json:"id"`
-	Email      string `json:"email"`
-	Name       string `json:"name"`
-	Location   string `json:"location"`
-	IsSeller   bool   `json:"isSeller"`
-	ProfileUrl string `json:"profileUrl"`
-	CreatedAt  string `json:"created_at"`
+	ID        string `json:"id"`
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	Location  string `json:"location"`
+	IsSeller  bool   `json:"isSeller"`
+	CreatedAt string `json:"created_at"`
 }
 
 func (s *SupabaseClient) InsertUser(user User) error {
@@ -314,12 +313,11 @@ func (s *SupabaseClient) InsertUser(user User) error {
 
 	// Create request payload
 	payload, err := json.Marshal(User{
-		ID:         user.ID,
-		Name:       user.Name,
-		Email:      user.Email,
-		Location:   user.Location,
-		CreatedAt:  user.CreatedAt,
-		ProfileUrl: fmt.Sprintf("%s/profile/%s", os.Getenv("PRODUCTION_URL"), user.ID),
+		ID:        user.ID,
+		Name:      user.Name,
+		Email:     user.Email,
+		Location:  user.Location,
+		CreatedAt: user.CreatedAt,
 	})
 
 	if err != nil {
@@ -575,4 +573,4 @@ func (s *SupabaseClient) RefreshAccessToken(refreshToken string) (User, error) {
 	}
 
 	return user, nil
-};
+}
