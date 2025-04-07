@@ -3,6 +3,7 @@ package listings
 import (
 	"greentrade-eu/internal/db"
 	"greentrade-eu/lib"
+	"greentrade-eu/lib/errors"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -26,9 +27,7 @@ func PostListing(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&payload); err != nil {
-		return c.Status(400).JSON(fiber.Map{
-			"error": "Failed to parse JSON body: " + err.Error(),
-		})
+		return errors.BadRequest("Failed to parse JSON payload: " + err.Error())
 	}
 
 	// Extract fields from parsed JSON
@@ -82,14 +81,12 @@ func PostListing(c *fiber.Ctx) error {
 	// Post the listing to Supabase
 	listingData, err := client.POST("listings", listing)
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
-			"error": "Failed to create listing: " + err.Error(),
-		})
+		return errors.DatabaseError("Failed to create listing: " + err.Error())
 	}
 
 	response := map[string]any{
 		"listing": listingData,
 	}
 
-	return c.JSON(response)
+	return errors.SuccessResponse(c, response)
 }
