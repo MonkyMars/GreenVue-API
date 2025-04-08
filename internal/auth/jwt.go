@@ -2,8 +2,9 @@ package auth
 
 import (
 	"errors"
-	"fmt"
+	response "greentrade-eu/lib/errors"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -85,13 +86,15 @@ func GenerateTokenPair(userID, email string) (*TokenPair, error) {
 }
 
 // ValidateToken validates a JWT token and returns the claims
-func ValidateToken(tokenString string) (*Claims, error) {
+func ValidateToken(tokenString string, isRefresh bool) (*Claims, error) {
+	accessSecret, refreshSecret := getJWTSecrets()
+	secret := accessSecret
+	if isRefresh {
+		secret = refreshSecret
+	}
+
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		accessSecret, _ := getJWTSecrets()
-		if accessSecret == nil {
-			return nil, fmt.Errorf("failed to get JWT secrets")
-		}
-		return accessSecret, nil
+		return secret, nil
 	})
 
 	if err != nil {
@@ -114,18 +117,13 @@ func AuthMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Get token from Authorization header
 		authHeader := c.Get("Authorization")
-		if authHeader == "" {
-			return fiber.NewError(fiber.StatusUnauthorized, "missing authorization header")
+		if !strings.HasPrefix(authHeader, "Bearer ") {
+			return fiber.NewError(fiber.StatusUnauthorized, "invalid or missing token")
 		}
-
-		// Extract token from "Bearer <token>"
-		tokenString := authHeader
-		if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
-			tokenString = authHeader[7:]
-		}
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
 		// Validate token
-		claims, err := ValidateToken(tokenString)
+		claims, err := ValidateToken(tokenString, false)
 		if err != nil {
 			return fiber.NewError(fiber.StatusUnauthorized, err.Error())
 		}
@@ -147,7 +145,7 @@ func RefreshTokenHandler(c *fiber.Ctx) error {
 	}
 
 	// Validate refresh token
-	claims, err := ValidateToken(payload.RefreshToken)
+	claims, err := ValidateToken(payload.RefreshToken, true)
 	if err != nil {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid refresh token")
 	}
@@ -158,7 +156,7 @@ func RefreshTokenHandler(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "failed to generate tokens")
 	}
 
-	return c.JSON(fiber.Map{
+	return response.SuccessResponse(c, fiber.Map{
 		"accessToken":  tokens.AccessToken,
 		"refreshToken": tokens.RefreshToken,
 		"expiresIn":    tokens.ExpiresIn,
