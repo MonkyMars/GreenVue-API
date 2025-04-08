@@ -40,7 +40,7 @@ func TestGenerateAndValidateTokens(t *testing.T) {
 	}
 
 	// Validate access token
-	claims, err := auth.ValidateToken(tokenPair.AccessToken)
+	claims, err := auth.ValidateToken(tokenPair.AccessToken, false)
 	if err != nil {
 		t.Errorf("Failed to validate access token: %v", err)
 	} else {
@@ -53,11 +53,18 @@ func TestGenerateAndValidateTokens(t *testing.T) {
 		}
 	}
 
-	// Validate refresh token - this is failing because ValidateToken might be using only the access secret
-	// In a real application, you would have separate validators for access and refresh tokens
-	// For now, we'll just check if it's a valid JWT format
-	if tokenPair.RefreshToken == "" || len(tokenPair.RefreshToken) < 30 {
-		t.Error("Refresh token is not in valid JWT format")
+	// Validate refresh token with the proper isRefresh flag
+	refreshClaims, refreshErr := auth.ValidateToken(tokenPair.RefreshToken, true)
+	if refreshErr != nil {
+		t.Errorf("Failed to validate refresh token: %v", refreshErr)
+	} else {
+		// Verify refresh token claims
+		if refreshClaims.UserID != userID {
+			t.Errorf("Expected user ID %s in refresh token, got %s", userID, refreshClaims.UserID)
+		}
+		if refreshClaims.Email != email {
+			t.Errorf("Expected email %s in refresh token, got %s", email, refreshClaims.Email)
+		}
 	}
 }
 
@@ -69,7 +76,7 @@ func TestExpiredToken(t *testing.T) {
 
 	invalidToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 
-	_, err := auth.ValidateToken(invalidToken)
+	_, err := auth.ValidateToken(invalidToken, false)
 	if err == nil {
 		t.Error("Expected error for invalid token, got nil")
 	}
@@ -103,14 +110,14 @@ func TestTokenSecurity(t *testing.T) {
 	}
 
 	// First token should not validate with second secret
-	_, err = auth.ValidateToken(firstTokenPair.AccessToken)
+	_, err = auth.ValidateToken(firstTokenPair.AccessToken, false)
 	if err == nil {
 		t.Error("First token should not validate with second secret")
 	}
 
 	// Restore first secret and validate first token
 	os.Setenv("JWT_ACCESS_SECRET", firstAccessSecret)
-	_, err = auth.ValidateToken(firstTokenPair.AccessToken)
+	_, err = auth.ValidateToken(firstTokenPair.AccessToken, false)
 	if err != nil {
 		t.Errorf("First token should validate with first secret: %v", err)
 	}
