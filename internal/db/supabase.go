@@ -265,7 +265,7 @@ func (s *SupabaseClient) SignUp(email, password string) (*lib.User, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set headers (You might only need one authentication method: apikey OR Authorization)
+	// Set headers
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("apikey", s.APIKey)
 	req.Header.Set("Authorization", "Bearer "+s.APIKey)
@@ -285,18 +285,37 @@ func (s *SupabaseClient) SignUp(email, password string) (*lib.User, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
+	// Debug logging
+	fmt.Printf("Supabase signup response: %s\n", string(body))
+
 	// Check for HTTP errors
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("failed to sign up user: %s", string(body))
 	}
 
-	// Parse JSON response (Ensure that this matches the actual Supabase user response structure)
-	var user lib.User
-	if err := json.Unmarshal(body, &user); err != nil {
+	// Parse JSON response based on actual Supabase structure
+	// The user data is at the root level, not nested under a "user" property
+	var userResp struct {
+		ID    string `json:"id"`
+		Email string `json:"email"`
+	}
+
+	if err := json.Unmarshal(body, &userResp); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	return &user, nil
+	// Check if user ID exists
+	if userResp.ID == "" {
+		return nil, fmt.Errorf("user ID missing in response")
+	}
+
+	// Create the user object
+	user := &lib.User{
+		ID:    userResp.ID,
+		Email: userResp.Email,
+	}
+
+	return user, nil
 }
 
 type User struct {
@@ -311,13 +330,16 @@ type User struct {
 func (s *SupabaseClient) InsertUser(user User) error {
 	url := fmt.Sprintf("%s/rest/v1/users", s.URL)
 
-	// Create request payload
-	payload, err := json.Marshal(User{
-		ID:        user.ID,
-		Name:      user.Name,
-		Email:     user.Email,
-		Location:  user.Location,
-		CreatedAt: user.CreatedAt,
+	// Log the user data we're about to insert
+	fmt.Printf("Inserting user: ID=%s, Name=%s, Email=%s, Location=%s\n",
+		user.ID, user.Name, user.Email, user.Location)
+
+	// Create request payload with all required fields
+	payload, err := json.Marshal(map[string]interface{}{
+		"id":       user.ID,
+		"name":     user.Name,
+		"email":    user.Email,
+		"location": user.Location,
 	})
 
 	if err != nil {
