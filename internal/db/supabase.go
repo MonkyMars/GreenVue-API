@@ -43,9 +43,16 @@ type SupabaseClient struct {
 	AuthToken string
 }
 
+// NewSupabaseClient creates a new Supabase client using environment variables
 func NewSupabaseClient() *SupabaseClient {
 	url := os.Getenv("SUPABASE_URL")
 	apiKey := os.Getenv("SUPABASE_ANON")
+
+	// Validate that the required environment variables are set
+	if url == "" || apiKey == "" {
+		fmt.Println("ERROR: Supabase environment variables not set. SUPABASE_URL and SUPABASE_ANON are required.")
+		return nil
+	}
 
 	return &SupabaseClient{
 		URL:    url,

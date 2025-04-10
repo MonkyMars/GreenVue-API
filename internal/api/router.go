@@ -154,6 +154,8 @@ func setupAuthRoutes(app *fiber.App) {
 func setupPublicListingRoutes(app *fiber.App) {
 	app.Get("/listings", listings.GetListings)
 	app.Get("/listings/category/:category", listings.GetListingByCategory)
+	app.Get("/listings/seller/:sellerId", listings.GetListingBySeller)
+	// This route should come last as it's a catch-all for any path parameter
 	app.Get("/listings/:id", listings.GetListingById)
 }
 

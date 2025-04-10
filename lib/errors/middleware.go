@@ -88,8 +88,14 @@ func ErrorHandler(config ...ErrorResponseConfig) fiber.ErrorHandler {
 
 			// Log internal server errors
 			if appErr.Internal || appErr.StatusCode >= 500 {
+				// Extra safety check for nil errors
+				errDetails := ""
 				if appErr.Err != nil {
-					cfg.Logger("[%s] Error: %s - %s", requestID, appErr.Message, appErr.Err.Error())
+					errDetails = appErr.Err.Error()
+				}
+
+				if errDetails != "" {
+					cfg.Logger("[%s] Error: %s - %s", requestID, appErr.Message, errDetails)
 				} else {
 					cfg.Logger("[%s] Error: %s", requestID, appErr.Message)
 				}

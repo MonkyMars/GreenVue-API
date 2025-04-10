@@ -14,6 +14,11 @@ import (
 func GetListings(c *fiber.Ctx) error {
 	client := db.NewSupabaseClient()
 
+	// Check if client was initialized properly
+	if client == nil {
+		return errors.InternalServerError("Database connection failed. Please check environment variables SUPABASE_URL and SUPABASE_ANON are set correctly.")
+	}
+
 	limit := c.Query("limit")
 	if limit == "" {
 		limit = "50" // Default limit if not provided
@@ -40,6 +45,11 @@ func GetListings(c *fiber.Ctx) error {
 func GetListingById(c *fiber.Ctx) error {
 	client := db.NewSupabaseClient()
 	listingID := c.Params("id")
+
+	// Check if client was initialized properly
+	if client == nil {
+		return errors.InternalServerError("Database connection failed. Please check environment variables SUPABASE_URL and SUPABASE_ANON are set correctly.")
+	}
 
 	if listingID == "" {
 		return errors.BadRequest("Listing ID is required")
@@ -79,6 +89,11 @@ func GetListingByCategory(c *fiber.Ctx) error {
 	client := db.NewSupabaseClient()
 	category := c.Params("category")
 
+	// Check if client was initialized properly
+	if client == nil {
+		return errors.InternalServerError("Database connection failed. Please check environment variables SUPABASE_URL and SUPABASE_ANON are set correctly.")
+	}
+
 	if category == "" {
 		return errors.BadRequest("Category is required")
 	}
@@ -96,6 +111,46 @@ func GetListingByCategory(c *fiber.Ctx) error {
 	var listings []db.Listing
 	if err := json.Unmarshal(data, &listings); err != nil {
 		return errors.InternalServerError("Failed to parse listings data")
+	}
+
+	return errors.SuccessResponse(c, listings)
+}
+
+func GetListingBySeller(c *fiber.Ctx) error {
+	client := db.NewSupabaseClient()
+	sellerID := c.Params("sellerId")
+
+	// Check if client was initialized properly
+	if client == nil {
+		return errors.InternalServerError("Database connection failed. Please check environment variables SUPABASE_URL and SUPABASE_ANON are set correctly.")
+	}
+
+	if sellerID == "" {
+		return errors.BadRequest("Seller ID is required")
+	}
+
+	query := fmt.Sprintf("select=*&seller->>id=eq.%s", sellerID)
+
+	data, err := client.Query("listings", query)
+
+	if err != nil {
+		fmt.Printf("Error from Supabase: %v\n", err)
+		return errors.DatabaseError("Failed to fetch listings by seller: " + err.Error())
+	}
+
+	if len(data) == 0 || string(data) == "[]" {
+		return errors.NotFound("No listings found for this seller")
+	}
+
+	var listings []db.Listing
+	if err := json.Unmarshal(data, &listings); err != nil {
+		fmt.Printf("JSON unmarshal error: %v\n", err)
+		return errors.InternalServerError("Failed to parse listings data")
+	}
+
+	// Add extra safety check before returning
+	if listings == nil {
+		listings = []db.Listing{} // Return empty array instead of nil
 	}
 
 	return errors.SuccessResponse(c, listings)

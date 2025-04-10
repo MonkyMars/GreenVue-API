@@ -50,19 +50,34 @@ func (e *AppError) AsInternal() *AppError {
 
 // Error implements the error interface
 func (e *AppError) Error() string {
-	if e.Field != "" {
-		return fmt.Sprintf("%s: %s (%s)", e.Err.Error(), e.Message, e.Field)
+	if e == nil {
+		return "nil error"
 	}
-	return fmt.Sprintf("%s: %s", e.Err.Error(), e.Message)
+
+	errMsg := "unknown error"
+	if e.Err != nil {
+		errMsg = e.Err.Error()
+	}
+
+	if e.Field != "" {
+		return fmt.Sprintf("%s: %s (%s)", errMsg, e.Message, e.Field)
+	}
+	return fmt.Sprintf("%s: %s", errMsg, e.Message)
 }
 
 // Unwrap implements the errors.Unwrap interface
 func (e *AppError) Unwrap() error {
+	if e == nil || e.Err == nil {
+		return nil
+	}
 	return e.Err
 }
 
 // Is implements the errors.Is interface for better error comparison
 func (e *AppError) Is(target error) bool {
+	if e == nil || e.Err == nil {
+		return false
+	}
 	return errors.Is(e.Err, target)
 }
 
