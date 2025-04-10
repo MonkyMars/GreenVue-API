@@ -331,15 +331,12 @@ type User struct {
 	Name      string `json:"name"`
 	Location  string `json:"location"`
 	IsSeller  bool   `json:"isSeller"`
+	Bio       string `json:"bio"`
 	CreatedAt string `json:"created_at"`
 }
 
 func (s *SupabaseClient) InsertUser(user User) error {
 	url := fmt.Sprintf("%s/rest/v1/users", s.URL)
-
-	// Log the user data we're about to insert
-	fmt.Printf("Inserting user: ID=%s, Name=%s, Email=%s, Location=%s\n",
-		user.ID, user.Name, user.Email, user.Location)
 
 	// Create request payload with all required fields
 	payload, err := json.Marshal(map[string]interface{}{
@@ -347,6 +344,7 @@ func (s *SupabaseClient) InsertUser(user User) error {
 		"name":     user.Name,
 		"email":    user.Email,
 		"location": user.Location,
+		"bio":      user.Bio,
 	})
 
 	if err != nil {
@@ -602,4 +600,62 @@ func (s *SupabaseClient) RefreshAccessToken(refreshToken string) (User, error) {
 	}
 
 	return user, nil
+}
+
+func (s *SupabaseClient) UpdateUser(user *lib.UpdateUser) (*lib.UpdateUser, error) {
+	url := fmt.Sprintf("%s/rest/v1/users?id=eq.%s", s.URL, user.ID)
+
+	jsonData, err := json.Marshal(user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal user: %w", err)
+	}
+
+	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("apikey", s.APIKey)
+	req.Header.Add("Authorization", "Bearer "+s.APIKey)
+	req.Header.Add("Prefer", "return=representation")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		return nil, fmt.Errorf("API error (%d): %s", resp.StatusCode, string(body))
+	}
+
+	// Handle empty response case
+	if len(body) == 0 || string(body) == "[]" {
+		return nil, fmt.Errorf("user not found with ID: %s", user.ID)
+	}
+
+	// Try to unmarshal as array first (which is what Supabase usually returns)
+	var users []lib.UpdateUser
+	if err := json.Unmarshal(body, &users); err != nil {
+		// If array unmarshal fails, try as single object
+		var singleUser lib.UpdateUser
+		if err := json.Unmarshal(body, &singleUser); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		return &singleUser, nil
+	}
+
+	// Check if we got any results
+	if len(users) == 0 {
+		return nil, fmt.Errorf("user not found with ID: %s", user.ID)
+	}
+
+	return &users[0], nil
 }

@@ -6,9 +6,16 @@ type User struct {
 }
 
 type AuthResponse struct {
-	AccessToken string `json:"access_token"`
-	TokenType   string `json:"token_type"`
-	ExpiresIn   int    `json:"expires_in"`
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
 	RefreshToken string `json:"refresh_token"`
-	User        User   `json:"user"`
+	User         User   `json:"user"`
+}
+
+type UpdateUser struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Bio      string `json:"bio"`
+	Location string `json:"location"`
 }

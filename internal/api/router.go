@@ -148,6 +148,7 @@ func setupAuthRoutes(app *fiber.App) {
 	app.Post("/auth/login", auth.LoginUser)
 	app.Post("/auth/register", auth.RegisterUser)
 	app.Post("/auth/refresh", auth.RefreshTokenHandler)
+
 }
 
 // setupPublicListingRoutes configures public listing routes
@@ -177,4 +178,5 @@ func setupSellerRoutes(router fiber.Router) {
 func setupUserRoutes(router fiber.Router) {
 	router.Get("/auth/me", auth.GetUserByAccessToken)
 	router.Get("/auth/user/:id", auth.GetUserById)
+	router.Put("/auth/user/:id", auth.UpdateUser)
 }
