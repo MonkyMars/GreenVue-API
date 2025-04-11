@@ -54,7 +54,7 @@ func setupMiddleware(app *fiber.App) {
 	}))
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "http://192.168.178.10,http://localhost:3000,https://greentrade.eu,https://www.greentrade.eu,http://10.0.2.2:3000",
+		AllowOrigins:     "http://192.168.178.10,http://localhost:3000,http://localhost:8081,https://greentrade.eu,https://www.greentrade.eu,http://10.0.2.2:3000",
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS,PATCH",
 		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
 		AllowCredentials: false,
@@ -169,8 +169,9 @@ func setupProtectedListingRoutes(router fiber.Router) {
 
 // setupSellerRoutes configures seller routes
 func setupSellerRoutes(router fiber.Router) {
-	router.Get("/sellers", seller.GetSellers)
+	router.Get("/sellers/bio/:id", seller.GetSellerBio)
 	router.Get("/sellers/:id", seller.GetSellerById)
+	router.Get("/sellers", seller.GetSellers)
 	router.Post("/sellers", seller.CreateSeller)
 }
 

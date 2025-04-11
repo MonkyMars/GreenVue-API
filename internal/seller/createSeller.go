@@ -8,9 +8,10 @@ package seller
   	verified boolean not null default false,
 */
 
-import(
-	"greentrade-eu/internal/db"
+import (
 	"fmt"
+	"greentrade-eu/internal/db"
+	"greentrade-eu/lib/errors"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -25,14 +26,12 @@ func CreateSeller(c *fiber.Ctx) error {
 
 	var payload struct {
 		Description string `json:"description"`
-		ID string `json:"id"`
+		ID          string `json:"id"`
 	}
 
 	// Parse JSON request body
 	if err := c.BodyParser(&payload); err != nil {
-		return c.Status(400).JSON(fiber.Map{
-			"error": "Invalid JSON payload: " + err.Error(),
-		})
+		errors.BadRequest("Failed to parse request body: " + err.Error())
 	}
 
 	Description := payload.Description
@@ -40,24 +39,17 @@ func CreateSeller(c *fiber.Ctx) error {
 
 	// Validate required fields
 	if Description == "" || ID == "" {
-		return c.Status(400).JSON(fiber.Map{
-			"error": "Description and ID are required",
-		})
+		return errors.BadRequest("Description and ID are required fields")
 	}
 
 	// Insert seller into the database
 	err := client.InsertSeller(ID, Description)
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
-			"error": "Failed to store seller in database: " + err.Error(),
-		})
+		return errors.InternalServerError("Failed to create seller: " + err.Error())
 	}
 
 	response := fmt.Sprintf("Seller with ID %s created successfully", ID)
 
 	// Return success response
-	return c.Status(201).JSON(fiber.Map{
-		"message": response,
-		"sellerId": ID,
-	})
+	return errors.SuccessResponse(c, response)
 }
