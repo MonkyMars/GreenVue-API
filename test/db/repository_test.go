@@ -18,10 +18,7 @@ func TestMockListingRepository(t *testing.T) {
 		Condition:   "good",
 		Price:       10000,
 		Location:    "Test City",
-		Seller: db.Seller{
-			ID:   "seller1",
-			Name: "Test Seller",
-		},
+		SellerID:    "seller1",
 	}
 
 	createdListing, err := repo.CreateListing(ctx, listing)

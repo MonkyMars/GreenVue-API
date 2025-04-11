@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -21,7 +22,7 @@ type Seller struct { // this struct is used in the supabase database: Seller.
 	Verified bool    `json:"verified"`
 }
 
-type Listing struct { // this struct is used in the supabase database: Listing.
+type Listing struct {
 	ID            int64    `json:"id,omitempty"`
 	CreatedAt     string   `json:"created_at,omitempty"`
 	Description   string   `json:"description"`
@@ -33,8 +34,28 @@ type Listing struct { // this struct is used in the supabase database: Listing.
 	EcoAttributes []string `json:"ecoAttributes"`
 	Negotiable    bool     `json:"negotiable"`
 	Title         string   `json:"title"`
-	Seller        Seller   `json:"seller"`
 	ImageUrl      []string `json:"imageUrl"`
+	SellerID      string   `json:"seller_id"`
+}
+
+type FetchedListing struct {
+	ID            int64    `json:"id,omitempty"`
+	CreatedAt     string   `json:"created_at,omitempty"`
+	Description   string   `json:"description"`
+	Category      string   `json:"category"`
+	Condition     string   `json:"condition"`
+	Price         int64    `json:"price"`
+	Location      string   `json:"location"`
+	EcoScore      float32  `json:"ecoScore"`
+	EcoAttributes []string `json:"ecoAttributes"`
+	Negotiable    bool     `json:"negotiable"`
+	Title         string   `json:"title"`
+	ImageUrl      []string `json:"imageUrl"`
+
+	SellerID        string `json:"seller_id"`
+	SellerUsername  string `json:"seller_username"`
+	SellerBio       string `json:"seller_bio"`
+	SellerCreatedAt string `json:"seller_created_at"`
 }
 
 type SupabaseClient struct {
@@ -70,8 +91,9 @@ func (s *SupabaseClient) Query(table string, query string) ([]byte, error) {
 
 	req.Header.Add("apikey", s.APIKey)
 	req.Header.Add("Authorization", "Bearer "+s.APIKey)
+	req.Header.Add("Accept", "application/json")
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -81,6 +103,10 @@ func (s *SupabaseClient) Query(table string, query string) ([]byte, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("supabase error: status %d - %s", resp.StatusCode, string(body))
 	}
 
 	return body, nil
