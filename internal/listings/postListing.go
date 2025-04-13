@@ -12,17 +12,17 @@ func PostListing(c *fiber.Ctx) error {
 	client := db.NewSupabaseClient()
 
 	var payload struct {
-		Title         string                 `json:"title"`
-		Description   string                 `json:"description"`
-		Category      string                 `json:"category"`
-		Condition     string                 `json:"condition"`
-		Location      string                 `json:"location"`
-		Price         int64                  `json:"price"`
-		Negotiable    bool                   `json:"negotiable"`
-		EcoScore      float32                `json:"ecoScore"`
-		EcoAttributes []string               `json:"ecoAttributes"`
-		ImageUrl      map[string]interface{} `json:"imageUrl"`
-		SellerID      string                 `json:"seller_id"`
+		Title         string         `json:"title"`
+		Description   string         `json:"description"`
+		Category      string         `json:"category"`
+		Condition     string         `json:"condition"`
+		Location      string         `json:"location"`
+		Price         int64          `json:"price"`
+		Negotiable    bool           `json:"negotiable"`
+		EcoScore      float32        `json:"ecoScore"`
+		EcoAttributes []string       `json:"ecoAttributes"`
+		ImageUrl      map[string]any `json:"imageUrl"`
+		SellerID      string         `json:"seller_id"`
 	}
 
 	if err := c.BodyParser(&payload); err != nil {
@@ -34,7 +34,7 @@ func PostListing(c *fiber.Ctx) error {
 	if payload.ImageUrl != nil {
 		if urls, exists := payload.ImageUrl["urls"]; exists {
 			switch urlsTyped := urls.(type) {
-			case []interface{}:
+			case []any:
 				for _, item := range urlsTyped {
 					if str, ok := item.(string); ok {
 						imageUrl = append(imageUrl, str)

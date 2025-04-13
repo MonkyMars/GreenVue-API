@@ -19,3 +19,9 @@ type UpdateUser struct {
 	Bio      string `json:"bio"`
 	Location string `json:"location"`
 }
+
+type Message struct {
+	ConversationID string `json:"conversation_id"`
+	SenderID       string `json:"sender_id"`
+	Content        string `json:"content"`
+}

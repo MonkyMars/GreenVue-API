@@ -17,7 +17,7 @@ func GetSellers(c *fiber.Ctx) error {
 		return errors.InternalServerError("Failed to fetch sellers: " + err.Error())
 	}
 
-	var sellers []db.Seller
+	var sellers []db.User
 	if err := json.Unmarshal(data, &sellers); err != nil {
 		return errors.BadRequest("Failed to parse sellers: " + err.Error())
 	}
@@ -32,14 +32,14 @@ func GetSellers(c *fiber.Ctx) error {
 func GetSellerById(c *fiber.Ctx) error {
 	client := db.NewSupabaseClient()
 	sellerID := c.Params("id")
-	query := fmt.Sprintf("select=*&id=eq.%s&isSeller=eq.%s", sellerID, "true")
+	query := fmt.Sprintf("select=*&id=eq.%s", sellerID)
 	data, err := client.Query("users", query)
 
 	if err != nil {
 		return errors.InternalServerError("Failed to fetch seller: " + err.Error())
 	}
 
-	var sellers []db.Seller
+	var sellers []db.User
 	if err := json.Unmarshal(data, &sellers); err != nil {
 		return errors.BadRequest("Failed to parse seller: " + err.Error())
 	}

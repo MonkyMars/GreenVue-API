@@ -2,6 +2,7 @@ package api
 
 import (
 	"greentrade-eu/internal/auth"
+	"greentrade-eu/internal/chat"
 	"greentrade-eu/internal/config"
 	"greentrade-eu/internal/health"
 	"greentrade-eu/internal/listings"
@@ -130,6 +131,7 @@ func setupRoutes(app *fiber.App) {
 	setupProtectedListingRoutes(api)
 	setupSellerRoutes(api)
 	setupUserRoutes(api)
+	setupChatRoutes(api)
 }
 
 // setupHealthRoutes configures health check routes
@@ -178,4 +180,15 @@ func setupUserRoutes(router fiber.Router) {
 	router.Get("/auth/me", auth.GetUserByAccessToken)
 	router.Get("/auth/user/:id", auth.GetUserById)
 	router.Put("/auth/user/:id", auth.UpdateUser)
+}
+
+// setupChatRoutes configures chat routes
+func setupChatRoutes(router fiber.Router) {
+	// Conversation routes
+	router.Get("/chat/conversation/:userId", chat.GetConversations) // Get conversations for userId
+	router.Post("/chat/conversation", chat.CreateConversation)      // Create a new conversation
+
+	// Message routes
+	router.Get("/chat/messages/:conversation_id", chat.GetMessagesByConversationID) // Get messages for a conversation
+	router.Post("/chat/message", chat.PostMessage)                                  // Post a new message
 }

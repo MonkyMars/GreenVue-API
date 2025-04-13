@@ -15,15 +15,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type Seller struct { // this struct is used in the supabase database: Seller.
-	ID       string  `json:"id"`
-	Name     string  `json:"name"`
-	Rating   float32 `json:"rating"`
-	Verified bool    `json:"verified"`
-}
-
 type Listing struct {
-	ID            int64    `json:"id,omitempty"`
+	ID            string   `json:"id,omitempty"`
 	CreatedAt     string   `json:"created_at,omitempty"`
 	Description   string   `json:"description"`
 	Category      string   `json:"category"`
@@ -39,7 +32,7 @@ type Listing struct {
 }
 
 type FetchedListing struct {
-	ID            int64    `json:"id,omitempty"`
+	ID            string   `json:"id,omitempty"`
 	CreatedAt     string   `json:"created_at,omitempty"`
 	Description   string   `json:"description"`
 	Category      string   `json:"category"`
@@ -52,10 +45,12 @@ type FetchedListing struct {
 	Title         string   `json:"title"`
 	ImageUrl      []string `json:"imageUrl"`
 
-	SellerID        string `json:"seller_id"`
-	SellerUsername  string `json:"seller_username"`
-	SellerBio       string `json:"seller_bio"`
-	SellerCreatedAt string `json:"seller_created_at"`
+	SellerID        string  `json:"seller_id"`
+	SellerUsername  string  `json:"seller_username"`
+	SellerBio       *string `json:"seller_bio,omitempty"`
+	SellerCreatedAt string  `json:"seller_created_at"`
+	SellerRating    float32 `json:"seller_rating"`
+	SellerVerified  bool    `json:"seller_verified"`
 }
 
 type SupabaseClient struct {
@@ -356,7 +351,6 @@ type User struct {
 	Email     string `json:"email"`
 	Name      string `json:"name"`
 	Location  string `json:"location"`
-	IsSeller  bool   `json:"isSeller"`
 	Bio       string `json:"bio"`
 	CreatedAt string `json:"created_at"`
 }
@@ -684,4 +678,37 @@ func (s *SupabaseClient) UpdateUser(user *lib.UpdateUser) (*lib.UpdateUser, erro
 	}
 
 	return &users[0], nil
+}
+
+func (s *SupabaseClient) UPDATE(table, ID string, query fiber.Map) ([]byte, error) {
+	url := fmt.Sprintf("%s/rest/v1/%s?id=eq.%s", s.URL, table, ID)
+
+	jsonData, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("apikey", s.APIKey)
+	req.Header.Add("Authorization", "Bearer "+s.APIKey)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Prefer", "return=representation") // Ensures Supabase returns the updated record
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return respBody, nil
 }
