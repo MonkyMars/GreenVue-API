@@ -94,8 +94,8 @@ func setupMiddleware(app *fiber.App) {
 				return true
 			}
 
-			// Don't cache health checks
-			if path == "/health" || path == "/health/detailed" {
+			// Don't cache health checks and chat routes.
+			if path == "/health" || path == "/health/detailed" || strings.HasPrefix(path, "/chat") {
 				return true
 			}
 
@@ -125,6 +125,8 @@ func setupRoutes(app *fiber.App) {
 
 	// Public listing routes
 	setupPublicListingRoutes(app)
+
+	chat.RegisterWebsocketRoutes(app)
 
 	// Protected routes
 	api := app.Group("/api", auth.AuthMiddleware())

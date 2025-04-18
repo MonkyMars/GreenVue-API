@@ -1,0 +1,159 @@
+package chat
+
+import (
+	"encoding/json"
+	"log"
+	"sync"
+	"time"
+
+	"github.com/gofiber/contrib/websocket"
+	"github.com/gofiber/fiber/v2"
+)
+
+// --- Rate Limiting Constants ---
+const (
+	messageRateLimitWindow = 5 * time.Second // Example: 5-second window
+	messageRateLimitMax    = 10              // Example: Max 10 messages per window (adjust as needed)
+)
+
+// Client represents a connected user via WebSocket
+type Client struct {
+	Conn           *websocket.Conn
+	ConversationID string
+	UserID         string // Keep track of the user ID if needed for authorization etc.
+
+	// --- Rate Limiting State ---
+	messageCount    int       // Messages sent in the current window
+	windowStartTime time.Time // Start time of the current window
+	// Use a mutex per client if handling messages concurrently within the handler (unlikely here)
+	// rateLimitMux sync.Mutex
+}
+
+var (
+	// clients stores active WebSocket connections mapped by their connection pointer
+	clients    = make(map[*websocket.Conn]*Client)
+	clientsMux sync.RWMutex // Use RWMutex for better concurrent read performance
+)
+
+// RegisterWebsocketRoutes sets up the WebSocket endpoint for the chat
+func RegisterWebsocketRoutes(app *fiber.App) {
+	// Middleware to check if it's a WebSocket upgrade request
+	app.Use("/ws", func(c *fiber.Ctx) error {
+		if websocket.IsWebSocketUpgrade(c) {
+			c.Locals("allowed", true)
+			return c.Next()
+		}
+		return fiber.ErrUpgradeRequired
+	})
+
+	// WebSocket endpoint: /ws/chat/:conversation_id/:user_id
+	// UserID might be used later for authentication/authorization checks
+	app.Get("/ws/chat/:conversation_id/:user_id", websocket.New(handleChatWebSocket))
+}
+
+// handleChatWebSocket manages individual WebSocket connections
+func handleChatWebSocket(c *websocket.Conn) {
+	conversationID := c.Params("conversation_id")
+	userID := c.Params("user_id")
+
+	// Basic validation
+	if conversationID == "" || userID == "" {
+		log.Println("WebSocket connection rejected: Missing conversation_id or user_id")
+		c.Close()
+		return
+	}
+
+	// Create and register the client
+	client := &Client{
+		Conn:           c,
+		ConversationID: conversationID,
+		UserID:         userID,
+		// --- Initialize Rate Limiting State ---
+		windowStartTime: time.Now(),
+		messageCount:    0,
+	}
+
+	clientsMux.Lock()
+	clients[c] = client
+	clientsMux.Unlock()
+
+	log.Printf("WebSocket client connected: User %s, Conversation %s", userID, conversationID)
+
+	// Defer cleanup: remove client and close connection when the function returns
+	defer func() {
+		clientsMux.Lock()
+		delete(clients, c)
+		clientsMux.Unlock()
+		c.Close()
+		log.Printf("WebSocket client disconnected: User %s, Conversation %s", userID, conversationID)
+	}()
+
+	// Keep the connection alive by handling incoming messages (e.g., pings)
+	// This loop also detects when the client disconnects
+	for {
+		messageType, msg, err := c.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				log.Printf("WebSocket read error: %v", err)
+			} else {
+				log.Printf("WebSocket connection closed normally for User %s, Conversation %s", userID, conversationID)
+			}
+			break // Exit loop on error or close
+		}
+
+		now := time.Now()
+		// Reset window if it has expired
+		if now.Sub(client.windowStartTime) > messageRateLimitWindow {
+			client.windowStartTime = now
+			client.messageCount = 0
+		}
+
+		// Increment message count for this window
+		client.messageCount++
+
+		// Check if limit is exceeded
+		if client.messageCount > messageRateLimitMax {
+			log.Printf("WebSocket message rate limit exceeded for User %s (Conv %s)", client.UserID, client.ConversationID)
+			continue // Skip processing this message, read the next one
+		}
+		// --- End Rate Limiting Check ---
+
+		if messageType == websocket.TextMessage {
+			// Handle incoming messages from client if necessary (e.g., typing indicators, or if clients send messages via WS)
+			log.Printf("Received message from User %s: %s", userID, msg)
+		} else {
+			log.Printf("Received non-text message type: %d", messageType)
+		}
+	}
+}
+
+// BroadcastMessage sends a message to all clients connected to a specific conversation
+func BroadcastMessage(conversationID string, message Message) {
+	messageJSON, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("Error marshalling message for broadcast: %v", err)
+		return
+	}
+
+	clientsMux.RLock() // Use read lock for iterating
+	defer clientsMux.RUnlock()
+
+	activeConnections := 0
+	for conn, client := range clients {
+		if client.ConversationID == conversationID {
+			activeConnections++
+			// Launch sending in a goroutine to avoid blocking the broadcast loop
+			go func(c *websocket.Conn) {
+				// Need to lock writing to a single connection if multiple goroutines might write concurrently
+				// However, websocket library might handle this internally. Check docs if issues arise.
+				err := c.WriteMessage(websocket.TextMessage, messageJSON)
+				if err != nil {
+					log.Printf("Error sending message to client %s: %v", client.UserID, err)
+					// Optional: Consider closing the connection or marking the client for removal
+					// c.Close() // Be careful with concurrent map modification if you do this
+				}
+			}(conn) // Pass conn to the goroutine
+		}
+	}
+	log.Printf("Broadcasted message to %d clients in conversation %s", activeConnections, conversationID)
+}

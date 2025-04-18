@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"greentrade-eu/internal/db"
 	"greentrade-eu/lib/errors"
+	"log" // Import log package
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -91,10 +92,16 @@ func PostMessage(c *fiber.Ctx) error {
 	// Optionally parse the inserted data back into a Message struct if needed for the response
 	var createdMessages []Message
 	if err := json.Unmarshal(insertedData, &createdMessages); err != nil || len(createdMessages) == 0 {
-		// Log the error, but maybe still return success as the insert *did* happen
-		fmt.Println("Warning: Failed to parse inserted message data:", err)
-		// Fallback or simplified success response
-		return errors.SuccessResponse(c, fiber.Map{"status": "Message posted successfully"})
+		log.Println("Warning: Failed to parse inserted message data after successful post:", err) // Use log instead of fmt
+		// Even if parsing fails, the message was posted. Broadcast might still be possible if payload is valid.
+		// Consider broadcasting the original payload data if parsing fails but you trust the input.
+		// For simplicity, we only broadcast if parsing succeeds here.
+		return errors.SuccessResponse(c, fiber.Map{"status": "Message posted successfully, but response parsing failed"})
+	}
+
+	// Broadcast the newly created message to WebSocket clients
+	if len(createdMessages) > 0 {
+		go BroadcastMessage(payload.ConversationID, createdMessages[0]) // Run broadcast in a goroutine
 	}
 
 	// Return the newly created message
