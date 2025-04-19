@@ -8,6 +8,7 @@ import (
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 // --- Rate Limiting Constants ---
@@ -37,8 +38,18 @@ var (
 
 // RegisterWebsocketRoutes sets up the WebSocket endpoint for the chat
 func RegisterWebsocketRoutes(app *fiber.App) {
+	// Configure CORS specifically for WebSocket routes
+	wsGroup := app.Group("/ws")
+	wsGroup.Use(cors.New(cors.Config{
+		AllowOrigins:     "http://192.168.178.10,http://localhost:3000,http://localhost:8081,https://greentrade.eu,https://www.greentrade.eu,http://10.0.2.2:3000",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowMethods:     "GET, POST",
+		AllowCredentials: true,
+		ExposeHeaders:    "Upgrade, Connection",
+	}))
+
 	// Middleware to check if it's a WebSocket upgrade request
-	app.Use("/ws", func(c *fiber.Ctx) error {
+	wsGroup.Use(func(c *fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
 			c.Locals("allowed", true)
 			return c.Next()
@@ -48,7 +59,12 @@ func RegisterWebsocketRoutes(app *fiber.App) {
 
 	// WebSocket endpoint: /ws/chat/:conversation_id/:user_id
 	// UserID might be used later for authentication/authorization checks
-	app.Get("/ws/chat/:conversation_id/:user_id", websocket.New(handleChatWebSocket))
+	wsGroup.Get("/chat/:conversation_id/:user_id", websocket.New(handleChatWebSocket, websocket.Config{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		// Add basic configuration to improve stability
+		EnableCompression: true,
+	}))
 }
 
 // handleChatWebSocket manages individual WebSocket connections
@@ -78,6 +94,13 @@ func handleChatWebSocket(c *websocket.Conn) {
 	clientsMux.Unlock()
 
 	log.Printf("WebSocket client connected: User %s, Conversation %s", userID, conversationID)
+
+	// Send a connection confirmation message
+	welcomeMsg := map[string]string{"type": "connection_established", "message": "Connected to chat"}
+	welcomeJSON, _ := json.Marshal(welcomeMsg)
+	if err := c.WriteMessage(websocket.TextMessage, welcomeJSON); err != nil {
+		log.Printf("Error sending welcome message: %v", err)
+	}
 
 	// Defer cleanup: remove client and close connection when the function returns
 	defer func() {
@@ -120,7 +143,14 @@ func handleChatWebSocket(c *websocket.Conn) {
 
 		if messageType == websocket.TextMessage {
 			// Handle incoming messages from client if necessary (e.g., typing indicators, or if clients send messages via WS)
-			log.Printf("Received message from User %s: %s", userID, msg)
+			log.Printf("Received message from User %s: %s", userID, string(msg))
+
+			// Send back an acknowledgment to confirm message receipt
+			ackMsg := map[string]string{"type": "ack", "message": "Message received"}
+			ackJSON, _ := json.Marshal(ackMsg)
+			if err := c.WriteMessage(websocket.TextMessage, ackJSON); err != nil {
+				log.Printf("Error sending message acknowledgment: %v", err)
+			}
 		} else {
 			log.Printf("Received non-text message type: %d", messageType)
 		}
