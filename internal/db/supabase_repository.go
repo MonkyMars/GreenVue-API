@@ -132,13 +132,13 @@ func NewSupabaseSellerRepository(client *SupabaseClient) *SupabaseSellerReposito
 }
 
 // GetSellers fetches all sellers
-func (r *SupabaseSellerRepository) GetSellers(ctx context.Context) ([]Seller, error) {
+func (r *SupabaseSellerRepository) GetSellers(ctx context.Context) ([]User, error) {
 	resp, err := r.client.Query("sellers", "select=*")
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch sellers: %w", err)
 	}
 
-	var sellers []Seller
+	var sellers []User
 	if err := json.Unmarshal(resp, &sellers); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal sellers: %w", err)
 	}
@@ -147,14 +147,14 @@ func (r *SupabaseSellerRepository) GetSellers(ctx context.Context) ([]Seller, er
 }
 
 // GetSellerByID fetches a seller by ID
-func (r *SupabaseSellerRepository) GetSellerByID(ctx context.Context, id string) (*Seller, error) {
+func (r *SupabaseSellerRepository) GetSellerByID(ctx context.Context, id string) (*User, error) {
 	query := fmt.Sprintf("id=eq.%s&select=*", id)
 	resp, err := r.client.Query("sellers", query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch seller by ID: %w", err)
 	}
 
-	var sellers []Seller
+	var sellers []User
 	if err := json.Unmarshal(resp, &sellers); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal seller: %w", err)
 	}
@@ -167,7 +167,7 @@ func (r *SupabaseSellerRepository) GetSellerByID(ctx context.Context, id string)
 }
 
 // CreateSeller creates a new seller
-func (r *SupabaseSellerRepository) CreateSeller(ctx context.Context, seller Seller) (*Seller, error) {
+func (r *SupabaseSellerRepository) CreateSeller(ctx context.Context, seller User) (*User, error) {
 	jsonData, err := json.Marshal(seller)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal seller: %w", err)
@@ -199,7 +199,7 @@ func (r *SupabaseSellerRepository) CreateSeller(ctx context.Context, seller Sell
 		return nil, fmt.Errorf("supabase error (%d): %s", resp.StatusCode, string(body))
 	}
 
-	var createdSeller Seller
+	var createdSeller User
 	if err := json.Unmarshal(body, &createdSeller); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal created seller: %w", err)
 	}

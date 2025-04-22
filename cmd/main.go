@@ -13,18 +13,18 @@ func main() {
 		log.Printf("Warning: Error loading .env.local file: %v", err)
 	}
 
-	// Load configuration
+	// Load configuration using the config package
 	cfg := config.LoadConfig()
 
-	// Set up the application with routes and middleware
+	// Setup the Fiber app using the api package's function
+	// This likely includes middleware and basic route setup
 	app := api.SetupApp(cfg)
 
-	// Listen on port from config
+	// Start server using port from config
 	port := cfg.Server.Port
 	if port == "" {
-		port = "8081"
+		port = "8080" // Fallback default if config doesn't provide one
 	}
-	if err := app.Listen(":" + port); err != nil {
-		log.Fatalf("Error starting server: %v", err)
-	}
+
+	log.Fatal(app.Listen(":" + port))
 }

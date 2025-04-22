@@ -77,7 +77,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	if err := c.BodyParser(&userUpdate); err != nil {
 		return errors.BadRequest("Invalid user data format")
 	}
-	fmt.Println(userUpdate)
+
 	// Validate the user data
 	if err := errors.ValidateRequest(c, &userUpdate); err != nil {
 		return errors.BadRequest(err.Error())

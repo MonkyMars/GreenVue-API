@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"greentrade-eu/internal/db"
 	"greentrade-eu/lib"
 	"greentrade-eu/lib/errors"
@@ -41,6 +42,8 @@ func LoginUser(c *fiber.Ctx) error {
 	if err != nil {
 		return errors.InternalServerError("Failed to generate tokens")
 	}
+
+	fmt.Println(tokens.AccessToken)
 
 	// Return login success response with JWT tokens
 	return errors.SuccessResponse(c, fiber.Map{

@@ -11,74 +11,61 @@ import (
 func PostListing(c *fiber.Ctx) error {
 	client := db.NewSupabaseClient()
 
-	// Parse JSON payload
+	if client == nil {
+		return errors.InternalServerError("Failed to create client")
+	}
+
 	var payload struct {
-		Title         string                 `json:"title"`
-		Description   string                 `json:"description"`
-		Category      string                 `json:"category"`
-		Condition     string                 `json:"condition"`
-		Location      string                 `json:"location"`
-		Price         int64                  `json:"price"`
-		Negotiable    bool                   `json:"negotiable"`
-		EcoScore      float32                `json:"ecoScore"`
-		EcoAttributes []string               `json:"ecoAttributes"`
-		ImageUrl      map[string]interface{} `json:"imageUrl"`
-		Seller        db.Seller              `json:"seller"`
+		Title         string         `json:"title"`
+		Description   string         `json:"description"`
+		Category      string         `json:"category"`
+		Condition     string         `json:"condition"`
+		Location      string         `json:"location"`
+		Price         float64        `json:"price"`
+		Negotiable    bool           `json:"negotiable"`
+		EcoScore      float32        `json:"ecoScore"`
+		EcoAttributes []string       `json:"ecoAttributes"`
+		ImageUrl      map[string]any `json:"imageUrl"`
+		SellerID      string         `json:"seller_id"`
 	}
 
 	if err := c.BodyParser(&payload); err != nil {
 		return errors.BadRequest("Failed to parse JSON payload: " + err.Error())
 	}
 
-	// Extract fields from parsed JSON
-	title := payload.Title
-	description := payload.Description
-	category := payload.Category
-	condition := payload.Condition
-	location := payload.Location
-	price := payload.Price
-	negotiable := payload.Negotiable
-	ecoAttributes := payload.EcoAttributes
-	ecoScore := payload.EcoScore
-
-	// Handle imageUrl safely with proper type assertion
+	// Parse image URLs (as before)
 	var imageUrl []string
 	if payload.ImageUrl != nil {
-		if urls, exists := payload.ImageUrl["urls"]; exists && urls != nil {
-			// Try to handle the case where urls is a []interface{}
-			if urlsArray, ok := urls.([]interface{}); ok {
-				for _, item := range urlsArray {
+		if urls, exists := payload.ImageUrl["urls"]; exists {
+			switch urlsTyped := urls.(type) {
+			case []any:
+				for _, item := range urlsTyped {
 					if str, ok := item.(string); ok {
 						imageUrl = append(imageUrl, str)
 					}
 				}
-			}
-		} else {
-			// Try to handle the case where urls is a string
-			if url, ok := urls.(string); ok {
-				imageUrl = append(imageUrl, url)
+			case string:
+				imageUrl = append(imageUrl, urlsTyped)
 			}
 		}
 	}
 
-	seller := payload.Seller
-
-	// Create the listing
+	// Build the listing object
 	listing := db.Listing{
-		Description:   lib.SanitizeInput(description),
-		Category:      category,
-		Condition:     condition,
-		Price:         price,
-		Location:      location,
-		EcoScore:      ecoScore,
-		EcoAttributes: ecoAttributes,
-		Negotiable:    negotiable,
-		Title:         lib.SanitizeInput(title),
+		Title:         lib.SanitizeInput(payload.Title),
+		Description:   lib.SanitizeInput(payload.Description),
+		Category:      payload.Category,
+		Condition:     payload.Condition,
+		Location:      payload.Location,
+		Price:         payload.Price,
+		Negotiable:    payload.Negotiable,
+		EcoScore:      payload.EcoScore,
+		EcoAttributes: payload.EcoAttributes,
 		ImageUrl:      imageUrl,
-		Seller:        seller,
+		SellerID:      payload.SellerID,
 	}
 
-	// Post the listing to Supabase
+	// Insert into Supabase
 	listingData, err := client.POST("listings", listing)
 	if err != nil {
 		return errors.DatabaseError("Failed to create listing: " + err.Error())

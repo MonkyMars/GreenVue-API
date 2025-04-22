@@ -2,6 +2,7 @@ package listings
 
 import (
 	"greentrade-eu/internal/db"
+	"greentrade-eu/lib/errors"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,9 +18,9 @@ func DeleteListingById(c *fiber.Ctx) error {
 	_, err := client.DELETE("listings", listingId)
 	if err != nil {
 		log.Println(err)
-		return c.Status(500).SendString("Failed to delete listing")
+		return errors.InternalServerError("Failed to delete listing: " + err.Error())
 	}
 
 	// Return 204 No Content
-	return c.Status(204).Send(nil)
+	return errors.SuccessResponse(c, nil)
 }

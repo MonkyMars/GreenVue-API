@@ -2,9 +2,11 @@ package api
 
 import (
 	"greentrade-eu/internal/auth"
+	"greentrade-eu/internal/chat"
 	"greentrade-eu/internal/config"
 	"greentrade-eu/internal/health"
 	"greentrade-eu/internal/listings"
+	"greentrade-eu/internal/reviews"
 	"greentrade-eu/internal/seller"
 	"greentrade-eu/lib/errors"
 	"strings"
@@ -93,8 +95,8 @@ func setupMiddleware(app *fiber.App) {
 				return true
 			}
 
-			// Don't cache health checks
-			if path == "/health" || path == "/health/detailed" {
+			// Don't cache health checks and chat routes.
+			if path == "/health" || path == "/health/detailed" || strings.HasPrefix(path, "/chat") {
 				return true
 			}
 
@@ -125,11 +127,15 @@ func setupRoutes(app *fiber.App) {
 	// Public listing routes
 	setupPublicListingRoutes(app)
 
+	chat.RegisterWebsocketRoutes(app)
+
 	// Protected routes
 	api := app.Group("/api", auth.AuthMiddleware())
 	setupProtectedListingRoutes(api)
 	setupSellerRoutes(api)
 	setupUserRoutes(api)
+	setupChatRoutes(api)
+	setupReviewRoutes(api)
 }
 
 // setupHealthRoutes configures health check routes
@@ -139,7 +145,7 @@ func setupHealthRoutes(app *fiber.App) {
 
 	// Prevents 404 spam for favicon.ico
 	app.Get("/favicon.ico", func(c *fiber.Ctx) error {
-		return c.SendStatus(fiber.StatusNoContent) // 204 No Content
+		return errors.ErrNotFound
 	})
 }
 
@@ -169,10 +175,8 @@ func setupProtectedListingRoutes(router fiber.Router) {
 
 // setupSellerRoutes configures seller routes
 func setupSellerRoutes(router fiber.Router) {
-	router.Get("/sellers/bio/:id", seller.GetSellerBio)
 	router.Get("/sellers/:id", seller.GetSellerById)
 	router.Get("/sellers", seller.GetSellers)
-	router.Post("/sellers", seller.CreateSeller)
 }
 
 // setupUserRoutes configures user routes
@@ -180,4 +184,20 @@ func setupUserRoutes(router fiber.Router) {
 	router.Get("/auth/me", auth.GetUserByAccessToken)
 	router.Get("/auth/user/:id", auth.GetUserById)
 	router.Put("/auth/user/:id", auth.UpdateUser)
+}
+
+// setupChatRoutes configures chat routes
+func setupChatRoutes(router fiber.Router) {
+	// Conversation routes
+	router.Get("/chat/conversation/:userId", chat.GetConversations) // Get conversations for userId
+	router.Post("/chat/conversation", chat.CreateConversation)      // Create a new conversation
+
+	// Message routes
+	router.Get("/chat/messages/:conversation_id", chat.GetMessagesByConversationID) // Get messages for a conversation
+	router.Post("/chat/message", chat.PostMessage)                                  // Post a new message
+}
+
+func setupReviewRoutes(router fiber.Router) {
+	router.Get("/reviews/:listingId", reviews.GetReviews)
+	router.Post("/reviews", reviews.PostReview)
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"greentrade-eu/lib/errors"
 	"image"
-	_ "image/gif"  // register GIF format
 	_ "image/jpeg" // register JPEG format
 	_ "image/png"  // register PNG format
 	"io"

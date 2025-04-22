@@ -16,9 +16,9 @@ type ListingRepository interface {
 
 // SellerRepository defines operations for the Seller entity
 type SellerRepository interface {
-	GetSellers(ctx context.Context) ([]Seller, error)
-	GetSellerByID(ctx context.Context, id string) (*Seller, error)
-	CreateSeller(ctx context.Context, seller Seller) (*Seller, error)
+	GetSellers(ctx context.Context) ([]User, error)
+	GetSellerByID(ctx context.Context, id string) (*User, error)
+	CreateSeller(ctx context.Context, seller User) (*User, error)
 	UpdateSeller(ctx context.Context, id string, updates map[string]interface{}) error
 }
 
