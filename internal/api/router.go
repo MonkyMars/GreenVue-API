@@ -6,6 +6,7 @@ import (
 	"greentrade-eu/internal/config"
 	"greentrade-eu/internal/health"
 	"greentrade-eu/internal/listings"
+	"greentrade-eu/internal/reviews"
 	"greentrade-eu/internal/seller"
 	"greentrade-eu/lib/errors"
 	"strings"
@@ -134,6 +135,7 @@ func setupRoutes(app *fiber.App) {
 	setupSellerRoutes(api)
 	setupUserRoutes(api)
 	setupChatRoutes(api)
+	setupReviewRoutes(api)
 }
 
 // setupHealthRoutes configures health check routes
@@ -143,7 +145,7 @@ func setupHealthRoutes(app *fiber.App) {
 
 	// Prevents 404 spam for favicon.ico
 	app.Get("/favicon.ico", func(c *fiber.Ctx) error {
-		return c.SendStatus(fiber.StatusNoContent) // 204 No Content
+		return errors.ErrNotFound
 	})
 }
 
@@ -193,4 +195,9 @@ func setupChatRoutes(router fiber.Router) {
 	// Message routes
 	router.Get("/chat/messages/:conversation_id", chat.GetMessagesByConversationID) // Get messages for a conversation
 	router.Post("/chat/message", chat.PostMessage)                                  // Post a new message
+}
+
+func setupReviewRoutes(router fiber.Router) {
+	router.Get("/reviews/:listingId", reviews.GetReviews)
+	router.Post("/reviews", reviews.PostReview)
 }

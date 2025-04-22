@@ -21,7 +21,7 @@ type Listing struct {
 	Description   string   `json:"description"`
 	Category      string   `json:"category"`
 	Condition     string   `json:"condition"`
-	Price         int64    `json:"price"`
+	Price         float64  `json:"price"`
 	Location      string   `json:"location"`
 	EcoScore      float32  `json:"ecoScore"`
 	EcoAttributes []string `json:"ecoAttributes"`
@@ -37,7 +37,7 @@ type FetchedListing struct {
 	Description   string   `json:"description"`
 	Category      string   `json:"category"`
 	Condition     string   `json:"condition"`
-	Price         int64    `json:"price"`
+	Price         float64  `json:"price"`
 	Location      string   `json:"location"`
 	EcoScore      float32  `json:"ecoScore"`
 	EcoAttributes []string `json:"ecoAttributes"`
@@ -110,30 +110,49 @@ func (s *SupabaseClient) Query(table string, query string) ([]byte, error) {
 func (s *SupabaseClient) POST(table string, data Listing) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s", s.URL, table)
 
-	jsonData, _ := json.Marshal(data)
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error marshaling data:", err)
+		return nil, fmt.Errorf("error marshaling request data: %w", err)
+	}
+
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return nil, err
 	}
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("apikey", s.APIKey)
 	req.Header.Add("Authorization", "Bearer "+s.APIKey)
-	client := &http.Client{}
+	req.Header.Add("Prefer", "return=representation") // Request response back from Supabase
+
+	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Error sending request:", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error reading response: %w", err)
 	}
 
+	// Debug logging
+	fmt.Printf("Supabase response status: %d\n", resp.StatusCode)
+	fmt.Printf("Supabase response body: %s\n", string(body))
+
+	// Empty response is valid in some cases
+	if len(body) == 0 {
+		return []byte("{}"), nil
+	}
+
 	if resp.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("supabase error: %s", string(body))
 	}
+
 	return body, nil
 }
 

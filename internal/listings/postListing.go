@@ -11,13 +11,17 @@ import (
 func PostListing(c *fiber.Ctx) error {
 	client := db.NewSupabaseClient()
 
+	if client == nil {
+		return errors.InternalServerError("Failed to create client")
+	}
+
 	var payload struct {
 		Title         string         `json:"title"`
 		Description   string         `json:"description"`
 		Category      string         `json:"category"`
 		Condition     string         `json:"condition"`
 		Location      string         `json:"location"`
-		Price         int64          `json:"price"`
+		Price         float64        `json:"price"`
 		Negotiable    bool           `json:"negotiable"`
 		EcoScore      float32        `json:"ecoScore"`
 		EcoAttributes []string       `json:"ecoAttributes"`
