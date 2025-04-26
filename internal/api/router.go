@@ -137,6 +137,7 @@ func setupRoutes(app *fiber.App) {
 	setupUserRoutes(api)
 	setupChatRoutes(api)
 	setupReviewRoutes(api)
+	setupFavoritesRoutes(api)
 }
 
 // setupHealthRoutes configures health check routes

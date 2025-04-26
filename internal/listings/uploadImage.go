@@ -67,7 +67,11 @@ func UploadHandler(c *fiber.Ctx) error {
 
 func convertToWebP(file multipart.File) (*bytes.Buffer, error) {
 	// Ensures we read from the beginning of the file
-	file.Seek(0, 0)
+	_, err := file.Seek(0, 0)
+	if err != nil {
+		log.Println("Error seeking file:", err)
+		return nil, err
+	}
 
 	// Decode image
 	img, format, err := image.Decode(file)

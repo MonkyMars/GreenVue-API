@@ -23,7 +23,7 @@ func GetSellers(c *fiber.Ctx) error {
 	}
 
 	if len(sellers) == 0 {
-		return errors.NotFound("No sellers found")
+		return errors.SuccessResponse(c, []db.User{})
 	}
 
 	return errors.SuccessResponse(c, sellers)
@@ -32,7 +32,9 @@ func GetSellers(c *fiber.Ctx) error {
 func GetSellerById(c *fiber.Ctx) error {
 	client := db.NewSupabaseClient()
 	sellerID := c.Params("id")
-	query := fmt.Sprintf("select=*&id=eq.%s", sellerID)
+	query := fmt.Sprintf("select=id,created_at,name,location,bio,rating,verified&"+
+		"id=eq.%s", sellerID)
+
 	data, err := client.Query("users", query)
 
 	if err != nil {
@@ -45,7 +47,7 @@ func GetSellerById(c *fiber.Ctx) error {
 	}
 
 	if len(sellers) == 0 {
-		return errors.NotFound("Seller not found")
+		return errors.SuccessResponse(c, db.User{})
 	}
 
 	return errors.SuccessResponse(c, sellers[0])

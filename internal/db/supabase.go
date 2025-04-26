@@ -140,10 +140,6 @@ func (s *SupabaseClient) POST(table string, data Listing) ([]byte, error) {
 		return nil, fmt.Errorf("error reading response: %w", err)
 	}
 
-	// Debug logging
-	fmt.Printf("Supabase response status: %d\n", resp.StatusCode)
-	fmt.Printf("Supabase response body: %s\n", string(body))
-
 	// Empty response is valid in some cases
 	if len(body) == 0 {
 		return []byte("{}"), nil
@@ -372,19 +368,21 @@ func (s *SupabaseClient) SignUp(email, password string) (*lib.User, error) {
 }
 
 type User struct {
-	ID        string `json:"id"`
-	Email     string `json:"email"`
-	Name      string `json:"name"`
-	Location  string `json:"location"`
-	Bio       string `json:"bio"`
-	CreatedAt string `json:"created_at"`
+	ID        string  `json:"id"`
+	Email     string  `json:"email"`
+	Name      string  `json:"name"`
+	Location  string  `json:"location"`
+	Bio       string  `json:"bio"`
+	CreatedAt string  `json:"created_at"`
+	Rating    float32 `json:"rating"`
+	Verified  bool    `json:"verified"`
 }
 
 func (s *SupabaseClient) InsertUser(user User) error {
 	url := fmt.Sprintf("%s/rest/v1/users", s.URL)
 
 	// Create request payload with all required fields
-	payload, err := json.Marshal(map[string]interface{}{
+	payload, err := json.Marshal(map[string]any{
 		"id":       user.ID,
 		"name":     user.Name,
 		"email":    user.Email,

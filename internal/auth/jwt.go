@@ -3,6 +3,7 @@ package auth
 import (
 	"errors"
 	response "greentrade-eu/lib/errors"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -30,15 +31,10 @@ type TokenPair struct {
 
 func getJWTSecrets() (access []byte, refresh []byte) {
 	accessSecret := os.Getenv("JWT_ACCESS_SECRET")
-	if accessSecret == "" {
-		// Fallback for development or log a warning
-		accessSecret = "dev-access-secret"
-	}
-
 	refreshSecret := os.Getenv("JWT_REFRESH_SECRET")
-	if refreshSecret == "" {
-		// Fallback for development or log a warning
-		refreshSecret = "dev-refresh-secret"
+
+	if accessSecret == "" || refreshSecret == "" {
+		log.Fatal("JWT secrets are not set. Please set JWT_ACCESS_SECRET and JWT_REFRESH_SECRET in your environment.")
 	}
 
 	return []byte(accessSecret), []byte(refreshSecret)
