@@ -109,7 +109,7 @@ func (s *SupabaseClient) GET(table string, query string) ([]byte, error) {
 }
 
 // POST creates a new record
-func (s *SupabaseClient) POST(table string, data interface{}) ([]byte, error) {
+func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s", s.URL, table)
 
 	jsonData, err := json.Marshal(data)
@@ -155,7 +155,7 @@ func (s *SupabaseClient) POST(table string, data interface{}) ([]byte, error) {
 }
 
 // PATCH updates an existing record by ID
-func (s *SupabaseClient) PATCH(table string, id string, data interface{}) ([]byte, error) {
+func (s *SupabaseClient) PATCH(table string, id string, data any) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?id=eq.%s", s.URL, table, id)
 
 	jsonData, err := json.Marshal(data)

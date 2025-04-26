@@ -186,7 +186,7 @@ func (r *SupabaseSellerRepository) CreateSeller(ctx context.Context, seller lib.
 }
 
 // UpdateSeller updates a seller by ID
-func (r *SupabaseSellerRepository) UpdateSeller(ctx context.Context, id string, updates map[string]interface{}) error {
+func (r *SupabaseSellerRepository) UpdateSeller(ctx context.Context, id string, updates map[string]any) error {
 	_, err := r.repo.Update(ctx, "sellers", id, updates)
 	return err
 }

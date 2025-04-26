@@ -189,7 +189,7 @@ func (r *MockSellerRepository) CreateSeller(ctx context.Context, seller lib.User
 }
 
 // UpdateSeller updates a seller
-func (r *MockSellerRepository) UpdateSeller(ctx context.Context, id string, updates map[string]interface{}) error {
+func (r *MockSellerRepository) UpdateSeller(ctx context.Context, id string, updates map[string]any) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -288,7 +288,7 @@ func (r *MockUserRepository) CreateUser(ctx context.Context, user lib.User) (*li
 }
 
 // UpdateUser updates a user by ID
-func (r *MockUserRepository) UpdateUser(ctx context.Context, id string, updates map[string]interface{}) error {
+func (r *MockUserRepository) UpdateUser(ctx context.Context, id string, updates map[string]any) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

@@ -129,15 +129,20 @@ func setupRoutes(app *fiber.App) {
 	// Public listing routes
 	setupPublicListingRoutes(app)
 
+	// Seller routes (public), doesn't need auth since info is not sensitive.
+	setupSellerRoutes(app)
+
+	// Public review routes
+	setupPublicReviewRoutes(app)
+
 	chat.RegisterWebsocketRoutes(app)
 
 	// Protected routes
 	api := app.Group("/api", auth.AuthMiddleware())
 	setupProtectedListingRoutes(api)
-	setupSellerRoutes(api)
 	setupUserRoutes(api)
 	setupChatRoutes(api)
-	setupReviewRoutes(api)
+	setupProtectedReviewRoutes(api)
 	setupFavoritesRoutes(api)
 }
 
@@ -178,8 +183,7 @@ func setupProtectedListingRoutes(router fiber.Router) {
 
 // setupSellerRoutes configures seller routes
 func setupSellerRoutes(router fiber.Router) {
-	router.Get("/sellers/:id", seller.GetSellerById)
-	router.Get("/sellers", seller.GetSellers)
+	router.Get("/seller/:user_id", seller.GetSeller)
 }
 
 // setupUserRoutes configures user routes
@@ -200,9 +204,12 @@ func setupChatRoutes(router fiber.Router) {
 	router.Post("/chat/message", chat.PostMessage)                                  // Post a new message
 }
 
-func setupReviewRoutes(router fiber.Router) {
-	router.Get("/reviews/:listingId", reviews.GetReviews)
+func setupProtectedReviewRoutes(router fiber.Router) {
 	router.Post("/reviews", reviews.PostReview)
+}
+
+func setupPublicReviewRoutes(router fiber.Router) {
+	router.Get("/reviews/:seller_id", reviews.GetReviews)
 }
 
 func setupFavoritesRoutes(router fiber.Router) {

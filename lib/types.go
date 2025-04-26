@@ -18,6 +18,16 @@ type User struct {
 	Verified  bool    `json:"verified,omitempty"`
 }
 
+type PublicUser struct {
+	ID        string  `json:"id"`
+	Name      string  `json:"name"`
+	Location  string  `json:"location"`
+	Bio       string  `json:"bio"`
+	CreatedAt string  `json:"created_at"`
+	Rating    float32 `json:"rating"`
+	Verified  bool    `json:"verified"`
+}
+
 type AuthResponse struct {
 	AccessToken  string `json:"access_token"`
 	TokenType    string `json:"token_type"`
@@ -136,13 +146,13 @@ type FetchedListing struct {
 
 // Generic query parameters for data access
 type QueryParams struct {
-	Table     string                 `json:"-"`
-	ID        string                 `json:"-"`
-	Filter    string                 `json:"-"`
-	Limit     int                    `json:"-"`
-	Offset    int                    `json:"-"`
-	OrderBy   string                 `json:"-"`
-	Direction string                 `json:"-"`
-	Data      map[string]interface{} `json:"-"`
-	FiberMap  fiber.Map              `json:"-"`
+	Table     string         `json:"-"`
+	ID        string         `json:"-"`
+	Filter    string         `json:"-"`
+	Limit     int            `json:"-"`
+	Offset    int            `json:"-"`
+	OrderBy   string         `json:"-"`
+	Direction string         `json:"-"`
+	Data      map[string]any `json:"-"`
+	FiberMap  fiber.Map      `json:"-"`
 }

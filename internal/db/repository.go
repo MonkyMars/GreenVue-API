@@ -10,8 +10,8 @@ import (
 type Repository interface {
 	Get(ctx context.Context, params lib.QueryParams) ([]byte, error)
 	GetByID(ctx context.Context, table string, id string) ([]byte, error)
-	Create(ctx context.Context, table string, data interface{}) ([]byte, error)
-	Update(ctx context.Context, table string, id string, data interface{}) ([]byte, error)
+	Create(ctx context.Context, table string, data any) ([]byte, error)
+	Update(ctx context.Context, table string, id string, data any) ([]byte, error)
 	Delete(ctx context.Context, table string, id string) error
 }
 
@@ -70,12 +70,12 @@ func (r *SupabaseRepository) GetByID(ctx context.Context, table string, id strin
 }
 
 // Create creates a new record
-func (r *SupabaseRepository) Create(ctx context.Context, table string, data interface{}) ([]byte, error) {
+func (r *SupabaseRepository) Create(ctx context.Context, table string, data any) ([]byte, error) {
 	return r.client.POST(table, data)
 }
 
 // Update updates a record by ID
-func (r *SupabaseRepository) Update(ctx context.Context, table string, id string, data interface{}) ([]byte, error) {
+func (r *SupabaseRepository) Update(ctx context.Context, table string, id string, data any) ([]byte, error) {
 	return r.client.PATCH(table, id, data)
 }
 

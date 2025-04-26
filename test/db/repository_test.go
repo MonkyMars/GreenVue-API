@@ -192,7 +192,7 @@ func TestMockSellerRepository(t *testing.T) {
 	}
 
 	// Test updating a seller
-	updates := map[string]interface{}{
+	updates := map[string]any{
 		"name":     "Updated Seller Name",
 		"location": "New Seller City",
 		"bio":      "Updated bio",
@@ -329,7 +329,7 @@ func TestMockUserRepository(t *testing.T) {
 	}
 
 	// Test updating a user
-	updates := map[string]interface{}{
+	updates := map[string]any{
 		"name":     "Updated User Name",
 		"location": "Updated Location",
 		"email":    "updated@example.com", // Test email update
@@ -362,7 +362,7 @@ func TestMockUserRepository(t *testing.T) {
 		t.Fatalf("Setup failed: could not create other user: %v", err)
 	}
 	// Try to update original user to other user's email
-	emailConflictUpdates := map[string]interface{}{"email": otherUser.Email}
+	emailConflictUpdates := map[string]any{"email": otherUser.Email}
 	err = repo.UpdateUser(ctx, user.ID, emailConflictUpdates)
 	expectedErr = fmt.Errorf("email %s is already in use", otherUser.Email)
 	if err == nil || err.Error() != expectedErr.Error() {

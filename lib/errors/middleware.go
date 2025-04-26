@@ -31,7 +31,7 @@ type ErrorResponseConfig struct {
 	// ShowDetails determines if detailed errors are shown in non-production
 	DevMode bool
 	// Logger is a custom logger function, defaults to log.Printf
-	Logger func(format string, args ...interface{})
+	Logger func(format string, args ...any)
 }
 
 // DefaultErrorResponseConfig is the default config for ErrorResponse middleware
@@ -74,7 +74,7 @@ func ErrorHandler(config ...ErrorResponseConfig) fiber.ErrorHandler {
 		// Default error response
 		statusCode := fiber.StatusInternalServerError
 		errorMsg := "Internal Server Error"
-		errorDetails := map[string]interface{}{}
+		errorDetails := map[string]any{}
 
 		// Get request ID for logging
 		requestID, _ := ctx.Locals("requestID").(string)

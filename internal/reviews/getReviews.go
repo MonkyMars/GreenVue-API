@@ -12,23 +12,20 @@ import (
 
 const viewName string = "review_with_username"
 
-func getQuery(selectedSeller, limit string) string {
-	if selectedSeller == "" {
-		return fmt.Sprintf("select=*&limit=%s", limit)
-	} else {
-		return fmt.Sprintf("select=*&limit=%s&seller_id=eq.%s", limit, selectedSeller)
-	}
-}
-
 func GetReviews(c *fiber.Ctx) error {
 	client := db.NewSupabaseClient()
 	if client == nil {
 		return errors.InternalServerError("Failed to create client")
 	}
 
-	selectedSeller := c.Params("sellerID")
+	selectedSeller := c.Params("seller_id")
+
+	if selectedSeller == "" {
+		return errors.BadRequest("Seller ID is required")
+	}
+
 	limit := c.Query("limit", "50")
-	query := getQuery(selectedSeller, limit)
+	query := fmt.Sprintf("select=*&limit=%s&seller_id=eq.%s", limit, selectedSeller)
 
 	// Use standardized GET operation
 	data, err := client.GET(viewName, query)
