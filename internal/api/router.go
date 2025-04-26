@@ -10,6 +10,7 @@ import (
 	"greentrade-eu/internal/reviews"
 	"greentrade-eu/internal/seller"
 	"greentrade-eu/lib/errors"
+	"log" // Import log package
 	"strings"
 	"time"
 
@@ -27,14 +28,14 @@ func SetupApp(cfg *config.Config) *fiber.App {
 	// Check environment
 	devMode := cfg.Environment != "production"
 
-	// Configure with custom error handler
+	// Configure with custom error handler, explicitly providing the logger
 	app := fiber.New(fiber.Config{
 		ServerHeader:      "GreenTrade.eu",
 		ReadTimeout:       cfg.Server.ReadTimeout,
 		WriteTimeout:      cfg.Server.WriteTimeout,
 		IdleTimeout:       cfg.Server.IdleTimeout,
 		ReduceMemoryUsage: true,
-		ErrorHandler:      errors.ErrorHandler(errors.ErrorResponseConfig{DevMode: devMode}),
+		ErrorHandler:      errors.ErrorHandler(errors.ErrorResponseConfig{DevMode: devMode, Logger: log.Printf}), // Explicitly set Logger
 	})
 
 	// Setup middleware
