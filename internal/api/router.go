@@ -4,6 +4,7 @@ import (
 	"greentrade-eu/internal/auth"
 	"greentrade-eu/internal/chat"
 	"greentrade-eu/internal/config"
+	"greentrade-eu/internal/favorites"
 	"greentrade-eu/internal/health"
 	"greentrade-eu/internal/listings"
 	"greentrade-eu/internal/reviews"
@@ -200,4 +201,10 @@ func setupChatRoutes(router fiber.Router) {
 func setupReviewRoutes(router fiber.Router) {
 	router.Get("/reviews/:listingId", reviews.GetReviews)
 	router.Post("/reviews", reviews.PostReview)
+}
+
+func setupFavoritesRoutes(router fiber.Router) {
+	router.Get("/favorites/:id", favorites.GetFavorites)
+	router.Post("/favorites/:listing_id/:user_id", favorites.AddFavorite)
+	router.Delete("/favorites/:listing_id/:user_id", favorites.DeleteFavorite)
 }

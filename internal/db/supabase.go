@@ -156,28 +156,34 @@ func (s *SupabaseClient) POST(table string, data Listing) ([]byte, error) {
 	return body, nil
 }
 
-func (s *SupabaseClient) DELETE(table, id string) ([]byte, error) {
-	url := fmt.Sprintf("%s/rest/v1/%s", s.URL, table)
+func (s *SupabaseClient) DELETE(table, conditions string) ([]byte, error) {
+	url := fmt.Sprintf("%s/rest/v1/%s?%s", s.URL, table, conditions)
 
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create DELETE request: %w", err)
 	}
 
 	req.Header.Add("apikey", s.APIKey)
 	req.Header.Add("Authorization", "Bearer "+s.APIKey)
+	req.Header.Add("Prefer", "return=minimal") // More efficient for DELETE operations
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to execute DELETE request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read DELETE response: %w", err)
 	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("DELETE operation failed (status %d): %s", resp.StatusCode, string(respBody))
+	}
+
 	return respBody, nil
 }
 
