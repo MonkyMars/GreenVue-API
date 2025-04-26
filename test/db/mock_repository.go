@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"greentrade-eu/internal/db"
+	"greentrade-eu/lib"
 	"sync"
-	"time" // Added for potential use in User mock
+	"time"
 )
 
 // Define common errors for testing
@@ -17,7 +17,7 @@ var (
 
 // MockListingRepository provides a simple in-memory repository for testing
 type MockListingRepository struct {
-	listings    map[string]db.Listing
+	listings    map[string]lib.Listing
 	lastID      int64
 	uploadedImg map[string][]byte
 	mu          sync.RWMutex
@@ -26,17 +26,17 @@ type MockListingRepository struct {
 // NewMockListingRepository creates a new mock repository
 func NewMockListingRepository() *MockListingRepository {
 	return &MockListingRepository{
-		listings:    make(map[string]db.Listing),
+		listings:    make(map[string]lib.Listing),
 		uploadedImg: make(map[string][]byte),
 	}
 }
 
 // GetListings fetches listings with pagination
-func (r *MockListingRepository) GetListings(ctx context.Context, limit, offset int) ([]db.Listing, error) {
+func (r *MockListingRepository) GetListings(ctx context.Context, limit, offset int) ([]lib.Listing, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	var result []db.Listing
+	var result []lib.Listing
 	count := 0
 	// Note: Iteration order over maps is not guaranteed. For stable pagination, consider sorting keys.
 	for _, listing := range r.listings {
@@ -50,7 +50,7 @@ func (r *MockListingRepository) GetListings(ctx context.Context, limit, offset i
 }
 
 // GetListingByID fetches a listing by ID
-func (r *MockListingRepository) GetListingByID(ctx context.Context, id string) (*db.Listing, error) {
+func (r *MockListingRepository) GetListingByID(ctx context.Context, id string) (*lib.Listing, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -62,11 +62,11 @@ func (r *MockListingRepository) GetListingByID(ctx context.Context, id string) (
 }
 
 // GetListingsByCategory fetches listings by category
-func (r *MockListingRepository) GetListingsByCategory(ctx context.Context, category string) ([]db.Listing, error) {
+func (r *MockListingRepository) GetListingsByCategory(ctx context.Context, category string) ([]lib.Listing, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	var result []db.Listing
+	var result []lib.Listing
 	for _, listing := range r.listings {
 		if listing.Category == category {
 			result = append(result, listing)
@@ -77,7 +77,7 @@ func (r *MockListingRepository) GetListingsByCategory(ctx context.Context, categ
 }
 
 // CreateListing creates a new listing
-func (r *MockListingRepository) CreateListing(ctx context.Context, listing db.Listing) (*db.Listing, error) {
+func (r *MockListingRepository) CreateListing(ctx context.Context, listing lib.Listing) (*lib.Listing, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -127,25 +127,24 @@ func (r *MockListingRepository) UploadImage(ctx context.Context, filename, bucke
 }
 
 // MockSellerRepository provides a simple in-memory repository for testing
-// Note: The SellerRepository interface uses db.User, so we use db.User here.
 type MockSellerRepository struct {
-	sellers map[string]db.User // Changed from db.Seller to db.User
+	sellers map[string]lib.User
 	mu      sync.RWMutex
 }
 
 // NewMockSellerRepository creates a new mock repository
 func NewMockSellerRepository() *MockSellerRepository {
 	return &MockSellerRepository{
-		sellers: make(map[string]db.User), // Changed from db.Seller to db.User
+		sellers: make(map[string]lib.User),
 	}
 }
 
-// GetSellers fetches all sellers (returns db.User)
-func (r *MockSellerRepository) GetSellers(ctx context.Context) ([]db.User, error) {
+// GetSellers fetches all sellers
+func (r *MockSellerRepository) GetSellers(ctx context.Context) ([]lib.User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	var result []db.User // Changed from db.Seller to db.User
+	var result []lib.User
 	for _, seller := range r.sellers {
 		// Add filtering logic if sellers need specific attributes (e.g., is_seller flag)
 		result = append(result, seller)
@@ -154,8 +153,8 @@ func (r *MockSellerRepository) GetSellers(ctx context.Context) ([]db.User, error
 	return result, nil
 }
 
-// GetSellerByID fetches a seller by ID (returns db.User)
-func (r *MockSellerRepository) GetSellerByID(ctx context.Context, id string) (*db.User, error) {
+// GetSellerByID fetches a seller by ID
+func (r *MockSellerRepository) GetSellerByID(ctx context.Context, id string) (*lib.User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -166,8 +165,8 @@ func (r *MockSellerRepository) GetSellerByID(ctx context.Context, id string) (*d
 	return nil, ErrNotFound
 }
 
-// CreateSeller creates a new seller (takes db.User)
-func (r *MockSellerRepository) CreateSeller(ctx context.Context, seller db.User) (*db.User, error) {
+// CreateSeller creates a new seller
+func (r *MockSellerRepository) CreateSeller(ctx context.Context, seller lib.User) (*lib.User, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -189,7 +188,7 @@ func (r *MockSellerRepository) CreateSeller(ctx context.Context, seller db.User)
 	return &seller, nil
 }
 
-// UpdateSeller updates a seller (operates on db.User)
+// UpdateSeller updates a seller
 func (r *MockSellerRepository) UpdateSeller(ctx context.Context, id string, updates map[string]interface{}) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -209,7 +208,7 @@ func (r *MockSellerRepository) UpdateSeller(ctx context.Context, id string, upda
 	if bio, ok := updates["bio"].(string); ok {
 		seller.Bio = bio
 	}
-	// Add other updatable fields based on db.User and Seller needs
+	// Add other updatable fields based on lib.User needs
 
 	r.sellers[id] = seller
 	return nil
@@ -219,19 +218,19 @@ func (r *MockSellerRepository) UpdateSeller(ctx context.Context, id string, upda
 
 // MockUserRepository provides a simple in-memory repository for testing User operations
 type MockUserRepository struct {
-	users map[string]db.User
+	users map[string]lib.User
 	mu    sync.RWMutex
 }
 
 // NewMockUserRepository creates a new mock repository for users
 func NewMockUserRepository() *MockUserRepository {
 	return &MockUserRepository{
-		users: make(map[string]db.User),
+		users: make(map[string]lib.User),
 	}
 }
 
 // GetUserByID fetches a user by ID
-func (r *MockUserRepository) GetUserByID(ctx context.Context, id string) (*db.User, error) {
+func (r *MockUserRepository) GetUserByID(ctx context.Context, id string) (*lib.User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -243,7 +242,7 @@ func (r *MockUserRepository) GetUserByID(ctx context.Context, id string) (*db.Us
 }
 
 // GetUserByEmail fetches a user by email
-func (r *MockUserRepository) GetUserByEmail(ctx context.Context, email string) (*db.User, error) {
+func (r *MockUserRepository) GetUserByEmail(ctx context.Context, email string) (*lib.User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -257,7 +256,7 @@ func (r *MockUserRepository) GetUserByEmail(ctx context.Context, email string) (
 }
 
 // CreateUser creates a new user
-func (r *MockUserRepository) CreateUser(ctx context.Context, user db.User) (*db.User, error) {
+func (r *MockUserRepository) CreateUser(ctx context.Context, user lib.User) (*lib.User, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -308,6 +307,7 @@ func (r *MockUserRepository) UpdateUser(ctx context.Context, id string, updates 
 	if bio, ok := updates["bio"].(string); ok {
 		user.Bio = bio
 	}
+
 	// Note: Email updates might need special handling (checking for uniqueness)
 	if email, ok := updates["email"].(string); ok {
 		// Check if the new email is already taken by another user
@@ -322,7 +322,3 @@ func (r *MockUserRepository) UpdateUser(ctx context.Context, id string, updates 
 	r.users[id] = user
 	return nil
 }
-
-// Helper function for string ID generation in CreateListing (if needed elsewhere)
-// Can be removed if CreateListing handles ID generation internally
-// import "fmt" // Ensure fmt is imported at the top

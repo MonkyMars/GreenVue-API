@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"fmt"
+	"context"
 	"greentrade-eu/internal/db"
 	"greentrade-eu/lib"
 	"greentrade-eu/lib/errors"
@@ -11,6 +11,12 @@ import (
 
 func LoginUser(c *fiber.Ctx) error {
 	client := db.NewSupabaseClient()
+	if client == nil {
+		return errors.InternalServerError("Failed to create database client")
+	}
+
+	// Create a new repository instance to use standardized operations
+	repo := db.NewSupabaseRepository(client)
 
 	// Define payload struct
 	var payload struct {
@@ -31,8 +37,9 @@ func LoginUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	// Authenticate user
-	authResp, err := client.Login(lib.SanitizeInput(payload.Email), lib.SanitizeInput(payload.Password))
+	// Authenticate user (this is a specialized operation that doesn't fit standard CRUD)
+	// We'll continue to use the Login method which is kept in the client for auth operations
+	authResp, err := repo.Login(context.Background(), lib.SanitizeInput(payload.Email), lib.SanitizeInput(payload.Password))
 	if err != nil {
 		return errors.Unauthorized("Invalid credentials")
 	}
@@ -42,8 +49,6 @@ func LoginUser(c *fiber.Ctx) error {
 	if err != nil {
 		return errors.InternalServerError("Failed to generate tokens")
 	}
-
-	fmt.Println(tokens.AccessToken)
 
 	// Return login success response with JWT tokens
 	return errors.SuccessResponse(c, fiber.Map{

@@ -52,7 +52,7 @@ func CreateConversation(c *fiber.Ctx) error {
 	}
 
 	jsonPayload := fmt.Sprintf(`{"buyer_id": "%s", "seller_id": "%s", "listing_id": "%s"}`, buyerId, sellerId, listingId)
-	body, err := client.PostRaw("conversations", []byte(jsonPayload))
+	body, err := client.POST("conversations", []byte(jsonPayload))
 
 	if err != nil {
 		return errors.InternalServerError("Failed to create conversation: " + err.Error())
@@ -73,7 +73,7 @@ func CreateConversation(c *fiber.Ctx) error {
 	if len(conversations) > 0 {
 		createdConversation := conversations[0]
 		query := fmt.Sprintf("id=eq.%s", createdConversation.Id)
-		data, err := client.Query(viewName, query)
+		data, err := client.GET(viewName, query)
 		if err != nil {
 			return errors.InternalServerError("Failed to fetch created conversation: " + err.Error())
 		}
@@ -110,7 +110,7 @@ func GetConversations(c *fiber.Ctx) error {
 	query := fmt.Sprintf("or=(seller_id.eq.%s,buyer_id.eq.%s)", userId, userId)
 
 	// Execute the query
-	data, err := client.Query(viewName, query)
+	data, err := client.GET(viewName, query)
 	if err != nil {
 		return errors.InternalServerError("Failed to fetch conversations: " + err.Error())
 	}

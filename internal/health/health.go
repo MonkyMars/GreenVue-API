@@ -71,7 +71,7 @@ func DetailedHealth(c *fiber.Ctx) error {
 	dbDetails := "Connected"
 
 	client := db.NewSupabaseClient()
-	_, err := client.Query("listings", "select=*")
+	_, err := client.GET("listings", "select=*")
 	if err != nil {
 		dbStatus = "DOWN"
 		dbDetails = "Connection failed: " + err.Error()

@@ -32,7 +32,7 @@ func GetMessagesByConversationID(c *fiber.Ctx) error {
 	}
 
 	query := fmt.Sprintf("conversation_id=eq.%s", conversationID)
-	data, err := client.Query("messages", query)
+	data, err := client.GET("messages", query)
 
 	if err != nil {
 		return errors.InternalServerError("Failed to retrieve messages: " + err.Error())
@@ -84,7 +84,7 @@ func PostMessage(c *fiber.Ctx) error {
 		return errors.InternalServerError("Failed to marshal message data: " + err.Error())
 	}
 
-	insertedData, err := client.PostRaw("messages", jsonData)
+	insertedData, err := client.POST("messages", jsonData)
 	if err != nil {
 		return errors.InternalServerError("Failed to post message: " + err.Error())
 	}

@@ -76,7 +76,8 @@ func NewSupabaseClient() *SupabaseClient {
 	}
 }
 
-func (s *SupabaseClient) Query(table string, query string) ([]byte, error) {
+// GET performs a GET request to fetch data with optional query parameters
+func (s *SupabaseClient) GET(table string, query string) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?%s", s.URL, table, query)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -107,7 +108,8 @@ func (s *SupabaseClient) Query(table string, query string) ([]byte, error) {
 	return body, nil
 }
 
-func (s *SupabaseClient) POST(table string, data Listing) ([]byte, error) {
+// POST creates a new record
+func (s *SupabaseClient) POST(table string, data interface{}) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s", s.URL, table)
 
 	jsonData, err := json.Marshal(data)
@@ -152,6 +154,45 @@ func (s *SupabaseClient) POST(table string, data Listing) ([]byte, error) {
 	return body, nil
 }
 
+// PATCH updates an existing record by ID
+func (s *SupabaseClient) PATCH(table string, id string, data interface{}) ([]byte, error) {
+	url := fmt.Sprintf("%s/rest/v1/%s?id=eq.%s", s.URL, table, id)
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("apikey", s.APIKey)
+	req.Header.Add("Authorization", "Bearer "+s.APIKey)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Prefer", "return=representation") // Ensures Supabase returns the updated record
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("supabase PATCH error (%d): %s", resp.StatusCode, string(respBody))
+	}
+
+	return respBody, nil
+}
+
+// DELETE removes a record based on condition
 func (s *SupabaseClient) DELETE(table, conditions string) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?%s", s.URL, table, conditions)
 
@@ -183,6 +224,7 @@ func (s *SupabaseClient) DELETE(table, conditions string) ([]byte, error) {
 	return respBody, nil
 }
 
+// UploadImage uploads an image to Supabase storage
 func (s *SupabaseClient) UploadImage(filename, bucket string, image []byte) ([]byte, error) {
 	url := fmt.Sprintf("%s/storage/v1/object/%s/%s", s.URL, bucket, filename)
 	fmt.Printf("Uploading to URL: %s\n", url)
@@ -208,7 +250,7 @@ func (s *SupabaseClient) UploadImage(filename, bucket string, image []byte) ([]b
 	req.Header.Add("apikey", s.APIKey)
 	req.Header.Add("Authorization", "Bearer "+s.APIKey)
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Printf("Error sending request: %v\n", err)
@@ -231,71 +273,7 @@ func (s *SupabaseClient) UploadImage(filename, bucket string, image []byte) ([]b
 	return body, nil
 }
 
-func (s *SupabaseClient) PATCH(table, ID string, query fiber.Map) ([]byte, error) {
-	url := fmt.Sprintf("%s/rest/v1/%s?id=eq.%s", s.URL, table, ID)
-
-	jsonData, err := json.Marshal(query)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("apikey", s.APIKey)
-	req.Header.Add("Authorization", "Bearer "+s.APIKey)
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Prefer", "return=representation") // Ensures Supabase returns the updated record
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return respBody, nil
-}
-
-func (s *SupabaseClient) PostRaw(table string, jsonData []byte) ([]byte, error) {
-	url := fmt.Sprintf("%s/rest/v1/%s", s.URL, table)
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("apikey", s.APIKey)
-	req.Header.Add("Authorization", "Bearer "+s.APIKey)
-	req.Header.Add("Prefer", "return=representation")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("supabase error: %s", string(body))
-	}
-
-	return body, nil
-}
-
+// SignUp registers a new user
 func (s *SupabaseClient) SignUp(email, password string) (*lib.User, error) {
 	url := fmt.Sprintf("%s/auth/v1/signup", s.URL)
 
@@ -321,7 +299,7 @@ func (s *SupabaseClient) SignUp(email, password string) (*lib.User, error) {
 	req.Header.Set("Prefer", "return=representation")
 
 	// Send request
-	client := &http.Client{}
+	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
@@ -343,7 +321,6 @@ func (s *SupabaseClient) SignUp(email, password string) (*lib.User, error) {
 	}
 
 	// Parse JSON response based on actual Supabase structure
-	// The user data is at the root level, not nested under a "user" property
 	var userResp struct {
 		ID    string `json:"id"`
 		Email string `json:"email"`
@@ -365,6 +342,136 @@ func (s *SupabaseClient) SignUp(email, password string) (*lib.User, error) {
 	}
 
 	return user, nil
+}
+
+// Login authenticates a user
+func (s *SupabaseClient) Login(email, password string) (*lib.AuthResponse, error) {
+	url := fmt.Sprintf("%s/auth/v1/token?grant_type=password", s.URL)
+
+	// Create request payload
+	payload, err := json.Marshal(map[string]string{
+		"email":    email,
+		"password": password,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	// Create HTTP request
+	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set headers
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("apikey", s.APIKey)
+	req.Header.Set("Authorization", "Bearer "+s.APIKey)
+
+	// Send request
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Check for HTTP errors
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("login failed: %s", string(body))
+	}
+
+	// Parse JSON response
+	var authResp lib.AuthResponse
+	if err := json.Unmarshal(body, &authResp); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &authResp, nil
+}
+
+// RefreshToken refreshes the access token using the refresh token
+func (s *SupabaseClient) RefreshToken(refreshToken string) (*lib.AuthResponse, error) {
+	encodedRefreshToken := url.QueryEscape(refreshToken)
+	url := fmt.Sprintf("%s/auth/v1/token?grant_type=refresh_token&refresh_token=%s", s.URL, encodedRefreshToken)
+
+	req, err := http.NewRequest("POST", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Add("apikey", s.APIKey)
+	req.Header.Add("Authorization", "Bearer "+s.APIKey)
+	req.Header.Add("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	// Handle HTTP error responses
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("API error (%d): %s", resp.StatusCode, string(body))
+	}
+
+	// Parse JSON response
+	var authResp lib.AuthResponse
+	if err := json.Unmarshal(body, &authResp); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &authResp, nil
+}
+
+// GetUserByToken retrieves user information using an access token
+func (s *SupabaseClient) GetUserByToken(accessToken string) (*lib.User, error) {
+	url := fmt.Sprintf("%s/auth/v1/user", s.URL)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Add("apikey", s.APIKey)
+	req.Header.Add("Authorization", "Bearer "+accessToken)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	// Handle HTTP error responses
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("API error (%d): %s", resp.StatusCode, string(body))
+	}
+
+	// Parse JSON response
+	var user lib.User
+	if err := json.Unmarshal(body, &user); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &user, nil
 }
 
 type User struct {
@@ -426,57 +533,6 @@ func (s *SupabaseClient) InsertUser(user User) error {
 	}
 
 	return nil
-}
-
-func (s *SupabaseClient) Login(email, password string) (*lib.AuthResponse, error) {
-	url := fmt.Sprintf("%s/auth/v1/token?grant_type=password", s.URL)
-
-	// Create request payload
-	payload, err := json.Marshal(map[string]string{
-		"email":    email,
-		"password": password,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request body: %w", err)
-	}
-
-	// Create HTTP request
-	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Set headers
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("apikey", s.APIKey)
-	req.Header.Set("Authorization", "Bearer "+s.APIKey)
-
-	// Send request
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Read response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Check for HTTP errors
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("login failed: %s", string(body))
-	}
-
-	// Parse JSON response
-	var authResp lib.AuthResponse
-	if err := json.Unmarshal(body, &authResp); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
-	}
-
-	return &authResp, nil
 }
 
 func (s *SupabaseClient) InsertSeller(ID, description string) error {

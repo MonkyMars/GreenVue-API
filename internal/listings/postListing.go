@@ -1,6 +1,7 @@
 package listings
 
 import (
+	"encoding/json"
 	"greentrade-eu/internal/db"
 	"greentrade-eu/lib"
 	"greentrade-eu/lib/errors"
@@ -50,8 +51,8 @@ func PostListing(c *fiber.Ctx) error {
 		}
 	}
 
-	// Build the listing object
-	listing := db.Listing{
+	// Build the listing object using the lib.Listing type now
+	listing := lib.Listing{
 		Title:         lib.SanitizeInput(payload.Title),
 		Description:   lib.SanitizeInput(payload.Description),
 		Category:      payload.Category,
@@ -65,15 +66,19 @@ func PostListing(c *fiber.Ctx) error {
 		SellerID:      payload.SellerID,
 	}
 
-	// Insert into Supabase
+	// Insert into Supabase using standardized repository method
 	listingData, err := client.POST("listings", listing)
 	if err != nil {
 		return errors.DatabaseError("Failed to create listing: " + err.Error())
 	}
 
-	response := map[string]any{
-		"listing": listingData,
+	// Parse the response
+	var createdListing lib.Listing
+	if err := json.Unmarshal(listingData, &createdListing); err != nil {
+		return errors.InternalServerError("Failed to parse created listing: " + err.Error())
 	}
 
-	return errors.SuccessResponse(c, response)
+	return errors.SuccessResponse(c, fiber.Map{
+		"listing": createdListing,
+	})
 }

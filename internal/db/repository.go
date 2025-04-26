@@ -2,30 +2,111 @@ package db
 
 import (
 	"context"
+	"fmt"
+	"greentrade-eu/lib"
 )
 
-// ListingRepository defines operations for the Listing entity
-type ListingRepository interface {
-	GetListings(ctx context.Context, limit, offset int) ([]Listing, error)
-	GetListingByID(ctx context.Context, id string) (*Listing, error)
-	GetListingsByCategory(ctx context.Context, category string) ([]Listing, error)
-	CreateListing(ctx context.Context, listing Listing) (*Listing, error)
-	DeleteListing(ctx context.Context, id string) error
-	UploadImage(ctx context.Context, filename, bucket string, image []byte) (string, error)
+// Repository defines standard CRUD operations for all entities
+type Repository interface {
+	Get(ctx context.Context, params lib.QueryParams) ([]byte, error)
+	GetByID(ctx context.Context, table string, id string) ([]byte, error)
+	Create(ctx context.Context, table string, data interface{}) ([]byte, error)
+	Update(ctx context.Context, table string, id string, data interface{}) ([]byte, error)
+	Delete(ctx context.Context, table string, id string) error
 }
 
-// SellerRepository defines operations for the Seller entity
-type SellerRepository interface {
-	GetSellers(ctx context.Context) ([]User, error)
-	GetSellerByID(ctx context.Context, id string) (*User, error)
-	CreateSeller(ctx context.Context, seller User) (*User, error)
-	UpdateSeller(ctx context.Context, id string, updates map[string]interface{}) error
+// SupabaseRepository implements the Repository interface with Supabase
+type SupabaseRepository struct {
+	client *SupabaseClient
 }
 
-// UserRepository defines operations for the User entity
-type UserRepository interface {
-	GetUserByID(ctx context.Context, id string) (*User, error)
-	GetUserByEmail(ctx context.Context, email string) (*User, error)
-	CreateUser(ctx context.Context, user User) (*User, error)
-	UpdateUser(ctx context.Context, id string, updates map[string]interface{}) error
+// NewSupabaseRepository creates a new Supabase repository
+func NewSupabaseRepository(client *SupabaseClient) *SupabaseRepository {
+	return &SupabaseRepository{
+		client: client,
+	}
+}
+
+// Get fetches records based on query parameters
+func (r *SupabaseRepository) Get(ctx context.Context, params lib.QueryParams) ([]byte, error) {
+	query := ""
+
+	if params.Filter != "" {
+		query += params.Filter
+	}
+
+	if params.Limit > 0 {
+		if query != "" {
+			query += "&"
+		}
+		query += "limit=" + fmt.Sprint(params.Limit)
+	}
+
+	if params.Offset > 0 {
+		if query != "" {
+			query += "&"
+		}
+		query += "offset=" + fmt.Sprint(params.Offset)
+	}
+
+	if params.OrderBy != "" {
+		if query != "" {
+			query += "&"
+		}
+		orderDirection := "asc"
+		if params.Direction != "" {
+			orderDirection = params.Direction
+		}
+		query += "order=" + params.OrderBy + "." + orderDirection
+	}
+
+	return r.client.GET(params.Table, query)
+}
+
+// GetByID fetches a record by ID
+func (r *SupabaseRepository) GetByID(ctx context.Context, table string, id string) ([]byte, error) {
+	query := "id=eq." + id
+	return r.client.GET(table, query)
+}
+
+// Create creates a new record
+func (r *SupabaseRepository) Create(ctx context.Context, table string, data interface{}) ([]byte, error) {
+	return r.client.POST(table, data)
+}
+
+// Update updates a record by ID
+func (r *SupabaseRepository) Update(ctx context.Context, table string, id string, data interface{}) ([]byte, error) {
+	return r.client.PATCH(table, id, data)
+}
+
+// Delete deletes a record by ID
+func (r *SupabaseRepository) Delete(ctx context.Context, table string, id string) error {
+	_, err := r.client.DELETE(table, "id=eq."+id)
+	return err
+}
+
+// Special operations that don't fit the standard CRUD pattern
+
+// UploadImage uploads an image to Supabase storage
+func (r *SupabaseRepository) UploadImage(ctx context.Context, filename, bucket string, image []byte) (string, error) {
+	_, err := r.client.UploadImage(filename, bucket, image)
+	if err != nil {
+		return "", err
+	}
+
+	// Construct and return the public URL
+	imageURL := r.client.URL + "/storage/v1/object/public/" + bucket + "/" + filename
+	return imageURL, nil
+}
+
+// Auth operations
+
+// SignUp registers a new user
+func (r *SupabaseRepository) SignUp(ctx context.Context, email, password string) (*lib.User, error) {
+	return r.client.SignUp(email, password)
+}
+
+// Login authenticates a user
+func (r *SupabaseRepository) Login(ctx context.Context, email, password string) (*lib.AuthResponse, error) {
+	return r.client.Login(email, password)
 }

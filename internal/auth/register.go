@@ -1,7 +1,9 @@
 package auth
 
 import (
+	"context"
 	"greentrade-eu/internal/db"
+	"greentrade-eu/lib"
 	"greentrade-eu/lib/errors"
 
 	"github.com/gofiber/fiber/v2"
@@ -9,6 +11,12 @@ import (
 
 func RegisterUser(c *fiber.Ctx) error {
 	client := db.NewSupabaseClient()
+	if client == nil {
+		return errors.InternalServerError("Failed to create database client")
+	}
+
+	// Create a repository instance to use standardized operations
+	repo := db.NewSupabaseRepository(client)
 
 	// Define payload struct
 	var payload struct {
@@ -23,10 +31,11 @@ func RegisterUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	// no need to validate username and email since it happens on the frontend using zod.
+	// No need to validate username and email since it happens on the frontend using zod.
 
-	// Sign up the user
-	user, err := client.SignUp(payload.Email, payload.Password)
+	// Sign up the user (this is a specialized operation that doesn't fit standard CRUD)
+	// We'll continue to use the SignUp method which is kept in the repository for auth operations
+	user, err := repo.SignUp(context.Background(), payload.Email, payload.Password)
 	if err != nil {
 		return errors.DatabaseError("Failed to register user: " + err.Error())
 	}
@@ -40,15 +49,16 @@ func RegisterUser(c *fiber.Ctx) error {
 		return errors.DatabaseError("User registration failed: received empty user ID from auth provider")
 	}
 
-	parsedPayload := db.User{
+	// Create a user record using the standardized type
+	newUser := lib.User{
 		ID:       user.ID,
 		Name:     payload.Name,
 		Email:    payload.Email,
 		Location: payload.Location,
 	}
 
-	// Insert user into the database
-	err = client.InsertUser(parsedPayload)
+	// Insert user into the database using standardized Create operation
+	_, err = repo.Create(context.Background(), "users", newUser)
 	if err != nil {
 		return errors.DatabaseError("Failed to store user in database: " + err.Error())
 	}

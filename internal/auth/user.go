@@ -1,13 +1,13 @@
 package auth
 
 import (
+	"encoding/json"
+	"fmt"
 	"greentrade-eu/internal/db"
 	"greentrade-eu/lib"
 	"greentrade-eu/lib/errors"
 
 	"github.com/gofiber/fiber/v2"
-
-	"fmt"
 )
 
 func GetUserById(c *fiber.Ctx) error {
@@ -18,23 +18,34 @@ func GetUserById(c *fiber.Ctx) error {
 	}
 
 	client := db.NewSupabaseClient()
-
-	// Get user by ID (safely handle errors)
-	user, err := client.GetUserById(userId)
-	if err != nil {
-		// Check for specific "not found" error message
-		if err.Error() == fmt.Sprintf("user not found with ID: %s", userId) {
-			return errors.NotFound("User not found")
-		}
-		return errors.InternalServerError("Failed to fetch user")
+	if client == nil {
+		return errors.InternalServerError("Failed to create database client")
 	}
 
-	if user.ID == "" {
+	// Get user by ID using the standardized GET operation
+	query := fmt.Sprintf("id=eq.%s", userId)
+	data, err := client.GET("users", query)
+	if err != nil {
+		return errors.DatabaseError("Failed to fetch user: " + err.Error())
+	}
+
+	// Handle empty response
+	if len(data) == 0 || string(data) == "[]" {
+		return errors.NotFound("User not found")
+	}
+
+	// Parse the user data
+	var users []lib.User
+	if err := json.Unmarshal(data, &users); err != nil {
+		return errors.InternalServerError("Failed to parse user data")
+	}
+
+	if len(users) == 0 {
 		return errors.NotFound("User not found")
 	}
 
 	return errors.SuccessResponse(c, fiber.Map{
-		"user": user,
+		"user": users[0],
 	})
 }
 
@@ -46,22 +57,34 @@ func GetUserByAccessToken(c *fiber.Ctx) error {
 	}
 
 	client := db.NewSupabaseClient()
-
-	// Get user by ID from claims
-	user, err := client.GetUserById(claims.UserID)
-	if err != nil {
-		if err.Error() == fmt.Sprintf("user not found with ID: %s", claims.UserID) {
-			return errors.NotFound("User not found")
-		}
-		return errors.InternalServerError("Failed to fetch user")
+	if client == nil {
+		return errors.InternalServerError("Failed to create database client")
 	}
 
-	if user.ID == "" {
+	// Get user by ID using the standardized GET operation
+	query := fmt.Sprintf("id=eq.%s", claims.UserID)
+	data, err := client.GET("users", query)
+	if err != nil {
+		return errors.DatabaseError("Failed to fetch user: " + err.Error())
+	}
+
+	// Handle empty response
+	if len(data) == 0 || string(data) == "[]" {
+		return errors.NotFound("User not found")
+	}
+
+	// Parse the user data
+	var users []lib.User
+	if err := json.Unmarshal(data, &users); err != nil {
+		return errors.InternalServerError("Failed to parse user data")
+	}
+
+	if len(users) == 0 {
 		return errors.NotFound("User not found")
 	}
 
 	return errors.SuccessResponse(c, fiber.Map{
-		"user": user,
+		"user": users[0],
 	})
 }
 
@@ -84,28 +107,33 @@ func UpdateUser(c *fiber.Ctx) error {
 	}
 
 	client := db.NewSupabaseClient()
-
 	if client == nil {
-		return errors.InternalServerError("Failed to create Supabase client")
+		return errors.InternalServerError("Failed to create database client")
 	}
 
 	// Make sure the ID is set correctly
 	userUpdate.ID = userId
 
-	// Update user (safely handle errors)
-	updatedUser, err := client.UpdateUser(&userUpdate)
+	// Update user using the standardized PATCH operation
+	data, err := client.PATCH("users", userId, userUpdate)
 	if err != nil {
-		// Check for specific "not found" error message
-		if err.Error() == fmt.Sprintf("user not found with ID: %s", userId) {
-			return errors.NotFound("User not found")
-		}
-		return errors.InternalServerError("Failed to update user")
+		return errors.DatabaseError("Failed to update user: " + err.Error())
 	}
 
-	// Check if updatedUser is nil first, then check ID
-	if updatedUser == nil || updatedUser.ID == "" {
+	// Handle empty response
+	if len(data) == 0 || string(data) == "[]" {
 		return errors.NotFound("User not found")
 	}
 
-	return errors.SuccessResponse(c, updatedUser)
+	// Parse the updated user data
+	var updatedUsers []lib.UpdateUser
+	if err := json.Unmarshal(data, &updatedUsers); err != nil {
+		return errors.InternalServerError("Failed to parse updated user data")
+	}
+
+	if len(updatedUsers) == 0 {
+		return errors.NotFound("User not found")
+	}
+
+	return errors.SuccessResponse(c, updatedUsers[0])
 }

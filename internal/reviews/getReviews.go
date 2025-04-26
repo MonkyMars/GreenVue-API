@@ -27,13 +27,11 @@ func GetReviews(c *fiber.Ctx) error {
 	}
 
 	selectedSeller := c.Params("sellerID")
-
 	limit := c.Query("limit", "50")
-
 	query := getQuery(selectedSeller, limit)
 
-	data, err := client.Query(viewName, query)
-
+	// Use standardized GET operation
+	data, err := client.GET(viewName, query)
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch reviews: " + err.Error())
 	}
@@ -43,7 +41,6 @@ func GetReviews(c *fiber.Ctx) error {
 	}
 
 	var reviews []lib.FetchedReview
-
 	if err := json.Unmarshal(data, &reviews); err != nil {
 		return errors.InternalServerError("Failed to parse reviews data: " + err.Error())
 	}
