@@ -140,10 +140,6 @@ func (s *SupabaseClient) POST(table string, data Listing) ([]byte, error) {
 		return nil, fmt.Errorf("error reading response: %w", err)
 	}
 
-	// Debug logging
-	fmt.Printf("Supabase response status: %d\n", resp.StatusCode)
-	fmt.Printf("Supabase response body: %s\n", string(body))
-
 	// Empty response is valid in some cases
 	if len(body) == 0 {
 		return []byte("{}"), nil

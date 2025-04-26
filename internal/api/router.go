@@ -4,6 +4,7 @@ import (
 	"greentrade-eu/internal/auth"
 	"greentrade-eu/internal/chat"
 	"greentrade-eu/internal/config"
+	"greentrade-eu/internal/favorites"
 	"greentrade-eu/internal/health"
 	"greentrade-eu/internal/listings"
 	"greentrade-eu/internal/reviews"
@@ -136,6 +137,7 @@ func setupRoutes(app *fiber.App) {
 	setupUserRoutes(api)
 	setupChatRoutes(api)
 	setupReviewRoutes(api)
+	setupFavoritesRoutes(api)
 }
 
 // setupHealthRoutes configures health check routes
@@ -200,4 +202,10 @@ func setupChatRoutes(router fiber.Router) {
 func setupReviewRoutes(router fiber.Router) {
 	router.Get("/reviews/:listingId", reviews.GetReviews)
 	router.Post("/reviews", reviews.PostReview)
+}
+
+func setupFavoritesRoutes(router fiber.Router) {
+	router.Get("/favorites/:id", favorites.GetFavorites)
+	router.Post("/favorites/:id", favorites.AddFavorite)
+	router.Delete("/favorites/:id", nil)
 }

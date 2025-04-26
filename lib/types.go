@@ -53,3 +53,36 @@ type FetchedReview struct {
 	HelpfulCount     int        `json:"helpful_count"`
 	VerifiedPurchase bool       `json:"verified_purchase"`
 }
+
+type Favorite struct {
+	ID        string `json:"id,omitempty"`
+	CreatedAt string `json:"created_at,omitempty"`
+	UserID    string `json:"user_id"`
+	ListingID string `json:"listing_id"`
+}
+
+type FetchedFavorite struct {
+	CreatedAt *time.Time `json:"created_at,omitempty"`
+	UserID    uuid.UUID  `json:"user_id"`
+	ListingID uuid.UUID  `json:"listing_id"`
+
+	ID            string   `json:"id,omitempty"`
+	FavoritedAt   string   `json:"favorited_at,omitempty"`
+	Description   string   `json:"description"`
+	Category      string   `json:"category"`
+	Condition     string   `json:"condition"`
+	Price         float64  `json:"price"`
+	Location      string   `json:"location"`
+	EcoScore      float32  `json:"ecoScore"`
+	EcoAttributes []string `json:"ecoAttributes"`
+	Negotiable    bool     `json:"negotiable"`
+	Title         string   `json:"title"`
+	ImageUrl      []string `json:"imageUrl"`
+
+	SellerID        string  `json:"seller_id"`
+	SellerUsername  string  `json:"seller_username"`
+	SellerBio       *string `json:"seller_bio,omitempty"`
+	SellerCreatedAt string  `json:"seller_created_at"`
+	SellerRating    float32 `json:"seller_rating"`
+	SellerVerified  bool    `json:"seller_verified"`
+}
