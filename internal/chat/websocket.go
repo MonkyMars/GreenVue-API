@@ -75,7 +75,10 @@ func handleChatWebSocket(c *websocket.Conn) {
 	// Basic validation
 	if conversationID == "" || userID == "" {
 		log.Println("WebSocket connection rejected: Missing conversation_id or user_id")
-		c.Close()
+		if err := c.Close(); err != nil {
+			log.Println("Error closing WebSocket:", err)
+			return
+		}
 		return
 	}
 
@@ -107,7 +110,10 @@ func handleChatWebSocket(c *websocket.Conn) {
 		clientsMux.Lock()
 		delete(clients, c)
 		clientsMux.Unlock()
-		c.Close()
+		if err := c.Close(); err != nil {
+			log.Println("Error closing WebSocket:", err)
+			return
+		}
 		log.Printf("WebSocket client disconnected: User %s, Conversation %s", userID, conversationID)
 	}()
 
