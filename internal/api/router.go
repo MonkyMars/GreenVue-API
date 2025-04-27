@@ -213,7 +213,8 @@ func setupPublicReviewRoutes(router fiber.Router) {
 }
 
 func setupFavoritesRoutes(router fiber.Router) {
-	router.Get("/favorites/:id", favorites.GetFavorites)
-	router.Post("/favorites/:listing_id/:user_id", favorites.AddFavorite)
+	router.Get("/favorites/:user_id", favorites.GetFavorites)
+	router.Get("/favorites/check/:listing_id/:user_id", favorites.IsFavorite)
+	router.Post("/favorites", favorites.AddFavorite)
 	router.Delete("/favorites/:listing_id/:user_id", favorites.DeleteFavorite)
 }
