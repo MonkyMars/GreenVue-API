@@ -98,7 +98,7 @@ func setupMiddleware(app *fiber.App) {
 			}
 
 			// Don't cache health checks and chat routes.
-			if path == "/health" || path == "/health/detailed" || strings.HasPrefix(path, "/chat") {
+			if strings.Contains(path, "health") || strings.HasPrefix(path, "/chat") {
 				return true
 			}
 
