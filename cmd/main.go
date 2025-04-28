@@ -17,13 +17,12 @@ func main() {
 	cfg := config.LoadConfig()
 
 	// Setup the Fiber app using the api package's function
-	// This likely includes middleware and basic route setup
 	app := api.SetupApp(cfg)
 
 	// Start server using port from config
 	port := cfg.Server.Port
 	if port == "" {
-		port = "8080" // Fallback default if config doesn't provide one
+		port = "8080"
 	}
 
 	log.Fatal(app.Listen(":" + port))

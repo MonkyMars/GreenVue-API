@@ -120,9 +120,6 @@ func setupMiddleware(app *fiber.App) {
 
 // setupRoutes configures all the routes for the application
 func setupRoutes(app *fiber.App) {
-	// Health routes
-	setupHealthRoutes(app)
-
 	// Auth routes (public)
 	setupAuthRoutes(app)
 
@@ -144,17 +141,7 @@ func setupRoutes(app *fiber.App) {
 	setupChatRoutes(api)
 	setupProtectedReviewRoutes(api)
 	setupFavoritesRoutes(api)
-}
-
-// setupHealthRoutes configures health check routes
-func setupHealthRoutes(app *fiber.App) {
-	app.Get("/health", health.HealthCheck)
-	app.Get("/health/detailed", health.DetailedHealth)
-
-	// Prevents 404 spam for favicon.ico
-	app.Get("/favicon.ico", func(c *fiber.Ctx) error {
-		return errors.ErrNotFound
-	})
+	setupHealthRoutes(api)
 }
 
 // setupAuthRoutes configures authentication routes
@@ -170,7 +157,6 @@ func setupPublicListingRoutes(app *fiber.App) {
 	app.Get("/listings", listings.GetListings)
 	app.Get("/listings/category/:category", listings.GetListingByCategory)
 	app.Get("/listings/seller/:sellerId", listings.GetListingBySeller)
-	// This route should come last as it's a catch-all for any path parameter
 	app.Get("/listings/:id", listings.GetListingById)
 }
 
@@ -196,25 +182,39 @@ func setupUserRoutes(router fiber.Router) {
 // setupChatRoutes configures chat routes
 func setupChatRoutes(router fiber.Router) {
 	// Conversation routes
-	router.Get("/chat/conversation/:userId", chat.GetConversations) // Get conversations for userId
-	router.Post("/chat/conversation", chat.CreateConversation)      // Create a new conversation
+	router.Get("/chat/conversation/:userId", chat.GetConversations)
+	router.Post("/chat/conversation", chat.CreateConversation)
 
 	// Message routes
-	router.Get("/chat/messages/:conversation_id", chat.GetMessagesByConversationID) // Get messages for a conversation
-	router.Post("/chat/message", chat.PostMessage)                                  // Post a new message
+	router.Get("/chat/messages/:conversation_id", chat.GetMessagesByConversationID)
+	router.Post("/chat/message", chat.PostMessage)
 }
 
+// setupProtectedReviewRoutes configures protected review routes
 func setupProtectedReviewRoutes(router fiber.Router) {
 	router.Post("/reviews", reviews.PostReview)
 }
 
+// setupPublicReviewRoutes configures public review routes
 func setupPublicReviewRoutes(router fiber.Router) {
 	router.Get("/reviews/:seller_id", reviews.GetReviews)
 }
 
+// setupFavoritesRoutes configures favorites routes
 func setupFavoritesRoutes(router fiber.Router) {
 	router.Get("/favorites/:user_id", favorites.GetFavorites)
 	router.Get("/favorites/check/:listing_id/:user_id", favorites.IsFavorite)
 	router.Post("/favorites", favorites.AddFavorite)
 	router.Delete("/favorites/:listing_id/:user_id", favorites.DeleteFavorite)
+}
+
+// setupHealthRoutes configures health check routes
+func setupHealthRoutes(router fiber.Router) {
+	router.Get("/health", health.HealthCheck)
+	router.Get("/health/detailed", health.DetailedHealth)
+
+	// Prevents 404 spam for favicon.ico
+	router.Get("/favicon.ico", func(c *fiber.Ctx) error {
+		return errors.ErrNotFound
+	})
 }

@@ -40,14 +40,7 @@ func HealthCheck(c *fiber.Ctx) error {
 	})
 }
 
-// DetailedHealth returns detailed system health information
 func DetailedHealth(c *fiber.Ctx) error {
-	// Only allow this for authorized users
-	authHeader := c.Get("Authorization")
-	if authHeader == "" {
-		return errors.Unauthorized("Authorization required for detailed health check")
-	}
-
 	// Get system info
 	var stats runtime.MemStats
 	runtime.ReadMemStats(&stats)
@@ -66,12 +59,17 @@ func DetailedHealth(c *fiber.Ctx) error {
 		Uptime:    time.Since(startTime).String(),
 	}
 
-	// Check database connection
+	// Check database connection and measure latency
 	dbStatus := "UP"
 	dbDetails := "Connected"
+	var dbLatencyMs int64 = -1
 
 	client := db.NewSupabaseClient()
+
+	start := time.Now()
 	_, err := client.GET("listings", "select=*")
+	dbLatencyMs = time.Since(start).Milliseconds()
+
 	if err != nil {
 		dbStatus = "DOWN"
 		dbDetails = "Connection failed: " + err.Error()
@@ -80,8 +78,9 @@ func DetailedHealth(c *fiber.Ctx) error {
 	return errors.SuccessResponse(c, fiber.Map{
 		"status": "UP",
 		"database": fiber.Map{
-			"status":  dbStatus,
-			"details": dbDetails,
+			"status":    dbStatus,
+			"details":   dbDetails,
+			"latencyMs": dbLatencyMs,
 		},
 		"system": info,
 	})
