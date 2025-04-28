@@ -68,12 +68,6 @@ func setupMiddleware(app *fiber.App) {
 	rateLimiter := errors.NewRateLimiter()
 	rateLimiter.Max = 120                // Allow 120 requests
 	rateLimiter.Expiration = time.Minute // Per minute
-	// Skip rate limiting for certain paths
-	rateLimiter.SkipFunc = func(c *fiber.Ctx) bool {
-		// Don't rate limit static assets or health check
-		path := c.Path()
-		return path == "/health" || path == "/favicon.ico"
-	}
 	app.Use(rateLimiter.Middleware())
 
 	app.Use(compress.New(compress.Config{
