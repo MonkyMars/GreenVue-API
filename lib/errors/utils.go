@@ -18,7 +18,7 @@ func HandleError(c *fiber.Ctx, err error) error {
 }
 
 // SuccessResponse sends a standardized success response
-func SuccessResponse(c *fiber.Ctx, data interface{}) error {
+func SuccessResponse(c *fiber.Ctx, data any) error {
 	return c.JSON(fiber.Map{
 		"success": true,
 		"data":    data,
@@ -44,7 +44,7 @@ func ValidateFields(fields map[string]string) *AppError {
 }
 
 // ValidateRequest validates that the request body matches the expected structure
-func ValidateRequest(c *fiber.Ctx, data interface{}) error {
+func ValidateRequest(c *fiber.Ctx, data any) error {
 	if err := c.BodyParser(data); err != nil {
 		return BadRequest("Invalid request body format")
 	}

@@ -1,35 +1,40 @@
 package db
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
+	"greentrade-eu/lib"
 )
 
-// SupabaseListingRepository implements ListingRepository
+// SupabaseListingRepository implements ListingRepository using the new Repository interface
 type SupabaseListingRepository struct {
-	client *SupabaseClient
+	repo *SupabaseRepository
 }
 
-// NewSupabaseListingRepository creates a new Supabase repository for listings
+// NewSupabaseListingRepository creates a new repository for managing listings
 func NewSupabaseListingRepository(client *SupabaseClient) *SupabaseListingRepository {
 	return &SupabaseListingRepository{
-		client: client,
+		repo: NewSupabaseRepository(client),
 	}
 }
 
 // GetListings fetches listings with pagination
-func (r *SupabaseListingRepository) GetListings(ctx context.Context, limit, offset int) ([]Listing, error) {
-	query := fmt.Sprintf("select=*&limit=%d&offset=%d&order=created_at.desc", limit, offset)
-	resp, err := r.client.Query("listings", query)
+func (r *SupabaseListingRepository) GetListings(ctx context.Context, limit, offset int) ([]lib.Listing, error) {
+	params := lib.QueryParams{
+		Table:     "listings",
+		Limit:     limit,
+		Offset:    offset,
+		OrderBy:   "created_at",
+		Direction: "desc",
+	}
+
+	resp, err := r.repo.Get(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch listings: %w", err)
 	}
 
-	var listings []Listing
+	var listings []lib.Listing
 	if err := json.Unmarshal(resp, &listings); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal listings: %w", err)
 	}
@@ -38,14 +43,13 @@ func (r *SupabaseListingRepository) GetListings(ctx context.Context, limit, offs
 }
 
 // GetListingByID fetches a listing by ID
-func (r *SupabaseListingRepository) GetListingByID(ctx context.Context, id string) (*Listing, error) {
-	query := fmt.Sprintf("id=eq.%s&select=*", id)
-	resp, err := r.client.Query("listings", query)
+func (r *SupabaseListingRepository) GetListingByID(ctx context.Context, id string) (*lib.Listing, error) {
+	resp, err := r.repo.GetByID(ctx, "listings", id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch listing by ID: %w", err)
 	}
 
-	var listings []Listing
+	var listings []lib.Listing
 	if err := json.Unmarshal(resp, &listings); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal listing: %w", err)
 	}
@@ -58,14 +62,20 @@ func (r *SupabaseListingRepository) GetListingByID(ctx context.Context, id strin
 }
 
 // GetListingsByCategory fetches listings by category
-func (r *SupabaseListingRepository) GetListingsByCategory(ctx context.Context, category string) ([]Listing, error) {
-	query := fmt.Sprintf("category=eq.%s&select=*&order=created_at.desc", category)
-	resp, err := r.client.Query("listings", query)
+func (r *SupabaseListingRepository) GetListingsByCategory(ctx context.Context, category string) ([]lib.Listing, error) {
+	params := lib.QueryParams{
+		Table:     "listings",
+		Filter:    fmt.Sprintf("category=eq.%s", category),
+		OrderBy:   "created_at",
+		Direction: "desc",
+	}
+
+	resp, err := r.repo.Get(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch listings by category: %w", err)
 	}
 
-	var listings []Listing
+	var listings []lib.Listing
 	if err := json.Unmarshal(resp, &listings); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal listings: %w", err)
 	}
@@ -74,13 +84,13 @@ func (r *SupabaseListingRepository) GetListingsByCategory(ctx context.Context, c
 }
 
 // CreateListing creates a new listing
-func (r *SupabaseListingRepository) CreateListing(ctx context.Context, listing Listing) (*Listing, error) {
-	resp, err := r.client.POST("listings", listing)
+func (r *SupabaseListingRepository) CreateListing(ctx context.Context, listing lib.Listing) (*lib.Listing, error) {
+	resp, err := r.repo.Create(ctx, "listings", listing)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create listing: %w", err)
 	}
 
-	var createdListing []Listing
+	var createdListing []lib.Listing
 	if err := json.Unmarshal(resp, &createdListing); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal created listing: %w", err)
 	}
@@ -94,51 +104,38 @@ func (r *SupabaseListingRepository) CreateListing(ctx context.Context, listing L
 
 // DeleteListing deletes a listing by ID
 func (r *SupabaseListingRepository) DeleteListing(ctx context.Context, id string) error {
-	_, err := r.client.DELETE("listings", id)
-	if err != nil {
-		return fmt.Errorf("failed to delete listing: %w", err)
-	}
-
-	return nil
+	return r.repo.Delete(ctx, "listings", id)
 }
 
 // UploadImage uploads an image to Supabase storage
 func (r *SupabaseListingRepository) UploadImage(ctx context.Context, filename, bucket string, image []byte) (string, error) {
-	resp, err := r.client.UploadImage(filename, bucket, image)
-	if err != nil {
-		return "", fmt.Errorf("failed to upload image: %w", err)
-	}
-
-	var result map[string]interface{}
-	if err := json.Unmarshal(resp, &result); err != nil {
-		return "", fmt.Errorf("failed to parse upload response: %w", err)
-	}
-
-	// Construct image URL
-	imageURL := fmt.Sprintf("%s/storage/v1/object/public/%s/%s", r.client.URL, bucket, filename)
-	return imageURL, nil
+	return r.repo.UploadImage(ctx, filename, bucket, image)
 }
 
-// SupabaseSellerRepository implements SellerRepository
+// SupabaseSellerRepository implements SellerRepository using the new Repository interface
 type SupabaseSellerRepository struct {
-	client *SupabaseClient
+	repo *SupabaseRepository
 }
 
-// NewSupabaseSellerRepository creates a new Supabase repository for sellers
+// NewSupabaseSellerRepository creates a new repository for managing sellers
 func NewSupabaseSellerRepository(client *SupabaseClient) *SupabaseSellerRepository {
 	return &SupabaseSellerRepository{
-		client: client,
+		repo: NewSupabaseRepository(client),
 	}
 }
 
 // GetSellers fetches all sellers
-func (r *SupabaseSellerRepository) GetSellers(ctx context.Context) ([]User, error) {
-	resp, err := r.client.Query("sellers", "select=*")
+func (r *SupabaseSellerRepository) GetSellers(ctx context.Context) ([]lib.User, error) {
+	params := lib.QueryParams{
+		Table: "sellers",
+	}
+
+	resp, err := r.repo.Get(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch sellers: %w", err)
 	}
 
-	var sellers []User
+	var sellers []lib.User
 	if err := json.Unmarshal(resp, &sellers); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal sellers: %w", err)
 	}
@@ -147,14 +144,13 @@ func (r *SupabaseSellerRepository) GetSellers(ctx context.Context) ([]User, erro
 }
 
 // GetSellerByID fetches a seller by ID
-func (r *SupabaseSellerRepository) GetSellerByID(ctx context.Context, id string) (*User, error) {
-	query := fmt.Sprintf("id=eq.%s&select=*", id)
-	resp, err := r.client.Query("sellers", query)
+func (r *SupabaseSellerRepository) GetSellerByID(ctx context.Context, id string) (*lib.User, error) {
+	resp, err := r.repo.GetByID(ctx, "sellers", id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch seller by ID: %w", err)
 	}
 
-	var sellers []User
+	var sellers []lib.User
 	if err := json.Unmarshal(resp, &sellers); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal seller: %w", err)
 	}
@@ -167,74 +163,30 @@ func (r *SupabaseSellerRepository) GetSellerByID(ctx context.Context, id string)
 }
 
 // CreateSeller creates a new seller
-func (r *SupabaseSellerRepository) CreateSeller(ctx context.Context, seller User) (*User, error) {
-	jsonData, err := json.Marshal(seller)
+func (r *SupabaseSellerRepository) CreateSeller(ctx context.Context, seller lib.User) (*lib.User, error) {
+	resp, err := r.repo.Create(ctx, "sellers", seller)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal seller: %w", err)
+		return nil, fmt.Errorf("failed to create seller: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/rest/v1/%s", r.client.URL, "sellers")
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("apikey", r.client.APIKey)
-	req.Header.Add("Authorization", "Bearer "+r.client.APIKey)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("supabase error (%d): %s", resp.StatusCode, string(body))
-	}
-
-	var createdSeller User
-	if err := json.Unmarshal(body, &createdSeller); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal created seller: %w", err)
+	var createdSeller lib.User
+	if err := json.Unmarshal(resp, &createdSeller); err != nil {
+		// Try to unmarshal as array if single object fails
+		var sellerArray []lib.User
+		if err := json.Unmarshal(resp, &sellerArray); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal created seller: %w", err)
+		}
+		if len(sellerArray) == 0 {
+			return nil, fmt.Errorf("no seller returned after creation")
+		}
+		return &sellerArray[0], nil
 	}
 
 	return &createdSeller, nil
 }
 
 // UpdateSeller updates a seller by ID
-func (r *SupabaseSellerRepository) UpdateSeller(ctx context.Context, id string, updates map[string]interface{}) error {
-	jsonData, err := json.Marshal(updates)
-	if err != nil {
-		return fmt.Errorf("failed to marshal updates: %w", err)
-	}
-
-	url := fmt.Sprintf("%s/rest/v1/%s?id=eq.%s", r.client.URL, "sellers", id)
-	req, err := http.NewRequestWithContext(ctx, "PATCH", url, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("apikey", r.client.APIKey)
-	req.Header.Add("Authorization", "Bearer "+r.client.APIKey)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("supabase error (%d): %s", resp.StatusCode, string(body))
-	}
-
-	return nil
+func (r *SupabaseSellerRepository) UpdateSeller(ctx context.Context, id string, updates map[string]any) error {
+	_, err := r.repo.Update(ctx, "sellers", id, updates)
+	return err
 }

@@ -10,6 +10,7 @@ import (
 	"greentrade-eu/internal/reviews"
 	"greentrade-eu/internal/seller"
 	"greentrade-eu/lib/errors"
+	"log" // Import log package
 	"strings"
 	"time"
 
@@ -27,14 +28,14 @@ func SetupApp(cfg *config.Config) *fiber.App {
 	// Check environment
 	devMode := cfg.Environment != "production"
 
-	// Configure with custom error handler
+	// Configure with custom error handler, explicitly providing the logger
 	app := fiber.New(fiber.Config{
 		ServerHeader:      "GreenTrade.eu",
 		ReadTimeout:       cfg.Server.ReadTimeout,
 		WriteTimeout:      cfg.Server.WriteTimeout,
 		IdleTimeout:       cfg.Server.IdleTimeout,
 		ReduceMemoryUsage: true,
-		ErrorHandler:      errors.ErrorHandler(errors.ErrorResponseConfig{DevMode: devMode}),
+		ErrorHandler:      errors.ErrorHandler(errors.ErrorResponseConfig{DevMode: devMode, Logger: log.Printf}), // Explicitly set Logger
 	})
 
 	// Setup middleware
@@ -119,36 +120,28 @@ func setupMiddleware(app *fiber.App) {
 
 // setupRoutes configures all the routes for the application
 func setupRoutes(app *fiber.App) {
-	// Health routes
-	setupHealthRoutes(app)
-
 	// Auth routes (public)
 	setupAuthRoutes(app)
 
 	// Public listing routes
 	setupPublicListingRoutes(app)
 
+	// Seller routes (public), doesn't need auth since info is not sensitive.
+	setupSellerRoutes(app)
+
+	// Public review routes
+	setupPublicReviewRoutes(app)
+
 	chat.RegisterWebsocketRoutes(app)
 
 	// Protected routes
 	api := app.Group("/api", auth.AuthMiddleware())
 	setupProtectedListingRoutes(api)
-	setupSellerRoutes(api)
 	setupUserRoutes(api)
 	setupChatRoutes(api)
-	setupReviewRoutes(api)
+	setupProtectedReviewRoutes(api)
 	setupFavoritesRoutes(api)
-}
-
-// setupHealthRoutes configures health check routes
-func setupHealthRoutes(app *fiber.App) {
-	app.Get("/health", health.HealthCheck)
-	app.Get("/health/detailed", health.DetailedHealth)
-
-	// Prevents 404 spam for favicon.ico
-	app.Get("/favicon.ico", func(c *fiber.Ctx) error {
-		return errors.ErrNotFound
-	})
+	setupHealthRoutes(api)
 }
 
 // setupAuthRoutes configures authentication routes
@@ -164,7 +157,6 @@ func setupPublicListingRoutes(app *fiber.App) {
 	app.Get("/listings", listings.GetListings)
 	app.Get("/listings/category/:category", listings.GetListingByCategory)
 	app.Get("/listings/seller/:sellerId", listings.GetListingBySeller)
-	// This route should come last as it's a catch-all for any path parameter
 	app.Get("/listings/:id", listings.GetListingById)
 }
 
@@ -177,8 +169,7 @@ func setupProtectedListingRoutes(router fiber.Router) {
 
 // setupSellerRoutes configures seller routes
 func setupSellerRoutes(router fiber.Router) {
-	router.Get("/sellers/:id", seller.GetSellerById)
-	router.Get("/sellers", seller.GetSellers)
+	router.Get("/seller/:user_id", seller.GetSeller)
 }
 
 // setupUserRoutes configures user routes
@@ -191,21 +182,39 @@ func setupUserRoutes(router fiber.Router) {
 // setupChatRoutes configures chat routes
 func setupChatRoutes(router fiber.Router) {
 	// Conversation routes
-	router.Get("/chat/conversation/:userId", chat.GetConversations) // Get conversations for userId
-	router.Post("/chat/conversation", chat.CreateConversation)      // Create a new conversation
+	router.Get("/chat/conversation/:userId", chat.GetConversations)
+	router.Post("/chat/conversation", chat.CreateConversation)
 
 	// Message routes
-	router.Get("/chat/messages/:conversation_id", chat.GetMessagesByConversationID) // Get messages for a conversation
-	router.Post("/chat/message", chat.PostMessage)                                  // Post a new message
+	router.Get("/chat/messages/:conversation_id", chat.GetMessagesByConversationID)
+	router.Post("/chat/message", chat.PostMessage)
 }
 
-func setupReviewRoutes(router fiber.Router) {
-	router.Get("/reviews/:listingId", reviews.GetReviews)
+// setupProtectedReviewRoutes configures protected review routes
+func setupProtectedReviewRoutes(router fiber.Router) {
 	router.Post("/reviews", reviews.PostReview)
 }
 
+// setupPublicReviewRoutes configures public review routes
+func setupPublicReviewRoutes(router fiber.Router) {
+	router.Get("/reviews/:seller_id", reviews.GetReviews)
+}
+
+// setupFavoritesRoutes configures favorites routes
 func setupFavoritesRoutes(router fiber.Router) {
-	router.Get("/favorites/:id", favorites.GetFavorites)
-	router.Post("/favorites/:id", favorites.AddFavorite)
-	router.Delete("/favorites/:id", nil)
+	router.Get("/favorites/:user_id", favorites.GetFavorites)
+	router.Get("/favorites/check/:listing_id/:user_id", favorites.IsFavorite)
+	router.Post("/favorites", favorites.AddFavorite)
+	router.Delete("/favorites/:listing_id/:user_id", favorites.DeleteFavorite)
+}
+
+// setupHealthRoutes configures health check routes
+func setupHealthRoutes(router fiber.Router) {
+	router.Get("/health", health.HealthCheck)
+	router.Get("/health/detailed", health.DetailedHealth)
+
+	// Prevents 404 spam for favicon.ico
+	router.Get("/favicon.ico", func(c *fiber.Ctx) error {
+		return errors.ErrNotFound
+	})
 }

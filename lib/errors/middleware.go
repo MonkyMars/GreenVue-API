@@ -2,6 +2,7 @@ package errors
 
 import (
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -30,7 +31,7 @@ type ErrorResponseConfig struct {
 	// ShowDetails determines if detailed errors are shown in non-production
 	DevMode bool
 	// Logger is a custom logger function, defaults to log.Printf
-	Logger func(format string, args ...interface{})
+	Logger func(format string, args ...any)
 }
 
 // DefaultErrorResponseConfig is the default config for ErrorResponse middleware
@@ -41,13 +42,30 @@ var DefaultErrorResponseConfig = ErrorResponseConfig{
 
 // ErrorHandler creates a middleware that handles errors consistently
 func ErrorHandler(config ...ErrorResponseConfig) fiber.ErrorHandler {
-	// Use default config if none is provided
-	cfg := DefaultErrorResponseConfig
+	// Initialize final config with defaults
+	finalCfg := DefaultErrorResponseConfig
+
+	// Apply user config if provided
 	if len(config) > 0 {
-		cfg = config[0]
+		userConfig := config[0]
+		// Always apply DevMode from user config if provided
+		finalCfg.DevMode = userConfig.DevMode
+		// Only apply Logger from user config if it's not nil
+		if userConfig.Logger != nil {
+			finalCfg.Logger = userConfig.Logger
+		}
 	}
 
+	// Final safety check: ensure logger is never nil *before* returning the handler
+	if finalCfg.Logger == nil {
+		log.Println("Warning: ErrorHandler logger was nil, falling back to default log.Printf")
+		finalCfg.Logger = log.Printf
+	}
+
+	// Return the actual error handling closure, capturing the correctly configured finalCfg
 	return func(ctx *fiber.Ctx, err error) error {
+		cfg := finalCfg // Use the captured final config
+
 		// Early return if err is nil
 		if err == nil {
 			return nil
@@ -56,7 +74,7 @@ func ErrorHandler(config ...ErrorResponseConfig) fiber.ErrorHandler {
 		// Default error response
 		statusCode := fiber.StatusInternalServerError
 		errorMsg := "Internal Server Error"
-		errorDetails := map[string]interface{}{}
+		errorDetails := map[string]any{}
 
 		// Get request ID for logging
 		requestID, _ := ctx.Locals("requestID").(string)
@@ -70,7 +88,7 @@ func ErrorHandler(config ...ErrorResponseConfig) fiber.ErrorHandler {
 			// Safety check to prevent nil pointer dereference
 			if appErr == nil {
 				cfg.Logger("[%s] Application error is nil after type assertion", requestID)
-				goto SendResponse
+				goto SendResponse // Use default 500 error
 			}
 
 			statusCode = appErr.StatusCode
@@ -78,9 +96,22 @@ func ErrorHandler(config ...ErrorResponseConfig) fiber.ErrorHandler {
 
 			// Only include detailed error info in dev mode or for non-internal errors
 			if cfg.DevMode || !appErr.Internal {
+				var underlyingErrMsg string
+				// Safely get underlying error message
 				if appErr.Err != nil {
-					errorDetails["error"] = appErr.Err.Error()
+					func() {
+						defer func() {
+							if r := recover(); r != nil {
+								// Use the guaranteed non-nil logger
+								cfg.Logger("[%s] Panic recovering from appErr.Err.Error(): %v", requestID, r)
+								underlyingErrMsg = fmt.Sprintf("panic getting underlying error: %v", r)
+							}
+						}()
+						underlyingErrMsg = appErr.Err.Error()
+					}()
+					errorDetails["error"] = underlyingErrMsg
 				}
+
 				if appErr.Field != "" {
 					errorDetails["field"] = appErr.Field
 				}
@@ -88,15 +119,22 @@ func ErrorHandler(config ...ErrorResponseConfig) fiber.ErrorHandler {
 
 			// Log internal server errors
 			if appErr.Internal || appErr.StatusCode >= 500 {
-				// Extra safety check for nil errors
-				errDetails := ""
+				errDetailsLog := ""
 				if appErr.Err != nil {
-					errDetails = appErr.Err.Error()
+					// Use the safely obtained message for logging
+					if errMsg, ok := errorDetails["error"].(string); ok {
+						errDetailsLog = errMsg
+					} else {
+						// Fallback if casting failed (shouldn't happen often)
+						errDetailsLog = fmt.Sprintf("underlying error type: %T", appErr.Err)
+					}
 				}
 
-				if errDetails != "" {
-					cfg.Logger("[%s] Error: %s - %s", requestID, appErr.Message, errDetails)
+				if errDetailsLog != "" {
+					// Use the guaranteed non-nil logger
+					cfg.Logger("[%s] Error: %s - %s", requestID, appErr.Message, errDetailsLog)
 				} else {
+					// Use the guaranteed non-nil logger
 					cfg.Logger("[%s] Error: %s", requestID, appErr.Message)
 				}
 			}
@@ -106,19 +144,39 @@ func ErrorHandler(config ...ErrorResponseConfig) fiber.ErrorHandler {
 			if errors.As(err, &fiberErr) {
 				// Safety check for fiber error
 				if fiberErr == nil {
+					// Use the guaranteed non-nil logger
 					cfg.Logger("[%s] Fiber error is nil after type assertion", requestID)
-					goto SendResponse
+					goto SendResponse // Use default 500 error
 				}
 
 				statusCode = fiberErr.Code
 				errorMsg = fiberErr.Message
 			} else {
-				// For other error types, only show details in dev mode
+				// Handle other error types safely
+				var errorString string = "An unexpected error occurred" // Default message for unexpected errors
+
+				// Safely attempt to get the error string
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							// Use the guaranteed non-nil logger
+							cfg.Logger("[%s] Panic recovering from err.Error() for type %T: %v", requestID, err, r)
+							errorString = fmt.Sprintf("error retrieving message from type %T", err)
+						}
+					}()
+					// This is the line that might panic
+					errorString = err.Error()
+				}()
+
+				// Log the unexpected error using the obtained/default string
+				// Use the guaranteed non-nil logger
+				cfg.Logger("[%s] Unexpected error: %s", requestID, errorString)
+
+				// Set response message based on DevMode
 				if cfg.DevMode {
-					errorMsg = err.Error()
+					errorMsg = errorString // Show potentially detailed message in dev
 				}
-				// Always log unexpected errors
-				cfg.Logger("[%s] Unexpected error: %s", requestID, err.Error())
+				// Otherwise, errorMsg remains "Internal Server Error" (set by default earlier)
 			}
 		}
 
@@ -136,6 +194,22 @@ func ErrorHandler(config ...ErrorResponseConfig) fiber.ErrorHandler {
 
 		// Add request ID to response
 		response["requestId"] = requestID
+
+		// Ensure status code is valid before sending
+		if statusCode < 100 || statusCode > 599 {
+			// Use the guaranteed non-nil logger
+			cfg.Logger("[%s] Invalid status code (%d) detected in error handler. Defaulting to 500.", requestID, statusCode)
+			statusCode = fiber.StatusInternalServerError
+		}
+
+		// Check if the response has already been sent
+		if ctx.Response().StatusCode() != fiber.StatusOK { // Check if status is still default 200
+			// If status is not 200, it might have been set previously.
+			// Avoid sending response again if headers are already sent.
+			// Note: Fiber might handle this internally, but adding a check can prevent potential issues.
+			// This check might need refinement based on Fiber's exact behavior for double responses.
+			// For now, we proceed, assuming Fiber handles it or the previous response wasn't fully sent.
+		}
 
 		return ctx.Status(statusCode).JSON(response)
 	}

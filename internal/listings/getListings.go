@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"greentrade-eu/internal/db"
-
+	"greentrade-eu/lib"
 	"greentrade-eu/lib/errors"
 	"strings"
 
@@ -22,7 +22,7 @@ func GetListings(c *fiber.Ctx) error {
 
 	limit := c.Query("limit", "50")
 
-	data, err := client.Query(viewName, "select=*&limit="+limit)
+	data, err := client.GET(viewName, "select=*&limit="+limit)
 
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch listings: " + err.Error())
@@ -31,13 +31,13 @@ func GetListings(c *fiber.Ctx) error {
 		return errors.NotFound("No listings found")
 	}
 
-	var listings []db.FetchedListing
+	var listings []lib.FetchedListing
 	if err := json.Unmarshal(data, &listings); err != nil {
 		return errors.InternalServerError("Failed to parse listings data")
 	}
 
 	if listings == nil {
-		listings = []db.FetchedListing{}
+		listings = []lib.FetchedListing{}
 	}
 
 	return errors.SuccessResponse(c, listings)
@@ -56,7 +56,7 @@ func GetListingById(c *fiber.Ctx) error {
 
 	query := fmt.Sprintf("select=*&id=eq.%s", listingID)
 
-	data, err := client.Query(viewName, query)
+	data, err := client.GET(viewName, query)
 
 	if err != nil {
 		if strings.Contains(err.Error(), "invalid input syntax") {
@@ -69,7 +69,7 @@ func GetListingById(c *fiber.Ctx) error {
 		return errors.NotFound("Listing not found")
 	}
 
-	var listings []db.FetchedListing
+	var listings []lib.FetchedListing
 	if err := json.Unmarshal(data, &listings); err != nil {
 		return errors.InternalServerError("Failed to parse listing data")
 	}
@@ -92,7 +92,7 @@ func GetListingByCategory(c *fiber.Ctx) error {
 		return errors.BadRequest("Category is required")
 	}
 
-	data, err := client.Query(viewName, "select=*&category=eq."+category)
+	data, err := client.GET(viewName, "select=*&category=eq."+category)
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch listings by category: " + err.Error())
 	}
@@ -100,7 +100,7 @@ func GetListingByCategory(c *fiber.Ctx) error {
 		return errors.NotFound("No listings found in this category")
 	}
 
-	var listings []db.FetchedListing
+	var listings []lib.FetchedListing
 	if err := json.Unmarshal(data, &listings); err != nil {
 		return errors.InternalServerError("Failed to parse listings data")
 	}
@@ -120,7 +120,7 @@ func GetListingBySeller(c *fiber.Ctx) error {
 	}
 
 	query := fmt.Sprintf("select=*&seller_id=eq.%s", sellerID)
-	data, err := client.Query(viewName, query)
+	data, err := client.GET(viewName, query)
 	if err != nil {
 		fmt.Printf("Error from Supabase: %v\n", err)
 		return errors.DatabaseError("Failed to fetch listings by seller: " + err.Error())
@@ -129,13 +129,14 @@ func GetListingBySeller(c *fiber.Ctx) error {
 		return errors.NotFound("No listings found for this seller")
 	}
 
-	var listings []db.FetchedListing
+	var listings []lib.FetchedListing
 	if err := json.Unmarshal(data, &listings); err != nil {
 		fmt.Printf("JSON unmarshal error: %v\n", err)
 		return errors.InternalServerError("Failed to parse listings data")
 	}
+
 	if listings == nil {
-		listings = []db.FetchedListing{}
+		listings = []lib.FetchedListing{}
 	}
 
 	return errors.SuccessResponse(c, listings)

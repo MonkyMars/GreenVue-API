@@ -14,13 +14,17 @@ func DeleteListingById(c *fiber.Ctx) error {
 	// Extract listing ID from request path
 	listingId := c.Params("id")
 
-	// Delete listing from database
-	_, err := client.DELETE("listings", listingId)
+	if client == nil {
+		return errors.InternalServerError("Database connection failed")
+	}
+
+	// Delete listing using the standardized DELETE operation
+	_, err := client.DELETE("listings", "id=eq."+listingId)
 	if err != nil {
-		log.Println(err)
+		log.Println("Error deleting listing:", err)
 		return errors.InternalServerError("Failed to delete listing: " + err.Error())
 	}
 
-	// Return 204 No Content
+	// Return successful response with no content
 	return errors.SuccessResponse(c, nil)
 }

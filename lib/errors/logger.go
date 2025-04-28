@@ -25,13 +25,13 @@ const (
 type Logger struct {
 	level     LogLevel
 	requestID string
-	fields    map[string]interface{}
+	fields    map[string]any
 }
 
 // DefaultLogger is used when not provided by context
 var DefaultLogger = &Logger{
 	level:  LevelInfo,
-	fields: make(map[string]interface{}),
+	fields: make(map[string]any),
 }
 
 // FromContext creates a new logger with context from a Fiber request
@@ -44,16 +44,16 @@ func FromContext(c *fiber.Ctx) *Logger {
 	return &Logger{
 		level:     LevelInfo,
 		requestID: requestID,
-		fields:    make(map[string]interface{}),
+		fields:    make(map[string]any),
 	}
 }
 
 // WithField adds a field to the log output
-func (l *Logger) WithField(key string, value interface{}) *Logger {
+func (l *Logger) WithField(key string, value any) *Logger {
 	newLogger := &Logger{
 		level:     l.level,
 		requestID: l.requestID,
-		fields:    make(map[string]interface{}),
+		fields:    make(map[string]any),
 	}
 
 	// Copy existing fields
@@ -67,11 +67,11 @@ func (l *Logger) WithField(key string, value interface{}) *Logger {
 }
 
 // WithFields adds multiple fields to the log output
-func (l *Logger) WithFields(fields map[string]interface{}) *Logger {
+func (l *Logger) WithFields(fields map[string]any) *Logger {
 	newLogger := &Logger{
 		level:     l.level,
 		requestID: l.requestID,
-		fields:    make(map[string]interface{}),
+		fields:    make(map[string]any),
 	}
 
 	// Copy existing fields
@@ -105,7 +105,7 @@ func (l *Logger) format(level, msg string) string {
 }
 
 // Debug logs debug level messages
-func (l *Logger) Debug(format string, args ...interface{}) {
+func (l *Logger) Debug(format string, args ...any) {
 	if l.level <= LevelDebug {
 		msg := fmt.Sprintf(format, args...)
 		log.Println(l.format("DEBUG", msg))
@@ -113,7 +113,7 @@ func (l *Logger) Debug(format string, args ...interface{}) {
 }
 
 // Info logs info level messages
-func (l *Logger) Info(format string, args ...interface{}) {
+func (l *Logger) Info(format string, args ...any) {
 	if l.level <= LevelInfo {
 		msg := fmt.Sprintf(format, args...)
 		log.Println(l.format("INFO", msg))
@@ -121,7 +121,7 @@ func (l *Logger) Info(format string, args ...interface{}) {
 }
 
 // Warn logs warning level messages
-func (l *Logger) Warn(format string, args ...interface{}) {
+func (l *Logger) Warn(format string, args ...any) {
 	if l.level <= LevelWarn {
 		msg := fmt.Sprintf(format, args...)
 		log.Println(l.format("WARN", msg))
@@ -129,7 +129,7 @@ func (l *Logger) Warn(format string, args ...interface{}) {
 }
 
 // Error logs error level messages
-func (l *Logger) Error(format string, args ...interface{}) {
+func (l *Logger) Error(format string, args ...any) {
 	if l.level <= LevelError {
 		msg := fmt.Sprintf(format, args...)
 		log.Println(l.format("ERROR", msg))
@@ -137,7 +137,7 @@ func (l *Logger) Error(format string, args ...interface{}) {
 }
 
 // Fatal logs error and exits the application
-func (l *Logger) Fatal(format string, args ...interface{}) {
+func (l *Logger) Fatal(format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	log.Println(l.format("FATAL", msg))
 	os.Exit(1)

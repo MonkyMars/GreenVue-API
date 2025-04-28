@@ -1,12 +1,11 @@
 package favorites
 
 import (
+	"encoding/json"
 	"fmt"
 	"greentrade-eu/internal/db"
 	"greentrade-eu/lib"
 	"greentrade-eu/lib/errors"
-
-	"encoding/json"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -15,7 +14,7 @@ import (
 const viewName string = "user_favorites_with_listings_and_seller"
 
 func GetFavorites(c *fiber.Ctx) error {
-	id := c.Params("id")
+	id := c.Params("user_id")
 	if id == "" {
 		return errors.BadRequest("id is required")
 	}
@@ -26,36 +25,40 @@ func GetFavorites(c *fiber.Ctx) error {
 		return errors.InternalServerError("Database connection failed. Please check SUPABASE_URL and SUPABASE_ANON.")
 	}
 
-	data, err := client.Query(viewName, "select=*&user_id=eq."+id)
+	data, err := client.GET(viewName, "select=*&user_id=eq."+id)
 
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch favorites: " + err.Error())
 	}
 
 	if len(data) == 0 || string(data) == "[]" {
-		return errors.SuccessResponse(c, []db.FetchedListing{})
+		return errors.SuccessResponse(c, []lib.FetchedFavorite{})
 	}
 
-	var favorites []db.FetchedListing
+	var favorites []lib.FetchedFavorite
 	if err = json.Unmarshal(data, &favorites); err != nil {
 		return errors.InternalServerError("Failed to parse favorites data")
 	}
 
 	if favorites == nil {
-		favorites = []db.FetchedListing{}
+		favorites = []lib.FetchedFavorite{}
 	}
-
-	fmt.Println("favorites", favorites)
 
 	return errors.SuccessResponse(c, favorites)
 }
 
 func AddFavorite(c *fiber.Ctx) error {
-	userID := c.Params("user_id")
-	listingID := c.Params("listing_id")
+
+	var payload struct {
+		UserID    string `json:"user_id"`
+		ListingID string `json:"listing_id"`
+	}
+	if err := c.BodyParser(&payload); err != nil {
+		return errors.BadRequest("Invalid request body: " + err.Error())
+	}
 
 	// Step 1: Validate params
-	if userID == "" || listingID == "" {
+	if payload.UserID == "" || payload.ListingID == "" {
 		return errors.BadRequest("user_id and listing_id are required.")
 	}
 
@@ -65,27 +68,23 @@ func AddFavorite(c *fiber.Ctx) error {
 	}
 
 	// Step 2: Check if favorite already exists
-	query := fmt.Sprintf("select=*&user_id=eq.%s&listing_id=eq.%s", userID, listingID)
-	existingFavorites, err := client.Query("favorites", query)
+	query := fmt.Sprintf("select=*&user_id=eq.%s&listing_id=eq.%s", payload.UserID, payload.ListingID)
+	existingFavorites, err := client.GET("favorites", query)
 	if err != nil {
 		return errors.DatabaseError("Failed to query favorites: " + err.Error())
 	}
-	if len(existingFavorites) > 0 {
-		return errors.SuccessResponse(c, []lib.Favorite{})
+
+	if string(existingFavorites) != "[]" {
+		return errors.BadRequest("Favorite already exists.")
 	}
 
-	// Step 3: Insert new favorite
+	// Step 3: Create new favorite using standardized POST operation
 	newFavorite := lib.Favorite{
-		UserID:    userID,
-		ListingID: listingID,
+		UserID:    payload.UserID,
+		ListingID: payload.ListingID,
 	}
 
-	jsonBody, err := json.Marshal(newFavorite)
-	if err != nil {
-		return errors.InternalServerError("Failed to serialize favorite data.")
-	}
-
-	responseData, err := client.PostRaw("favorites", jsonBody)
+	responseData, err := client.POST("favorites", newFavorite)
 	if err != nil {
 		return errors.DatabaseError("Failed to insert favorite: " + err.Error())
 	}
@@ -102,4 +101,60 @@ func AddFavorite(c *fiber.Ctx) error {
 
 	// Step 5: Return created favorite
 	return errors.SuccessResponse(c, insertedFavorites[0])
+}
+
+func DeleteFavorite(c *fiber.Ctx) error {
+	userID := c.Params("user_id")
+	listingID := c.Params("listing_id")
+
+	// Step 1: Validate params
+	if userID == "" || listingID == "" {
+		return errors.BadRequest("user_id and listing_id are required.")
+	}
+
+	client := db.NewSupabaseClient()
+	if client == nil {
+		return errors.InternalServerError("Database connection failed. Please check server configuration.")
+	}
+
+	// Step 2: Delete favorite using the standardized DELETE operation
+	query := fmt.Sprintf("user_id=eq.%s&listing_id=eq.%s", userID, listingID)
+	responseData, err := client.DELETE("favorites", query)
+	if err != nil {
+		return errors.DatabaseError("Failed to delete favorite: " + err.Error())
+	}
+
+	if string(responseData) == "[]" {
+		return errors.NotFound("Favorite not found.")
+	}
+
+	return errors.SuccessResponse(c, responseData)
+}
+
+func IsFavorite(c *fiber.Ctx) error {
+	userID := c.Params("user_id")
+	listingID := c.Params("listing_id")
+
+	// Step 1: Validate params
+	if userID == "" || listingID == "" {
+		return errors.BadRequest("user_id and listing_id are required.")
+	}
+
+	client := db.NewSupabaseClient()
+	if client == nil {
+		return errors.InternalServerError("Database connection failed. Please check server configuration.")
+	}
+
+	// Step 2: Check if favorite exists
+	query := fmt.Sprintf("user_id=eq.%s&listing_id=eq.%s", userID, listingID)
+	existingFavorites, err := client.GET("favorites", query)
+	if err != nil {
+		return errors.DatabaseError("Failed to query favorites: " + err.Error())
+	}
+
+	if string(existingFavorites) == "[]" {
+		return errors.SuccessResponse(c, false)
+	}
+
+	return errors.SuccessResponse(c, true)
 }

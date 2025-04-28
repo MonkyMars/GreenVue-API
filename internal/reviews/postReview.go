@@ -1,12 +1,10 @@
 package reviews
 
 import (
-	"fmt"
+	"encoding/json"
 	"greentrade-eu/internal/db"
 	"greentrade-eu/lib"
 	"greentrade-eu/lib/errors"
-
-	"encoding/json"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -22,23 +20,18 @@ func PostReview(c *fiber.Ctx) error {
 		return errors.BadRequest("Invalid request body: " + err.Error())
 	}
 
+	// Validate required fields
 	if review.UserID == "" || review.SellerID == "" {
 		return errors.BadRequest("UserID, SellerID, and ListingID are required")
 	}
 
+	// Validate rating
 	if review.Rating < 1 || review.Rating > 5 {
 		return errors.BadRequest("Rating must be between 1 and 5")
 	}
 
-	reviewJSON, err := json.Marshal(review)
-	if err != nil {
-		return errors.InternalServerError("Failed to marshal review: " + err.Error())
-	}
-
-	fmt.Println("Review JSON:", string(reviewJSON))
-
-	data, err := client.PostRaw("reviews", reviewJSON)
-
+	// Use standardized POST operation
+	data, err := client.POST("reviews", review)
 	if err != nil {
 		return errors.DatabaseError("Failed to post review: " + err.Error())
 	}
@@ -47,5 +40,21 @@ func PostReview(c *fiber.Ctx) error {
 		return errors.InternalServerError("Failed to create review")
 	}
 
-	return errors.SuccessResponse(c, data)
+	// Parse the response
+	var createdReview lib.Review
+	if err := json.Unmarshal(data, &createdReview); err != nil {
+		// If the response is an array, try parsing it as an array
+		var reviewArray []lib.Review
+		if err := json.Unmarshal(data, &reviewArray); err != nil {
+			return errors.InternalServerError("Failed to parse review response: " + err.Error())
+		}
+
+		if len(reviewArray) == 0 {
+			return errors.InternalServerError("Empty review response")
+		}
+
+		createdReview = reviewArray[0]
+	}
+
+	return errors.SuccessResponse(c, createdReview)
 }

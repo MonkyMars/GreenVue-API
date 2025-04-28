@@ -3,12 +3,29 @@ package lib
 import (
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
 type User struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
+	ID        string  `json:"id"`
+	Email     string  `json:"email"`
+	Name      string  `json:"name,omitempty"`
+	Location  string  `json:"location,omitempty"`
+	Bio       string  `json:"bio,omitempty"`
+	CreatedAt string  `json:"created_at,omitempty"`
+	Rating    float32 `json:"rating,omitempty"`
+	Verified  bool    `json:"verified,omitempty"`
+}
+
+type PublicUser struct {
+	ID        string  `json:"id"`
+	Name      string  `json:"name"`
+	Location  string  `json:"location"`
+	Bio       string  `json:"bio"`
+	CreatedAt string  `json:"created_at"`
+	Rating    float32 `json:"rating"`
+	Verified  bool    `json:"verified"`
 }
 
 type AuthResponse struct {
@@ -56,18 +73,18 @@ type FetchedReview struct {
 
 type Favorite struct {
 	ID        string `json:"id,omitempty"`
-	CreatedAt string `json:"created_at,omitempty"`
 	UserID    string `json:"user_id"`
 	ListingID string `json:"listing_id"`
+	CreatedAt string `json:"created_at,omitempty"`
 }
 
 type FetchedFavorite struct {
-	CreatedAt *time.Time `json:"created_at,omitempty"`
-	UserID    uuid.UUID  `json:"user_id"`
-	ListingID uuid.UUID  `json:"listing_id"`
+	ID          string `json:"id,omitempty"`
+	UserID      string `json:"user_id"`
+	ListingID   string `json:"listing_id"`
+	FavoritedAt string `json:"favorited_at,omitempty"`
 
-	ID            string   `json:"id,omitempty"`
-	FavoritedAt   string   `json:"favorited_at,omitempty"`
+	CreatedAt     string   `json:"created_at,omitempty"`
 	Description   string   `json:"description"`
 	Category      string   `json:"category"`
 	Condition     string   `json:"condition"`
@@ -85,4 +102,57 @@ type FetchedFavorite struct {
 	SellerCreatedAt string  `json:"seller_created_at"`
 	SellerRating    float32 `json:"seller_rating"`
 	SellerVerified  bool    `json:"seller_verified"`
+}
+
+// Moved from db package
+type Listing struct {
+	ID            string   `json:"id,omitempty"`
+	CreatedAt     string   `json:"created_at,omitempty"`
+	Description   string   `json:"description"`
+	Category      string   `json:"category"`
+	Condition     string   `json:"condition"`
+	Price         float64  `json:"price"`
+	Location      string   `json:"location"`
+	EcoScore      float32  `json:"ecoScore"`
+	EcoAttributes []string `json:"ecoAttributes"`
+	Negotiable    bool     `json:"negotiable"`
+	Title         string   `json:"title"`
+	ImageUrl      []string `json:"imageUrl"`
+	SellerID      string   `json:"seller_id"`
+}
+
+// Moved from db package
+type FetchedListing struct {
+	ID            string   `json:"id,omitempty"`
+	CreatedAt     string   `json:"created_at,omitempty"`
+	Description   string   `json:"description"`
+	Category      string   `json:"category"`
+	Condition     string   `json:"condition"`
+	Price         float64  `json:"price"`
+	Location      string   `json:"location"`
+	EcoScore      float32  `json:"ecoScore"`
+	EcoAttributes []string `json:"ecoAttributes"`
+	Negotiable    bool     `json:"negotiable"`
+	Title         string   `json:"title"`
+	ImageUrl      []string `json:"imageUrl"`
+
+	SellerID        string  `json:"seller_id"`
+	SellerUsername  string  `json:"seller_username"`
+	SellerBio       *string `json:"seller_bio,omitempty"`
+	SellerCreatedAt string  `json:"seller_created_at"`
+	SellerRating    float32 `json:"seller_rating"`
+	SellerVerified  bool    `json:"seller_verified"`
+}
+
+// Generic query parameters for data access
+type QueryParams struct {
+	Table     string         `json:"-"`
+	ID        string         `json:"-"`
+	Filter    string         `json:"-"`
+	Limit     int            `json:"-"`
+	Offset    int            `json:"-"`
+	OrderBy   string         `json:"-"`
+	Direction string         `json:"-"`
+	Data      map[string]any `json:"-"`
+	FiberMap  fiber.Map      `json:"-"`
 }

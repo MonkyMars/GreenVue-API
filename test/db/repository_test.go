@@ -3,7 +3,7 @@ package db_test
 import (
 	"context"
 	"fmt"
-	"greentrade-eu/internal/db"
+	"greentrade-eu/lib"
 	"testing"
 
 	"github.com/google/uuid"
@@ -15,7 +15,7 @@ func TestMockListingRepository(t *testing.T) {
 
 	// Test creating a listing
 	sellerID := uuid.New().String() // Generate a UUID for the seller
-	listing := db.Listing{
+	listing := lib.Listing{
 		Title:       "Test Listing",
 		Description: "This is a test listing for the mock repository",
 		Category:    "electronics",
@@ -65,7 +65,7 @@ func TestMockListingRepository(t *testing.T) {
 	}
 
 	// Create a second listing with a different category
-	secondListing := db.Listing{
+	secondListing := lib.Listing{
 		Title:       "Test Listing 2",
 		Description: "This is another test listing",
 		Category:    "furniture",
@@ -138,14 +138,14 @@ func TestMockSellerRepository(t *testing.T) {
 	repo := NewMockSellerRepository()
 	ctx := context.Background()
 
-	// Test creating a seller (using db.User)
-	sellerUser := db.User{
+	// Test creating a seller (using lib.User)
+	sellerUser := lib.User{
 		ID:       "seller1",
 		Name:     "Test Seller User",
 		Email:    "seller@example.com",
 		Location: "Seller City",
 		Bio:      "Sells things",
-		// Add other relevant db.User fields if needed
+		// Add other relevant lib.User fields if needed
 	}
 
 	createdSeller, err := repo.CreateSeller(ctx, sellerUser)
@@ -192,7 +192,7 @@ func TestMockSellerRepository(t *testing.T) {
 	}
 
 	// Test updating a seller
-	updates := map[string]interface{}{
+	updates := map[string]any{
 		"name":     "Updated Seller Name",
 		"location": "New Seller City",
 		"bio":      "Updated bio",
@@ -250,7 +250,7 @@ func TestMockUserRepository(t *testing.T) {
 	ctx := context.Background()
 
 	// Test creating a user
-	user := db.User{
+	user := lib.User{
 		ID:       "user1",
 		Name:     "Test User",
 		Email:    "test@example.com",
@@ -273,13 +273,13 @@ func TestMockUserRepository(t *testing.T) {
 	}
 
 	// Test creating user with empty ID
-	_, err = repo.CreateUser(ctx, db.User{Email: "no-id@example.com"})
+	_, err = repo.CreateUser(ctx, lib.User{Email: "no-id@example.com"})
 	if err == nil {
 		t.Error("Expected error when creating user with empty ID, got nil")
 	}
 
 	// Test creating user with empty Email
-	_, err = repo.CreateUser(ctx, db.User{ID: "no-email-user"})
+	_, err = repo.CreateUser(ctx, lib.User{ID: "no-email-user"})
 	if err == nil {
 		t.Error("Expected error when creating user with empty email, got nil")
 	}
@@ -291,7 +291,7 @@ func TestMockUserRepository(t *testing.T) {
 	}
 
 	// Test creating duplicate user (by Email)
-	duplicateEmailUser := db.User{ID: "user2", Email: user.Email}
+	duplicateEmailUser := lib.User{ID: "user2", Email: user.Email}
 	_, err = repo.CreateUser(ctx, duplicateEmailUser)
 	expectedErr := fmt.Errorf("user with email %s already exists", user.Email)
 	if err == nil || err.Error() != expectedErr.Error() {
@@ -329,7 +329,7 @@ func TestMockUserRepository(t *testing.T) {
 	}
 
 	// Test updating a user
-	updates := map[string]interface{}{
+	updates := map[string]any{
 		"name":     "Updated User Name",
 		"location": "Updated Location",
 		"email":    "updated@example.com", // Test email update
@@ -356,13 +356,13 @@ func TestMockUserRepository(t *testing.T) {
 
 	// Test updating user with email already in use
 	// First, create another user
-	otherUser := db.User{ID: "otherUser", Email: "other@example.com"}
+	otherUser := lib.User{ID: "otherUser", Email: "other@example.com"}
 	_, err = repo.CreateUser(ctx, otherUser)
 	if err != nil {
 		t.Fatalf("Setup failed: could not create other user: %v", err)
 	}
 	// Try to update original user to other user's email
-	emailConflictUpdates := map[string]interface{}{"email": otherUser.Email}
+	emailConflictUpdates := map[string]any{"email": otherUser.Email}
 	err = repo.UpdateUser(ctx, user.ID, emailConflictUpdates)
 	expectedErr = fmt.Errorf("email %s is already in use", otherUser.Email)
 	if err == nil || err.Error() != expectedErr.Error() {

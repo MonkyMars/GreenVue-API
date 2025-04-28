@@ -1,6 +1,6 @@
-# Error Handling in GreenTrade.eu Backend
+# Error Handling in GreenTrade Backend
 
-This package provides a consistent and structured approach to error handling across the GreenTrade.eu backend.
+This package provides a consistent and structured approach to error handling across the GreenTrade backend.
 
 ## Key Components
 
@@ -88,3 +88,4 @@ func CreateUser(c *fiber.Ctx) error {
     
     // Continue with valid data...
 } 
+```
