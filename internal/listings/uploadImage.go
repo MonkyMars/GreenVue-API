@@ -105,7 +105,6 @@ func UploadHandler(c *fiber.Ctx) error {
 				continue
 			}
 
-			log.Println("Successfully uploaded file, URL:", publicURL)
 			// Append the public URL to the list
 			uploadedURLs = append(uploadedURLs, publicURL)
 		}
