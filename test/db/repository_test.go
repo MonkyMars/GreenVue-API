@@ -21,7 +21,6 @@ func TestMockListingRepository(t *testing.T) {
 		Category:    "electronics",
 		Condition:   "good",
 		Price:       10000,
-		Location:    "Test City",
 		SellerID:    sellerID, // Use the generated UUID string
 	}
 

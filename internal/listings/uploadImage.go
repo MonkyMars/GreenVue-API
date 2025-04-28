@@ -27,7 +27,7 @@ func UploadHandler(c *fiber.Ctx) error {
 	listingTitle := c.FormValue("listing_title")
 
 	// Get files from formdata
-	files, err := c.MultipartForm()
+	form, err := c.MultipartForm()
 
 	if err != nil {
 		return errors.BadRequest("Failed to parse form data: " + err.Error())
@@ -35,34 +35,90 @@ func UploadHandler(c *fiber.Ctx) error {
 
 	uploadedURLs := []string{}
 
-	// iterate over files
-	for _, file := range files.File["file"] {
-		src, err := file.Open()
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to open file"})
-		}
-		defer src.Close()
+	fileHeaders, ok := form.File["file"]
+	if !ok || len(fileHeaders) == 0 {
+		// If no files with key "file", check if there are any files at all
+		totalFiles := 0
+		for _, v := range form.File {
+			totalFiles += len(v)
+			// Process these files instead
+			for _, fileHeader := range v {
+				if fileHeader.Size == 0 {
+					continue
+				}
 
-		// Generate a unique filename
-		fileName := fmt.Sprintf("%s-%s.webp", lib.SanitizeFilename(listingTitle), uuid.New().String())
+				src, err := fileHeader.Open()
+				if err != nil {
+					continue
+				}
+				defer src.Close()
 
-		// Convert image to WebP
-		webpData, err := convertToWebP(src)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to convert image: " + err.Error()})
+				// Generate a unique filename
+				fileName := fmt.Sprintf("%s-%s.webp", lib.SanitizeFilename(listingTitle), uuid.New().String())
+
+				// Convert image to WebP
+				webpData, err := convertToWebP(src)
+				if err != nil {
+					continue
+				}
+
+				// Upload WebP file to Supabase
+				publicURL, err := uploadToSupabase(fileName, webpData)
+				if err != nil {
+					continue
+				}
+
+				// Append the public URL to the list
+				uploadedURLs = append(uploadedURLs, publicURL)
+			}
 		}
 
-		// Upload WebP file to Supabase
-		publicURL, err := uploadToSupabase(fileName, webpData)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Upload failed: " + err.Error()})
+		if totalFiles == 0 {
+			return errors.BadRequest("No files were submitted. Make sure to include files in your FormData.")
 		}
-		// Append the public URL to the list
-		uploadedURLs = append(uploadedURLs, publicURL)
+	} else {
+		// Process files from the expected "file" key
+		for _, fileHeader := range fileHeaders {
+
+			if fileHeader.Size == 0 {
+				log.Println("Skipping empty file")
+				continue
+			}
+
+			src, err := fileHeader.Open()
+			if err != nil {
+				continue
+			}
+			defer src.Close()
+
+			// Generate a unique filename
+			fileName := fmt.Sprintf("%s-%s.webp", lib.SanitizeFilename(listingTitle), uuid.New().String())
+			// Convert image to WebP
+			webpData, err := convertToWebP(src)
+			if err != nil {
+				continue
+			}
+
+			// Upload WebP file to Supabase
+			publicURL, err := uploadToSupabase(fileName, webpData)
+			if err != nil {
+				continue
+			}
+
+			log.Println("Successfully uploaded file, URL:", publicURL)
+			// Append the public URL to the list
+			uploadedURLs = append(uploadedURLs, publicURL)
+		}
 	}
 
-	// Return the list of uploaded URLs to the frontend.
-	return errors.SuccessResponse(c, uploadedURLs)
+	// Return error if no files were successfully processed
+	if len(uploadedURLs) == 0 {
+		return errors.BadRequest("No valid files were processed. Make sure to provide valid image files.")
+	}
+
+	return errors.SuccessResponse(c, fiber.Map{
+		"urls": uploadedURLs,
+	})
 }
 
 func convertToWebP(file multipart.File) (*bytes.Buffer, error) {

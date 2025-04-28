@@ -21,7 +21,6 @@ func PostListing(c *fiber.Ctx) error {
 		Description   string         `json:"description"`
 		Category      string         `json:"category"`
 		Condition     string         `json:"condition"`
-		Location      string         `json:"location"`
 		Price         float64        `json:"price"`
 		Negotiable    bool           `json:"negotiable"`
 		EcoScore      float32        `json:"ecoScore"`
@@ -57,7 +56,6 @@ func PostListing(c *fiber.Ctx) error {
 		Description:   lib.SanitizeInput(payload.Description),
 		Category:      payload.Category,
 		Condition:     payload.Condition,
-		Location:      payload.Location,
 		Price:         payload.Price,
 		Negotiable:    payload.Negotiable,
 		EcoScore:      payload.EcoScore,
@@ -72,13 +70,26 @@ func PostListing(c *fiber.Ctx) error {
 		return errors.DatabaseError("Failed to create listing: " + err.Error())
 	}
 
-	// Parse the response
-	var createdListing lib.Listing
-	if err := json.Unmarshal(listingData, &createdListing); err != nil {
-		return errors.InternalServerError("Failed to parse created listing: " + err.Error())
+	// Parse the response - first try as an array since Supabase returns arrays
+	var listingArray []lib.Listing
+	if err := json.Unmarshal(listingData, &listingArray); err != nil {
+		// If that fails, try as a single object
+		var createdListing lib.Listing
+		if err := json.Unmarshal(listingData, &createdListing); err != nil {
+			return errors.InternalServerError("Failed to parse created listing: " + err.Error())
+		}
+		return errors.SuccessResponse(c, fiber.Map{
+			"listing": createdListing,
+		})
 	}
 
+	// If we got here, we parsed an array successfully
+	if len(listingArray) == 0 {
+		return errors.InternalServerError("No listing was created")
+	}
+
+	// Return the first (and likely only) listing in the array
 	return errors.SuccessResponse(c, fiber.Map{
-		"listing": createdListing,
+		"listing": listingArray[0],
 	})
 }

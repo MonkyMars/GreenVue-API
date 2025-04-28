@@ -112,7 +112,6 @@ type Listing struct {
 	Category      string   `json:"category"`
 	Condition     string   `json:"condition"`
 	Price         float64  `json:"price"`
-	Location      string   `json:"location"`
 	EcoScore      float32  `json:"ecoScore"`
 	EcoAttributes []string `json:"ecoAttributes"`
 	Negotiable    bool     `json:"negotiable"`
