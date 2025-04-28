@@ -28,7 +28,7 @@ func GetListings(c *fiber.Ctx) error {
 		return errors.DatabaseError("Failed to fetch listings: " + err.Error())
 	}
 	if len(data) == 0 || string(data) == "[]" {
-		return errors.NotFound("No listings found")
+		return errors.SuccessResponse(c, []lib.FetchedListing{})
 	}
 
 	var listings []lib.FetchedListing
@@ -66,7 +66,7 @@ func GetListingById(c *fiber.Ctx) error {
 	}
 
 	if len(data) == 0 || string(data) == "[]" {
-		return errors.NotFound("Listing not found")
+		return errors.SuccessResponse(c, db.FetchedListing{}) // Return nil if no listing found
 	}
 
 	var listings []lib.FetchedListing
@@ -75,7 +75,7 @@ func GetListingById(c *fiber.Ctx) error {
 	}
 
 	if len(listings) == 0 {
-		return errors.NotFound("Listing not found")
+		return errors.SuccessResponse(c, db.FetchedListing{})
 	}
 
 	return errors.SuccessResponse(c, listings[0])
@@ -97,7 +97,7 @@ func GetListingByCategory(c *fiber.Ctx) error {
 		return errors.DatabaseError("Failed to fetch listings by category: " + err.Error())
 	}
 	if len(data) == 0 {
-		return errors.NotFound("No listings found in this category")
+		return errors.SuccessResponse(c, []lib.FetchedListing{})
 	}
 
 	var listings []lib.FetchedListing
@@ -126,7 +126,7 @@ func GetListingBySeller(c *fiber.Ctx) error {
 		return errors.DatabaseError("Failed to fetch listings by seller: " + err.Error())
 	}
 	if len(data) == 0 || string(data) == "[]" {
-		return errors.NotFound("No listings found for this seller")
+		return errors.SuccessResponse(c, []lib.FetchedListing{})
 	}
 
 	var listings []lib.FetchedListing

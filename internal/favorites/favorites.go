@@ -125,7 +125,7 @@ func DeleteFavorite(c *fiber.Ctx) error {
 	}
 
 	if string(responseData) == "[]" {
-		return errors.NotFound("Favorite not found.")
+		return errors.SuccessResponse(c, []lib.Favorite{})
 	}
 
 	return errors.SuccessResponse(c, responseData)
