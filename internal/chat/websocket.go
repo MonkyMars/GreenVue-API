@@ -15,6 +15,7 @@ import (
 const (
 	messageRateLimitWindow = 5 * time.Second // Example: 5-second window
 	messageRateLimitMax    = 10              // Example: Max 10 messages per window (adjust as needed)
+	pingTimeout            = 5 * time.Second // Close connection if no ping received within this time
 )
 
 // Client represents a connected user via WebSocket
@@ -28,6 +29,10 @@ type Client struct {
 	windowStartTime time.Time // Start time of the current window
 	// Use a mutex per client if handling messages concurrently within the handler (unlikely here)
 	// rateLimitMux sync.Mutex
+
+	// Ping/Pong tracking
+	lastPingTime time.Time
+	pingTimer    *time.Timer
 }
 
 var (
@@ -90,6 +95,8 @@ func handleChatWebSocket(c *websocket.Conn) {
 		// --- Initialize Rate Limiting State ---
 		windowStartTime: time.Now(),
 		messageCount:    0,
+		lastPingTime:    time.Now(),
+		pingTimer:       time.NewTimer(pingTimeout),
 	}
 
 	clientsMux.Lock()
@@ -99,7 +106,11 @@ func handleChatWebSocket(c *websocket.Conn) {
 	log.Printf("WebSocket client connected: User %s, Conversation %s", userID, conversationID)
 
 	// Send a connection confirmation message
-	welcomeMsg := map[string]string{"type": "connection_established", "message": "Connected to chat"}
+	welcomeMsg := map[string]string{
+		"type":        "connection_established",
+		"message":     "Connected to chat",
+		"pingTimeout": pingTimeout.String(),
+	}
 	welcomeJSON, _ := json.Marshal(welcomeMsg)
 	if err := c.WriteMessage(websocket.TextMessage, welcomeJSON); err != nil {
 		log.Printf("Error sending welcome message: %v", err)
@@ -107,6 +118,8 @@ func handleChatWebSocket(c *websocket.Conn) {
 
 	// Defer cleanup: remove client and close connection when the function returns
 	defer func() {
+		// Stop the ping timer to prevent leaks
+		client.pingTimer.Stop()
 		clientsMux.Lock()
 		delete(clients, c)
 		clientsMux.Unlock()
@@ -117,8 +130,21 @@ func handleChatWebSocket(c *websocket.Conn) {
 		log.Printf("WebSocket client disconnected: User %s, Conversation %s", userID, conversationID)
 	}()
 
-	// Keep the connection alive by handling incoming messages (e.g., pings)
-	// This loop also detects when the client disconnects
+	// Start goroutine to monitor ping timeouts
+	go func() {
+		done := make(chan struct{})
+		defer close(done)
+
+		for range client.pingTimer.C {
+			if time.Since(client.lastPingTime) > pingTimeout {
+				log.Printf("WebSocket ping timeout for User %s, Conversation %s", userID, conversationID)
+				c.Close()
+				return
+			}
+			client.pingTimer.Reset(pingTimeout)
+		}
+	}()
+
 	for {
 		messageType, msg, err := c.ReadMessage()
 		if err != nil {
@@ -150,6 +176,25 @@ func handleChatWebSocket(c *websocket.Conn) {
 		if messageType == websocket.TextMessage {
 			// Handle incoming messages from client if necessary (e.g., typing indicators, or if clients send messages via WS)
 			log.Printf("Received message from User %s: %s", userID, string(msg))
+
+			// Parse the message to check if it's a ping
+			var msgData map[string]string
+			if err := json.Unmarshal(msg, &msgData); err == nil {
+				if msgData["type"] == "ping" {
+					// Update last ping time
+					client.lastPingTime = time.Now()
+					// Reset the ping timer
+					client.pingTimer.Reset(pingTimeout)
+
+					// Send pong response immediately
+					pongMsg := map[string]string{"type": "pong"}
+					pongJSON, _ := json.Marshal(pongMsg)
+					if err := c.WriteMessage(websocket.TextMessage, pongJSON); err != nil {
+						log.Printf("Error sending pong response: %v", err)
+					}
+					continue // Skip the general acknowledgment for ping messages
+				}
+			}
 
 			// Send back an acknowledgment to confirm message receipt
 			ackMsg := map[string]string{"type": "ack", "message": "Message received"}

@@ -14,7 +14,7 @@ import (
 type Message struct {
 	ID             string    `json:"id"`
 	ConversationID string    `json:"conversation_id"`
-	SenderID       string    `json:"sender_id"` // Or int, depending on your user ID type
+	SenderID       string    `json:"sender_id"`
 	Content        string    `json:"content"`
 	CreatedAt      time.Time `json:"created_at"`
 }
@@ -88,6 +88,8 @@ func PostMessage(c *fiber.Ctx) error {
 	if err != nil {
 		return errors.InternalServerError("Failed to post message: " + err.Error())
 	}
+
+	fmt.Println("Inserted data:", string(insertedData)) // Debugging line to check inserted data
 
 	// Optionally parse the inserted data back into a Message struct if needed for the response
 	var createdMessages []Message

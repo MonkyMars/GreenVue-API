@@ -118,6 +118,15 @@ func AuthMiddleware() fiber.Handler {
 		}
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
+		path := c.Path()
+		if strings.HasPrefix(path, "/api/health") {
+			healthAccessToken := os.Getenv("HEALTH_ACCESS_TOKEN")
+			if tokenString != healthAccessToken {
+				return fiber.NewError(fiber.StatusUnauthorized, "invalid health access token")
+			}
+			return c.Next()
+		}
+
 		// Validate token
 		claims, err := ValidateToken(tokenString, false)
 		if err != nil {

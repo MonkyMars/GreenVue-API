@@ -125,9 +125,9 @@ func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("apikey", s.APIKey)
-	req.Header.Add("Authorization", "Bearer "+s.APIKey)
-	req.Header.Add("Prefer", "return=representation") // Request response back from Supabase
+	req.Header.Set("apikey", s.APIKey)
+	req.Header.Set("Authorization", "Bearer "+s.APIKey)
+	req.Header.Set("Prefer", "return=representation")
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
@@ -141,6 +141,10 @@ func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading response: %w", err)
 	}
+
+	fmt.Println("Response body:", string(body))
+	fmt.Printf("POST Response: Status=%d, Headers=%v, Body=%s\n",
+		resp.StatusCode, resp.Header, string(body))
 
 	// Empty response is valid in some cases
 	if len(body) == 0 {
