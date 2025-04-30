@@ -4,13 +4,16 @@ import (
 	"greentrade-eu/internal/api"
 	"greentrade-eu/internal/config"
 	"log"
+	"os"
 
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	if err := godotenv.Load(".env.local"); err != nil {
-		log.Printf("Warning: Error loading .env.local file: %v", err)
+	if os.Getenv("ENV") == "development" {
+		if err := godotenv.Load(".env.local"); err != nil {
+			log.Printf("Warning: Error loading .env.local file: %v", err)
+		}
 	}
 
 	// Load configuration using the config package
