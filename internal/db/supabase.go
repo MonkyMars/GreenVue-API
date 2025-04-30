@@ -112,15 +112,15 @@ func (s *SupabaseClient) GET(table string, query string) ([]byte, error) {
 func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?select=*", s.URL, table)
 
-	fmt.Printf("POST URL: %s\n", url)
-
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		fmt.Println("Error marshaling data:", err)
 		return nil, fmt.Errorf("error marshaling request data: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	payload := strings.NewReader(string(jsonData))
+
+	req, err := http.NewRequest("POST", url, payload)
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return nil, err
@@ -143,12 +143,6 @@ func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading response: %w", err)
 	}
-
-	fmt.Println("Content length:", resp.Header.Get("Content-Length"))
-	fmt.Println("Response status:", resp.Status)
-	fmt.Println("Response body:", string(body))
-	fmt.Printf("POST Response: Status=%d, Headers=%v, Body=%s\n",
-		resp.StatusCode, resp.Header, string(body))
 
 	// Empty response is valid in some cases
 	if len(body) == 0 {
