@@ -22,7 +22,7 @@ type Conversation struct {
 	LastMessageTime    string `json:"last_message_time"`
 }
 
-var viewName string = "conversation_with_usernames"
+const viewName string = "conversation_with_usernames"
 
 // creates a conversation between a buyer and a seller for a specific listing and returns the conversation uuid.
 func CreateConversation(c *fiber.Ctx) error {
