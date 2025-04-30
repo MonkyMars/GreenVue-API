@@ -110,7 +110,9 @@ func (s *SupabaseClient) GET(table string, query string) ([]byte, error) {
 
 // POST creates a new record
 func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
-	url := fmt.Sprintf("%s/rest/v1/%s", s.URL, table)
+	url := fmt.Sprintf("%s/rest/v1/%s?select=*", s.URL, table)
+
+	fmt.Printf("POST URL: %s\n", url)
 
 	jsonData, err := json.Marshal(data)
 	if err != nil {
@@ -124,12 +126,12 @@ func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
 		return nil, err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("apikey", s.APIKey)
-	req.Header.Set("Authorization", "Bearer "+s.APIKey)
-	req.Header.Set("Prefer", "return=representation")
+	req.Header.Add("apikey", s.APIKey)
+	req.Header.Add("Authorization", "Bearer "+s.APIKey)
+	req.Header.Add("Prefer", "return=representation")
+	req.Header.Add("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Error sending request:", err)
@@ -142,6 +144,8 @@ func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
 		return nil, fmt.Errorf("error reading response: %w", err)
 	}
 
+	fmt.Println("Content length:", resp.Header.Get("Content-Length"))
+	fmt.Println("Response status:", resp.Status)
 	fmt.Println("Response body:", string(body))
 	fmt.Printf("POST Response: Status=%d, Headers=%v, Body=%s\n",
 		resp.StatusCode, resp.Header, string(body))
