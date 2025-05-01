@@ -58,7 +58,7 @@ func setupMiddleware(app *fiber.App) {
 	}))
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "http://192.168.178.10,http://localhost:3000,http://localhost:8081,http://10.0.2.2:3000,https://greentradeeu.vercel.app",
+		AllowOrigins:     "http://192.168.178.10,http://localhost:3000,http://localhost:8081,http://10.0.2.2:3000,https://greentradeeu.vercel.app,https://fictional-happiness-v667gvprvgpx3xr7x-3000.app.github.dev",
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS,PATCH",
 		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
 		AllowCredentials: false,
