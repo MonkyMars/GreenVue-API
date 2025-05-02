@@ -57,14 +57,6 @@ Our mission is to promote sustainability by extending the lifecycle of products 
   - Input validation
   - Structured error handling
 
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Go 1.24 or higher
-- Docker (optional for containerization)
-- GCC (for WebP image support on Windows - see [setup instructions](docs/setup-gcc-windows.md))
-
 ## 🔒 Security
 
 GreenTrade takes security seriously. Our security practices include:
