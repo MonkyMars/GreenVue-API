@@ -18,8 +18,9 @@ var (
 )
 
 type Claims struct {
-	UserID string `json:"user_id"`
+	UserID string `json:"sub"`
 	Email  string `json:"email"`
+	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -46,7 +47,9 @@ func GenerateTokenPair(userID, email string) (*TokenPair, error) {
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		UserID: userID,
 		Email:  email,
+		Role:   "authenticated", // required for Supabase RLS
 		RegisteredClaims: jwt.RegisteredClaims{
+			Audience:  []string{"authenticated"},
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -56,8 +59,10 @@ func GenerateTokenPair(userID, email string) (*TokenPair, error) {
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		UserID: userID,
 		Email:  email,
+		Role:   "authenticated", // required for Supabase RLS
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)), // 7 days
+			Audience:  []string{"authenticated"},
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	})
@@ -137,6 +142,23 @@ func AuthMiddleware() fiber.Handler {
 		c.Locals("user", claims)
 		return c.Next()
 	}
+}
+
+func GetAccessToken(c *fiber.Ctx) (*Claims, error) {
+	// Get token from Authorization header
+	authHeader := c.Get("Authorization")
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		return nil, fiber.NewError(fiber.StatusUnauthorized, "invalid or missing token")
+	}
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
+	// Validate token
+	claims, err := ValidateToken(tokenString, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return claims, nil
 }
 
 // RefreshTokenHandler handles token refresh requests

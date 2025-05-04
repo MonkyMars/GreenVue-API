@@ -15,48 +15,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type Listing struct {
-	ID            string   `json:"id,omitempty"`
-	CreatedAt     string   `json:"created_at,omitempty"`
-	Description   string   `json:"description"`
-	Category      string   `json:"category"`
-	Condition     string   `json:"condition"`
-	Price         float64  `json:"price"`
-	Location      string   `json:"location"`
-	EcoScore      float32  `json:"ecoScore"`
-	EcoAttributes []string `json:"ecoAttributes"`
-	Negotiable    bool     `json:"negotiable"`
-	Title         string   `json:"title"`
-	ImageUrl      []string `json:"imageUrl"`
-	SellerID      string   `json:"seller_id"`
-}
-
-type FetchedListing struct {
-	ID            string   `json:"id,omitempty"`
-	CreatedAt     string   `json:"created_at,omitempty"`
-	Description   string   `json:"description"`
-	Category      string   `json:"category"`
-	Condition     string   `json:"condition"`
-	Price         float64  `json:"price"`
-	Location      string   `json:"location"`
-	EcoScore      float32  `json:"ecoScore"`
-	EcoAttributes []string `json:"ecoAttributes"`
-	Negotiable    bool     `json:"negotiable"`
-	Title         string   `json:"title"`
-	ImageUrl      []string `json:"imageUrl"`
-
-	SellerID        string  `json:"seller_id"`
-	SellerUsername  string  `json:"seller_username"`
-	SellerBio       *string `json:"seller_bio,omitempty"`
-	SellerCreatedAt string  `json:"seller_created_at"`
-	SellerRating    float32 `json:"seller_rating"`
-	SellerVerified  bool    `json:"seller_verified"`
-}
-
 type SupabaseClient struct {
-	URL       string
-	APIKey    string
-	AuthToken string
+	URL    string
+	APIKey string
 }
 
 // NewSupabaseClient creates a new Supabase client using environment variables
@@ -77,8 +38,12 @@ func NewSupabaseClient() *SupabaseClient {
 }
 
 // GET performs a GET request to fetch data with optional query parameters
-func (s *SupabaseClient) GET(table string, query string) ([]byte, error) {
+func (s *SupabaseClient) GET(c *fiber.Ctx, table, query string) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?%s", s.URL, table, query)
+
+	if c == nil {
+		return nil, fmt.Errorf("fiber context is nil")
+	}
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -86,7 +51,7 @@ func (s *SupabaseClient) GET(table string, query string) ([]byte, error) {
 	}
 
 	req.Header.Add("apikey", s.APIKey)
-	req.Header.Add("Authorization", "Bearer "+s.APIKey)
+	req.Header.Add("Authorization", c.Get("Authorization"))
 	req.Header.Add("Accept", "application/json")
 
 	client := &http.Client{Timeout: 10 * time.Second}
