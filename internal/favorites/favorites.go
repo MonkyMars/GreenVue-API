@@ -84,7 +84,7 @@ func AddFavorite(c *fiber.Ctx) error {
 		ListingID: payload.ListingID,
 	}
 
-	responseData, err := client.POST("favorites", newFavorite)
+	responseData, err := client.POST(c, "favorites", newFavorite)
 	if err != nil {
 		return errors.DatabaseError("Failed to insert favorite: " + err.Error())
 	}
@@ -119,7 +119,7 @@ func DeleteFavorite(c *fiber.Ctx) error {
 
 	// Step 2: Delete favorite using the standardized DELETE operation
 	query := fmt.Sprintf("user_id=eq.%s&listing_id=eq.%s", userID, listingID)
-	responseData, err := client.DELETE("favorites", query)
+	responseData, err := client.DELETE(c, "favorites", query)
 	if err != nil {
 		return errors.DatabaseError("Failed to delete favorite: " + err.Error())
 	}

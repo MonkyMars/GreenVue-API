@@ -10,7 +10,7 @@ import (
 )
 
 func RegisterUser(c *fiber.Ctx) error {
-	client := db.NewSupabaseClient()
+	client := db.NewSupabaseClient(true)
 	if client == nil {
 		return errors.InternalServerError("Failed to create database client")
 	}

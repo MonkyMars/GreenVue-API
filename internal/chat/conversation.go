@@ -52,7 +52,7 @@ func CreateConversation(c *fiber.Ctx) error {
 	}
 
 	jsonPayload := fmt.Sprintf(`{"buyer_id": "%s", "seller_id": "%s", "listing_id": "%s"}`, buyerId, sellerId, listingId)
-	body, err := client.POST("conversations", []byte(jsonPayload))
+	body, err := client.POST(c, "conversations", []byte(jsonPayload))
 
 	if err != nil {
 		return errors.InternalServerError("Failed to create conversation: " + err.Error())

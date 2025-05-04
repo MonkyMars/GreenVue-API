@@ -21,13 +21,21 @@ type SupabaseClient struct {
 }
 
 // NewSupabaseClient creates a new Supabase client using environment variables
-func NewSupabaseClient() *SupabaseClient {
+func NewSupabaseClient(useServiceKey ...bool) *SupabaseClient {
 	url := os.Getenv("SUPABASE_URL")
-	apiKey := os.Getenv("SUPABASE_ANON")
+
+	var apiKey string
+	// Check if we should use the service key or the anon key
+	if len(useServiceKey) > 0 && useServiceKey[0] {
+		apiKey = os.Getenv("SUPABASE_SERVICE_KEY")
+	} else {
+		// Default to using the anon key
+		apiKey = os.Getenv("SUPABASE_ANON")
+	}
 
 	// Validate that the required environment variables are set
 	if url == "" || apiKey == "" {
-		fmt.Println("ERROR: Supabase environment variables not set. SUPABASE_URL and SUPABASE_ANON are required.")
+		fmt.Println("ERROR: Supabase environment variables not set. SUPABASE_URL and SUPABASE_ANON or SUPABASE_SERVICE_KEY are required.")
 		return nil
 	}
 
@@ -74,7 +82,7 @@ func (s *SupabaseClient) GET(c *fiber.Ctx, table, query string) ([]byte, error) 
 }
 
 // POST creates a new record
-func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
+func (s *SupabaseClient) POST(c *fiber.Ctx, table string, data any) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?select=*", s.URL, table)
 
 	jsonData, err := json.Marshal(data)
@@ -122,7 +130,7 @@ func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
 }
 
 // PATCH updates an existing record by ID
-func (s *SupabaseClient) PATCH(table string, id string, data any) ([]byte, error) {
+func (s *SupabaseClient) PATCH(c *fiber.Ctx, table string, id string, data any) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?id=eq.%s", s.URL, table, id)
 
 	jsonData, err := json.Marshal(data)
@@ -160,7 +168,7 @@ func (s *SupabaseClient) PATCH(table string, id string, data any) ([]byte, error
 }
 
 // DELETE removes a record based on condition
-func (s *SupabaseClient) DELETE(table, conditions string) ([]byte, error) {
+func (s *SupabaseClient) DELETE(c *fiber.Ctx, table, conditions string) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?%s", s.URL, table, conditions)
 
 	req, err := http.NewRequest("DELETE", url, nil)
