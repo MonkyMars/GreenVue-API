@@ -15,58 +15,27 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type Listing struct {
-	ID            string   `json:"id,omitempty"`
-	CreatedAt     string   `json:"created_at,omitempty"`
-	Description   string   `json:"description"`
-	Category      string   `json:"category"`
-	Condition     string   `json:"condition"`
-	Price         float64  `json:"price"`
-	Location      string   `json:"location"`
-	EcoScore      float32  `json:"ecoScore"`
-	EcoAttributes []string `json:"ecoAttributes"`
-	Negotiable    bool     `json:"negotiable"`
-	Title         string   `json:"title"`
-	ImageUrl      []string `json:"imageUrl"`
-	SellerID      string   `json:"seller_id"`
-}
-
-type FetchedListing struct {
-	ID            string   `json:"id,omitempty"`
-	CreatedAt     string   `json:"created_at,omitempty"`
-	Description   string   `json:"description"`
-	Category      string   `json:"category"`
-	Condition     string   `json:"condition"`
-	Price         float64  `json:"price"`
-	Location      string   `json:"location"`
-	EcoScore      float32  `json:"ecoScore"`
-	EcoAttributes []string `json:"ecoAttributes"`
-	Negotiable    bool     `json:"negotiable"`
-	Title         string   `json:"title"`
-	ImageUrl      []string `json:"imageUrl"`
-
-	SellerID        string  `json:"seller_id"`
-	SellerUsername  string  `json:"seller_username"`
-	SellerBio       *string `json:"seller_bio,omitempty"`
-	SellerCreatedAt string  `json:"seller_created_at"`
-	SellerRating    float32 `json:"seller_rating"`
-	SellerVerified  bool    `json:"seller_verified"`
-}
-
 type SupabaseClient struct {
-	URL       string
-	APIKey    string
-	AuthToken string
+	URL    string
+	APIKey string
 }
 
 // NewSupabaseClient creates a new Supabase client using environment variables
-func NewSupabaseClient() *SupabaseClient {
+func NewSupabaseClient(useServiceKey ...bool) *SupabaseClient {
 	url := os.Getenv("SUPABASE_URL")
-	apiKey := os.Getenv("SUPABASE_ANON")
+
+	var apiKey string
+	// Check if we should use the service key or the anon key
+	if len(useServiceKey) > 0 && useServiceKey[0] {
+		apiKey = os.Getenv("SUPABASE_SERVICE_KEY")
+	} else {
+		// Default to using the anon key
+		apiKey = os.Getenv("SUPABASE_ANON")
+	}
 
 	// Validate that the required environment variables are set
 	if url == "" || apiKey == "" {
-		fmt.Println("ERROR: Supabase environment variables not set. SUPABASE_URL and SUPABASE_ANON are required.")
+		fmt.Println("ERROR: Supabase environment variables not set. SUPABASE_URL and SUPABASE_ANON or SUPABASE_SERVICE_KEY are required.")
 		return nil
 	}
 
@@ -77,8 +46,12 @@ func NewSupabaseClient() *SupabaseClient {
 }
 
 // GET performs a GET request to fetch data with optional query parameters
-func (s *SupabaseClient) GET(table string, query string) ([]byte, error) {
+func (s *SupabaseClient) GET(c *fiber.Ctx, table, query string) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?%s", s.URL, table, query)
+
+	if c == nil {
+		return nil, fmt.Errorf("fiber context is nil")
+	}
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -86,7 +59,7 @@ func (s *SupabaseClient) GET(table string, query string) ([]byte, error) {
 	}
 
 	req.Header.Add("apikey", s.APIKey)
-	req.Header.Add("Authorization", "Bearer "+s.APIKey)
+	req.Header.Add("Authorization", c.Get("Authorization"))
 	req.Header.Add("Accept", "application/json")
 
 	client := &http.Client{Timeout: 10 * time.Second}
@@ -109,7 +82,7 @@ func (s *SupabaseClient) GET(table string, query string) ([]byte, error) {
 }
 
 // POST creates a new record
-func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
+func (s *SupabaseClient) POST(c *fiber.Ctx, table string, data any) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?select=*", s.URL, table)
 
 	jsonData, err := json.Marshal(data)
@@ -157,7 +130,7 @@ func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
 }
 
 // PATCH updates an existing record by ID
-func (s *SupabaseClient) PATCH(table string, id string, data any) ([]byte, error) {
+func (s *SupabaseClient) PATCH(c *fiber.Ctx, table string, id string, data any) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?id=eq.%s", s.URL, table, id)
 
 	jsonData, err := json.Marshal(data)
@@ -195,7 +168,7 @@ func (s *SupabaseClient) PATCH(table string, id string, data any) ([]byte, error
 }
 
 // DELETE removes a record based on condition
-func (s *SupabaseClient) DELETE(table, conditions string) ([]byte, error) {
+func (s *SupabaseClient) DELETE(c *fiber.Ctx, table, conditions string) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?%s", s.URL, table, conditions)
 
 	req, err := http.NewRequest("DELETE", url, nil)

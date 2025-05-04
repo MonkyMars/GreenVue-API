@@ -31,7 +31,7 @@ func PostReview(c *fiber.Ctx) error {
 	}
 
 	// Use standardized POST operation
-	data, err := client.POST("reviews", review)
+	data, err := client.POST(c, "reviews", review)
 	if err != nil {
 		return errors.DatabaseError("Failed to post review: " + err.Error())
 	}

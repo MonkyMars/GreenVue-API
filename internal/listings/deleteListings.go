@@ -19,7 +19,7 @@ func DeleteListingById(c *fiber.Ctx) error {
 	}
 
 	// Delete listing using the standardized DELETE operation
-	_, err := client.DELETE("listings", "id=eq."+listingId)
+	_, err := client.DELETE(c, "listings", "id=eq."+listingId)
 	if err != nil {
 		log.Println("Error deleting listing:", err)
 		return errors.InternalServerError("Failed to delete listing: " + err.Error())

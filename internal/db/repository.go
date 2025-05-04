@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"greentrade-eu/lib"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 // Repository defines standard CRUD operations for all entities
@@ -60,28 +62,28 @@ func (r *SupabaseRepository) Get(ctx context.Context, params lib.QueryParams) ([
 		query += "order=" + params.OrderBy + "." + orderDirection
 	}
 
-	return r.client.GET(params.Table, query)
+	return r.client.GET(&fiber.Ctx{}, params.Table, query)
 }
 
 // GetByID fetches a record by ID
 func (r *SupabaseRepository) GetByID(ctx context.Context, table string, id string) ([]byte, error) {
 	query := "id=eq." + id
-	return r.client.GET(table, query)
+	return r.client.GET(&fiber.Ctx{}, table, query)
 }
 
 // Create creates a new record
 func (r *SupabaseRepository) Create(ctx context.Context, table string, data any) ([]byte, error) {
-	return r.client.POST(table, data)
+	return r.client.POST(&fiber.Ctx{}, table, data)
 }
 
 // Update updates a record by ID
 func (r *SupabaseRepository) Update(ctx context.Context, table string, id string, data any) ([]byte, error) {
-	return r.client.PATCH(table, id, data)
+	return r.client.PATCH(&fiber.Ctx{}, table, id, data)
 }
 
 // Delete deletes a record by ID
 func (r *SupabaseRepository) Delete(ctx context.Context, table string, id string) error {
-	_, err := r.client.DELETE(table, "id=eq."+id)
+	_, err := r.client.DELETE(&fiber.Ctx{}, table, "id=eq."+id)
 	return err
 }
 

@@ -25,7 +25,7 @@ func GetFavorites(c *fiber.Ctx) error {
 		return errors.InternalServerError("Database connection failed. Please check SUPABASE_URL and SUPABASE_ANON.")
 	}
 
-	data, err := client.GET(viewName, "select=*&user_id=eq."+id)
+	data, err := client.GET(c, viewName, "select=*&user_id=eq."+id)
 
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch favorites: " + err.Error())
@@ -69,7 +69,7 @@ func AddFavorite(c *fiber.Ctx) error {
 
 	// Step 2: Check if favorite already exists
 	query := fmt.Sprintf("select=*&user_id=eq.%s&listing_id=eq.%s", payload.UserID, payload.ListingID)
-	existingFavorites, err := client.GET("favorites", query)
+	existingFavorites, err := client.GET(c, "favorites", query)
 	if err != nil {
 		return errors.DatabaseError("Failed to query favorites: " + err.Error())
 	}
@@ -84,7 +84,7 @@ func AddFavorite(c *fiber.Ctx) error {
 		ListingID: payload.ListingID,
 	}
 
-	responseData, err := client.POST("favorites", newFavorite)
+	responseData, err := client.POST(c, "favorites", newFavorite)
 	if err != nil {
 		return errors.DatabaseError("Failed to insert favorite: " + err.Error())
 	}
@@ -119,7 +119,7 @@ func DeleteFavorite(c *fiber.Ctx) error {
 
 	// Step 2: Delete favorite using the standardized DELETE operation
 	query := fmt.Sprintf("user_id=eq.%s&listing_id=eq.%s", userID, listingID)
-	responseData, err := client.DELETE("favorites", query)
+	responseData, err := client.DELETE(c, "favorites", query)
 	if err != nil {
 		return errors.DatabaseError("Failed to delete favorite: " + err.Error())
 	}
@@ -147,7 +147,7 @@ func IsFavorite(c *fiber.Ctx) error {
 
 	// Step 2: Check if favorite exists
 	query := fmt.Sprintf("user_id=eq.%s&listing_id=eq.%s", userID, listingID)
-	existingFavorites, err := client.GET("favorites", query)
+	existingFavorites, err := client.GET(c, "favorites", query)
 	if err != nil {
 		return errors.DatabaseError("Failed to query favorites: " + err.Error())
 	}
