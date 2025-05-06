@@ -63,7 +63,10 @@ func setupMiddleware(app *fiber.App, cfg *config.Config) {
 				return "*" // Allow all origins in development
 			}
 			// Specify allowed origins in production
-			return "http://192.168.178.10,http://localhost:3000,http://localhost:8081,http://10.0.2.2:3000,https://greentradeeu.vercel.app,https://www.greentrade.site"
+			allowedOrigins := []string{
+				"https://www.greentrade.site",
+			}
+			return strings.Join(allowedOrigins, ",")
 		}(),
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS,PATCH",
 		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
