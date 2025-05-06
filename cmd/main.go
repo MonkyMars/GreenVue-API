@@ -2,6 +2,7 @@ package main
 
 import (
 	"greentrade-eu/internal/api"
+	"greentrade-eu/internal/db"
 	"greentrade-eu/internal/config"
 	"log"
 
@@ -18,6 +19,11 @@ func main() {
 
 	// Setup the Fiber app using the api package's function
 	app := api.SetupApp(cfg)
+
+	// Perform a sanity check on the database connection
+	if ok, err := db.SanityCheck(); !ok {
+		log.Fatalf("Sanity check failed: %v", err)
+	}
 
 	// Start server using port from config
 	port := cfg.Server.Port
