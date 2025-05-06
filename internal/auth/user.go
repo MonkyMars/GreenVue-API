@@ -17,7 +17,7 @@ func GetUserById(c *fiber.Ctx) error {
 		return errors.BadRequest("User ID is required")
 	}
 
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 	if client == nil {
 		return errors.InternalServerError("Failed to create database client")
 	}
@@ -56,7 +56,7 @@ func GetUserByAccessToken(c *fiber.Ctx) error {
 		return errors.Unauthorized("Invalid token claims")
 	}
 
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 	if client == nil {
 		return errors.InternalServerError("Failed to create database client")
 	}
@@ -106,7 +106,7 @@ func UpdateUser(c *fiber.Ctx) error {
 		return errors.BadRequest(err.Error())
 	}
 
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 	if client == nil {
 		return errors.InternalServerError("Failed to create database client")
 	}

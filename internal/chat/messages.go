@@ -20,7 +20,7 @@ type Message struct {
 }
 
 func GetMessagesByConversationID(c *fiber.Ctx) error {
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 
 	if client == nil {
 		return errors.InternalServerError("Database connection failed. Please check SUPABASE_URL and SUPABASE_ANON.")
@@ -64,7 +64,7 @@ func PostMessage(c *fiber.Ctx) error {
 		return errors.BadRequest("Missing required fields: conversation_id, sender_id, content")
 	}
 
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 	if client == nil {
 		return errors.InternalServerError("Database connection failed.")
 	}

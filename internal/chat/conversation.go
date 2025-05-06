@@ -41,7 +41,7 @@ func CreateConversation(c *fiber.Ctx) error {
 	sellerId := payload.SellerId
 	listingId := payload.ListingId
 
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 
 	if client == nil {
 		return errors.InternalServerError("Database connection failed. Please check SUPABASE_URL and SUPABASE_ANON.")
@@ -101,7 +101,7 @@ func GetConversations(c *fiber.Ctx) error {
 		return errors.BadRequest("User ID is required")
 	}
 
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 	if client == nil {
 		return errors.InternalServerError("Database connection failed. Please check SUPABASE_URL and SUPABASE_ANON.")
 	}

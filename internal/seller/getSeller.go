@@ -13,7 +13,7 @@ import (
 )
 
 func GetSeller(c *fiber.Ctx) error {
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 	sellerID := c.Params("user_id")
 	query := fmt.Sprintf("select=id,created_at,name,location,bio,rating,verified&"+
 		"id=eq.%s", url.QueryEscape(sellerID))

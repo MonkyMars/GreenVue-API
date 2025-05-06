@@ -9,7 +9,7 @@ import (
 )
 
 func DeleteListingById(c *fiber.Ctx) error {
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 
 	// Extract listing ID from request path
 	listingId := c.Params("id")

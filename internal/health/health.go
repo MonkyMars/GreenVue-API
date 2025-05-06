@@ -64,7 +64,7 @@ func DetailedHealth(c *fiber.Ctx) error {
 	dbDetails := "Connected"
 	var dbLatencyMs int64 = -1
 
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 
 	start := time.Now()
 	_, err := client.GET(c, "listings", "select=*")

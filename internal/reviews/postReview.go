@@ -10,7 +10,7 @@ import (
 )
 
 func PostReview(c *fiber.Ctx) error {
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 	if client == nil {
 		return errors.InternalServerError("Failed to create client")
 	}
