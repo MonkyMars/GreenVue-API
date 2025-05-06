@@ -10,7 +10,7 @@ import (
 	"greentrade-eu/internal/reviews"
 	"greentrade-eu/internal/seller"
 	"greentrade-eu/lib/errors"
-	"log" // Import log package
+	"log"
 	"strings"
 	"time"
 
@@ -30,7 +30,7 @@ func SetupApp(cfg *config.Config) *fiber.App {
 
 	// Configure with custom error handler, explicitly providing the logger
 	app := fiber.New(fiber.Config{
-		ServerHeader:      "GreenTrade.eu",
+		ServerHeader:      "GreenTrade",
 		ReadTimeout:       cfg.Server.ReadTimeout,
 		WriteTimeout:      cfg.Server.WriteTimeout,
 		IdleTimeout:       cfg.Server.IdleTimeout,
