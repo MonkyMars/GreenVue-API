@@ -8,7 +8,7 @@ require (
 	github.com/fasthttp/websocket v1.5.8 // indirect
 	github.com/gofiber/contrib/websocket v1.3.4 // direct
 	github.com/savsgio/gotils v0.0.0-20240303185622-093b76447511 // indirect
-	golang.org/x/net v0.33.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 )
 
 require github.com/golang-jwt/jwt/v5 v5.2.2 // direct
