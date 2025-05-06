@@ -58,7 +58,13 @@ func setupMiddleware(app *fiber.App) {
 	}))
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "*", // TODO: http://192.168.178.10,http://localhost:3000,http://localhost:8081,http://10.0.2.2:3000,https://greentradeeu.vercel.app,https://www.greentrade.site
+		AllowOrigins: func() string {
+			if devMode {
+				return "*" // Allow all origins in development
+			}
+			// Specify allowed origins in production
+			return "http://192.168.178.10,http://localhost:3000,http://localhost:8081,http://10.0.2.2:3000,https://greentradeeu.vercel.app,https://www.greentrade.site"
+		}(),
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS,PATCH",
 		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
 		AllowCredentials: false,
