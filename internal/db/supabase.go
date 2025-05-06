@@ -115,8 +115,6 @@ func (s *SupabaseClient) GET(c *fiber.Ctx, table, query string) ([]byte, error) 
 		return nil, err
 	}
 
-	fmt.Println("Supabase GET response:", string(body))
-
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("supabase error: status %d - %s", resp.StatusCode, string(body))
 	}
@@ -143,7 +141,7 @@ func (s *SupabaseClient) POST(c *fiber.Ctx, table string, data any) ([]byte, err
 	}
 
 	req.Header.Add("apikey", s.APIKey)
-	req.Header.Add("Authorization", "Bearer "+s.APIKey)
+	req.Header.Add("Authorization", c.Get("Authorization"))
 	req.Header.Add("Prefer", "return=representation")
 	req.Header.Add("Content-Type", "application/json")
 
@@ -187,7 +185,7 @@ func (s *SupabaseClient) PATCH(c *fiber.Ctx, table string, id string, data any) 
 	}
 
 	req.Header.Add("apikey", s.APIKey)
-	req.Header.Add("Authorization", "Bearer "+s.APIKey)
+	req.Header.Add("Authorization", c.Get("Authorization"))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Prefer", "return=representation") // Ensures Supabase returns the updated record
 
@@ -220,7 +218,7 @@ func (s *SupabaseClient) DELETE(c *fiber.Ctx, table, conditions string) ([]byte,
 	}
 
 	req.Header.Add("apikey", s.APIKey)
-	req.Header.Add("Authorization", "Bearer "+s.APIKey)
+	req.Header.Add("Authorization", c.Get("Authorization"))
 	req.Header.Add("Prefer", "return=minimal") // More efficient for DELETE operations
 
 	client := &http.Client{Timeout: 10 * time.Second}
