@@ -14,6 +14,10 @@ type SupabaseListingRepository struct {
 
 // NewSupabaseListingRepository creates a new repository for managing listings
 func NewSupabaseListingRepository(client *SupabaseClient) *SupabaseListingRepository {
+	// If no client is provided, use the global client
+	if client == nil {
+		client = GetGlobalClient()
+	}
 	return &SupabaseListingRepository{
 		repo: NewSupabaseRepository(client),
 	}
@@ -119,6 +123,10 @@ type SupabaseSellerRepository struct {
 
 // NewSupabaseSellerRepository creates a new repository for managing sellers
 func NewSupabaseSellerRepository(client *SupabaseClient) *SupabaseSellerRepository {
+	// If no client is provided, use the global client
+	if client == nil {
+		client = GetGlobalClient()
+	}
 	return &SupabaseSellerRepository{
 		repo: NewSupabaseRepository(client),
 	}

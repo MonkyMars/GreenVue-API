@@ -19,7 +19,7 @@ func GetFavorites(c *fiber.Ctx) error {
 		return errors.BadRequest("id is required")
 	}
 
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 
 	if client == nil {
 		return errors.InternalServerError("Database connection failed. Please check SUPABASE_URL and SUPABASE_ANON.")
@@ -62,7 +62,7 @@ func AddFavorite(c *fiber.Ctx) error {
 		return errors.BadRequest("user_id and listing_id are required.")
 	}
 
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 	if client == nil {
 		return errors.InternalServerError("Database connection failed. Please check server configuration.")
 	}
@@ -112,7 +112,7 @@ func DeleteFavorite(c *fiber.Ctx) error {
 		return errors.BadRequest("user_id and listing_id are required.")
 	}
 
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 	if client == nil {
 		return errors.InternalServerError("Database connection failed. Please check server configuration.")
 	}
@@ -140,7 +140,7 @@ func IsFavorite(c *fiber.Ctx) error {
 		return errors.BadRequest("user_id and listing_id are required.")
 	}
 
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 	if client == nil {
 		return errors.InternalServerError("Database connection failed. Please check server configuration.")
 	}

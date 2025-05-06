@@ -24,6 +24,10 @@ type SupabaseRepository struct {
 
 // NewSupabaseRepository creates a new Supabase repository
 func NewSupabaseRepository(client *SupabaseClient) *SupabaseRepository {
+	// If no client is explicitly provided, use the global client
+	if client == nil {
+		client = GetGlobalClient()
+	}
 	return &SupabaseRepository{
 		client: client,
 	}

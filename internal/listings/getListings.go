@@ -14,7 +14,7 @@ import (
 const viewName string = "listings_with_seller"
 
 func GetListings(c *fiber.Ctx) error {
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 
 	if client == nil {
 		return errors.InternalServerError("Database connection failed. Please check SUPABASE_URL and SUPABASE_ANON.")
@@ -44,7 +44,7 @@ func GetListings(c *fiber.Ctx) error {
 }
 
 func GetListingById(c *fiber.Ctx) error {
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 	listingID := c.Params("id")
 
 	if client == nil {
@@ -82,7 +82,7 @@ func GetListingById(c *fiber.Ctx) error {
 }
 
 func GetListingByCategory(c *fiber.Ctx) error {
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 	category := c.Params("category")
 
 	if client == nil {
@@ -109,7 +109,7 @@ func GetListingByCategory(c *fiber.Ctx) error {
 }
 
 func GetListingBySeller(c *fiber.Ctx) error {
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 	sellerID := c.Params("sellerId")
 
 	if client == nil {

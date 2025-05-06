@@ -13,7 +13,7 @@ import (
 const viewName string = "review_with_username"
 
 func GetReviews(c *fiber.Ctx) error {
-	client := db.NewSupabaseClient()
+	client := db.GetGlobalClient()
 	if client == nil {
 		return errors.InternalServerError("Failed to create client")
 	}

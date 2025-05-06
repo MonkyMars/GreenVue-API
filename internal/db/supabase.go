@@ -10,14 +10,56 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
 
+// Global client instance and mutex for thread safety
+var (
+	globalClient     *SupabaseClient
+	globalClientOnce sync.Once
+	globalClientMu   sync.RWMutex
+)
+
 type SupabaseClient struct {
 	URL    string
 	APIKey string
+}
+
+// InitGlobalClient initializes the global Supabase client if it doesn't exist yet
+func InitGlobalClient(useServiceKey ...bool) (*SupabaseClient, error) {
+	globalClientOnce.Do(func() {
+		globalClient = NewSupabaseClient(useServiceKey...)
+	})
+
+	if globalClient == nil {
+		return nil, fmt.Errorf("failed to initialize global Supabase client")
+	}
+
+	return globalClient, nil
+}
+
+// GetGlobalClient returns the global Supabase client instance
+// If it hasn't been initialized yet, it creates a new instance
+func GetGlobalClient() *SupabaseClient {
+	globalClientMu.RLock()
+	if globalClient != nil {
+		defer globalClientMu.RUnlock()
+		return globalClient
+	}
+	globalClientMu.RUnlock()
+
+	// If client doesn't exist, initialize it
+	globalClientMu.Lock()
+	defer globalClientMu.Unlock()
+
+	if globalClient == nil {
+		globalClient = NewSupabaseClient()
+	}
+
+	return globalClient
 }
 
 // NewSupabaseClient creates a new Supabase client using environment variables
