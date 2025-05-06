@@ -26,7 +26,7 @@ import (
 // SetupApp configures the Fiber app with all middleware and routes
 func SetupApp(cfg *config.Config) *fiber.App {
 	// Check environment
-	devMode := cfg.Environment != "production"
+	DevMode := cfg.Environment != "production"
 
 	// Configure with custom error handler, explicitly providing the logger
 	app := fiber.New(fiber.Config{
@@ -35,11 +35,11 @@ func SetupApp(cfg *config.Config) *fiber.App {
 		WriteTimeout:      cfg.Server.WriteTimeout,
 		IdleTimeout:       cfg.Server.IdleTimeout,
 		ReduceMemoryUsage: true,
-		ErrorHandler:      errors.ErrorHandler(errors.ErrorResponseConfig{DevMode: devMode, Logger: log.Printf}), // Explicitly set Logger
+		ErrorHandler:      errors.ErrorHandler(errors.ErrorResponseConfig{DevMode: DevMode, Logger: log.Printf}), // Explicitly set Logger
 	})
 
 	// Setup middleware
-	setupMiddleware(app)
+	setupMiddleware(app, cfg)
 
 	// Setup routes
 	setupRoutes(app)
@@ -48,7 +48,7 @@ func SetupApp(cfg *config.Config) *fiber.App {
 }
 
 // setupMiddleware adds all middleware to the app
-func setupMiddleware(app *fiber.App) {
+func setupMiddleware(app *fiber.App, cfg *config.Config) {
 	// Add request ID middleware early in the chain
 	app.Use(errors.RequestID())
 
@@ -59,7 +59,7 @@ func setupMiddleware(app *fiber.App) {
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: func() string {
-			if devMode {
+			if cfg.Environment != "production" {
 				return "*" // Allow all origins in development
 			}
 			// Specify allowed origins in production
