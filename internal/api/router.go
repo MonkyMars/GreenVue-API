@@ -179,6 +179,7 @@ func setupSellerRoutes(router fiber.Router) {
 func setupUserRoutes(router fiber.Router) {
 	router.Get("/auth/me", auth.GetUserByAccessToken)
 	router.Get("/auth/user/:id", auth.GetUserById)
+	router.Post("/auth/resend_email", auth.ResendConfirmationEmail)
 	router.Put("/auth/user/:id", auth.UpdateUser)
 }
 

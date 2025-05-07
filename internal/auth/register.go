@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"greentrade-eu/internal/db"
 	"greentrade-eu/lib"
 	"greentrade-eu/lib/errors"
@@ -14,9 +13,6 @@ func RegisterUser(c *fiber.Ctx) error {
 	if client == nil {
 		return errors.InternalServerError("Failed to create database client")
 	}
-
-	// Create a repository instance to use standardized operations
-	repo := db.NewSupabaseRepository(client)
 
 	// Define payload struct
 	var payload struct {
@@ -35,7 +31,8 @@ func RegisterUser(c *fiber.Ctx) error {
 
 	// Sign up the user (this is a specialized operation that doesn't fit standard CRUD)
 	// We'll continue to use the SignUp method which is kept in the repository for auth operations
-	user, err := repo.SignUp(context.Background(), payload.Email, payload.Password)
+	user, err := client.SignUp(payload.Email, payload.Password)
+
 	if err != nil {
 		return errors.DatabaseError("Failed to register user: " + err.Error())
 	}
@@ -58,7 +55,8 @@ func RegisterUser(c *fiber.Ctx) error {
 	}
 
 	// Insert user into the database using standardized Create operation
-	_, err = repo.Create(context.Background(), "users", newUser)
+	_, err = client.POST(c, "users", newUser, true)
+
 	if err != nil {
 		return errors.DatabaseError("Failed to store user in database: " + err.Error())
 	}
