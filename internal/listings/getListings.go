@@ -22,7 +22,9 @@ func GetListings(c *fiber.Ctx) error {
 
 	limit := c.Query("limit", "50")
 
-	data, err := client.GET(c, viewName, "select=*&limit="+limit)
+	query := fmt.Sprintf("select=*&limit=%s&order=created_at.desc", limit)
+
+	data, err := client.GET(c, viewName, query)
 
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch listings: " + err.Error())
