@@ -83,7 +83,9 @@ func setupMiddleware(app *fiber.App, cfg *config.Config) {
 		Level: compress.LevelBestSpeed,
 	}))
 
-	app.Use(recover.New())
+	app.Use(recover.New(recover.Config{
+		EnableStackTrace: cfg.Environment != "production",
+	}))
 
 	// Cache middleware with exclusions for auth and non-GET requests
 	app.Use(cache.New(cache.Config{
