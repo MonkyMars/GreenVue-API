@@ -64,7 +64,7 @@ func setupMiddleware(app *fiber.App, cfg *config.Config) {
 			}
 			// Specify allowed origins in production
 			allowedOrigins := []string{
-				"https://www.greentrade.site",
+				"https://www.greenvue.eu",
 			}
 			return strings.Join(allowedOrigins, ",")
 		}(),
