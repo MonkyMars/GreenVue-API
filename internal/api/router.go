@@ -1,15 +1,15 @@
 package api
 
 import (
-	"greentrade-eu/internal/auth"
-	"greentrade-eu/internal/chat"
-	"greentrade-eu/internal/config"
-	"greentrade-eu/internal/favorites"
-	"greentrade-eu/internal/health"
-	"greentrade-eu/internal/listings"
-	"greentrade-eu/internal/reviews"
-	"greentrade-eu/internal/seller"
-	"greentrade-eu/lib/errors"
+	"greenvue-eu/internal/auth"
+	"greenvue-eu/internal/chat"
+	"greenvue-eu/internal/config"
+	"greenvue-eu/internal/favorites"
+	"greenvue-eu/internal/health"
+	"greenvue-eu/internal/listings"
+	"greenvue-eu/internal/reviews"
+	"greenvue-eu/internal/seller"
+	"greenvue-eu/lib/errors"
 	"log"
 	"strings"
 	"time"
@@ -30,7 +30,7 @@ func SetupApp(cfg *config.Config) *fiber.App {
 
 	// Configure with custom error handler, explicitly providing the logger
 	app := fiber.New(fiber.Config{
-		ServerHeader:      "GreenTrade",
+		ServerHeader:      "GreenVue",
 		ReadTimeout:       cfg.Server.ReadTimeout,
 		WriteTimeout:      cfg.Server.WriteTimeout,
 		IdleTimeout:       cfg.Server.IdleTimeout,

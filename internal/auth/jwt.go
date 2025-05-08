@@ -2,7 +2,7 @@ package auth
 
 import (
 	"errors"
-	response "greentrade-eu/lib/errors"
+	response "greenvue-eu/lib/errors"
 	"log"
 	"os"
 	"strings"

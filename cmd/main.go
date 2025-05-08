@@ -1,9 +1,9 @@
 package main
 
 import (
-	"greentrade-eu/internal/api"
-	"greentrade-eu/internal/db"
-	"greentrade-eu/internal/config"
+	"greenvue-eu/internal/api"
+	"greenvue-eu/internal/config"
+	"greenvue-eu/internal/db"
 	"log"
 
 	"github.com/joho/godotenv"

@@ -3,9 +3,9 @@ package listings
 import (
 	"encoding/json"
 	"fmt"
-	"greentrade-eu/internal/db"
-	"greentrade-eu/lib"
-	"greentrade-eu/lib/errors"
+	"greenvue-eu/internal/db"
+	"greenvue-eu/lib"
+	"greenvue-eu/lib/errors"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"

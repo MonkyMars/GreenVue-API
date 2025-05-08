@@ -1,6 +1,6 @@
-# GreenTrade API
+# GreenVue API
 
-Backend API for GreenTrade.eu - an EU-focused sustainable marketplace for selling pre-owned items.
+Backend API for GreenVue.eu - an EU-focused sustainable marketplace for selling pre-owned items.
 
 [![Go Version](https://img.shields.io/badge/Go-1.24-blue.svg)](https://go.dev/)
 [![Fiber](https://img.shields.io/badge/Fiber-v2.52.6-brightgreen.svg)](https://gofiber.io/)
@@ -8,7 +8,7 @@ Backend API for GreenTrade.eu - an EU-focused sustainable marketplace for sellin
 
 ## 🌱 Overview
 
-GreenTrade is a sustainable marketplace platform focused on the EU market, designed to facilitate the buying and selling of pre-owned items. This repository contains the backend API that powers both the [mobile app](https://github.com/MonkyMars/GreenTrade-Mobile) and [web platform](https://github.com/MonkyMars/GreenTrade-Web).
+GreenVue is a sustainable marketplace platform focused on the EU market, designed to facilitate the buying and selling of pre-owned items. This repository contains the backend API that powers both the [mobile app](https://github.com/MonkyMars/GreenVue-Mobile) and [web platform](https://github.com/MonkyMars/GreenVue-Web).
 
 Our mission is to promote sustainability by extending the lifecycle of products and reducing waste through a user-friendly marketplace that encourages reuse over disposal.
 
@@ -26,29 +26,35 @@ Our mission is to promote sustainability by extending the lifecycle of products 
 ## ✨ Features
 
 - **Authentication**
+
   - Registration and login
   - JWT-based authentication
   - Refresh token support
 
 - **Listings Management**
+
   - Create, retrieve and delete listings
   - Category-based listing organization
   - Image upload support (WebP conversion)
   - Seller-specific listings
 
 - **User Profiles**
+
   - User information management
   - Seller profiles
 
 - **Chat System**
+
   - Real-time messaging via WebSockets
   - Conversation management
   - Message history
 
 - **Reviews & Ratings**
+
   - Post and retrieve product reviews
 
 - **Favorites**
+
   - Save and manage favorite listings
 
 - **Security**
@@ -59,7 +65,7 @@ Our mission is to promote sustainability by extending the lifecycle of products 
 
 ## 🔒 Security
 
-GreenTrade takes security seriously. Our security practices include:
+GreenVue takes security seriously. Our security practices include:
 
 - Environment variable management for credentials
 - Secure JWT implementation
@@ -84,8 +90,8 @@ Future development plans:
 
 ## 🔗 Related Projects
 
-- [GreenTrade Mobile App](https://github.com/MonkyMars/GreenTrade-Mobile)
-- [GreenTrade Web Platform](https://github.com/MonkyMars/GreenTrade-Web)
+- [GreenVue Mobile App](https://github.com/MonkyMars/GreenVue-Mobile)
+- [GreenVue Web Platform](https://github.com/MonkyMars/GreenVue-Web)
 
 ## 📄 License
 

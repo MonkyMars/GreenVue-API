@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
-	"greentrade-eu/lib"
+	"greenvue-eu/lib"
 
 	"github.com/gofiber/fiber/v2"
 )

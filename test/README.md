@@ -1,6 +1,6 @@
-# GreenTrade.eu Backend Tests
+# GreenVue.eu Backend Tests
 
-This directory contains test files for various components of the GreenTrade.eu backend application.
+This directory contains test files for various components of the GreenVue.eu backend application.
 
 ## Test Structure
 
@@ -61,4 +61,4 @@ The `db/mock_repository.go` file contains mock implementations of the repository
 
 ## Environmental Variables for Testing
 
-Some tests, especially those for JWT functionality, require environmental variables to be set. These are automatically set within the tests and cleaned up afterward. 
+Some tests, especially those for JWT functionality, require environmental variables to be set. These are automatically set within the tests and cleaned up afterward.

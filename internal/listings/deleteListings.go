@@ -1,8 +1,8 @@
 package listings
 
 import (
-	"greentrade-eu/internal/db"
-	"greentrade-eu/lib/errors"
+	"greenvue-eu/internal/db"
+	"greenvue-eu/lib/errors"
 	"log"
 
 	"github.com/gofiber/fiber/v2"

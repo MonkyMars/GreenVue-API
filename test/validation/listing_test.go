@@ -1,7 +1,7 @@
 package validation_test
 
 import (
-	"greentrade-eu/lib/validation"
+	"greenvue-eu/lib/validation"
 	"testing"
 )
 

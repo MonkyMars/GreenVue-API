@@ -3,7 +3,7 @@ package db_test
 import (
 	"context"
 	"fmt"
-	"greentrade-eu/lib"
+	"greenvue-eu/lib"
 	"testing"
 
 	"github.com/google/uuid"

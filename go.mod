@@ -1,4 +1,4 @@
-module greentrade-eu
+module greenvue-eu
 
 go 1.24.1
 

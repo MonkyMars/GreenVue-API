@@ -1,7 +1,7 @@
 package auth_test
 
 import (
-	"greentrade-eu/internal/auth"
+	"greenvue-eu/internal/auth"
 	"os"
 	"testing"
 )

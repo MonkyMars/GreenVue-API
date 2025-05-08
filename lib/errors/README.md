@@ -1,12 +1,13 @@
-# Error Handling in GreenTrade Backend
+# Error Handling in GreenVue Backend
 
-This package provides a consistent and structured approach to error handling across the GreenTrade backend.
+This package provides a consistent and structured approach to error handling across the GreenVue backend.
 
 ## Key Components
 
 ### 1. Error Types
 
 Pre-defined error types for common scenarios:
+
 - `ErrBadRequest`: Invalid input from client
 - `ErrUnauthorized`: Authentication required
 - `ErrForbidden`: Authentication successful but permission denied
@@ -19,6 +20,7 @@ Pre-defined error types for common scenarios:
 ### 2. AppError Structure
 
 The `AppError` struct encapsulates all error-related information:
+
 - `Err`: The underlying error
 - `StatusCode`: HTTP status code
 - `Message`: User-friendly error message
@@ -28,6 +30,7 @@ The `AppError` struct encapsulates all error-related information:
 ### 3. Error Factories
 
 Helper functions for creating consistent errors:
+
 - `BadRequest(message)`: Creates a 400 Bad Request error
 - `ValidationError(message, field)`: Creates a 400 with field identification
 - `Unauthorized(message)`: Creates a 401 Unauthorized error
@@ -40,6 +43,7 @@ Helper functions for creating consistent errors:
 ### 4. Middleware
 
 The `ErrorHandler` middleware provides consistent error handling across the application:
+
 - Converts errors to appropriate HTTP responses
 - Sanitizes error details based on environment
 - Maintains consistent error response format
@@ -47,6 +51,7 @@ The `ErrorHandler` middleware provides consistent error handling across the appl
 ### 5. Response Utilities
 
 Helper functions for consistent response formatting:
+
 - `HandleError(c, err)`: Handles an error in route handlers
 - `SuccessResponse(c, data)`: Formats successful responses
 - `ErrorResponse(c, statusCode, message)`: Creates custom error responses
@@ -74,18 +79,18 @@ func CreateUser(c *fiber.Ctx) error {
         Username string `json:"username"`
         Email    string `json:"email"`
     }
-    
+
     if err := errors.ValidateRequest(c, &payload); err != nil {
         return err
     }
-    
+
     if err := errors.ValidateFields(map[string]string{
         "username": payload.Username,
         "email":    payload.Email,
     }); err != nil {
         return err
     }
-    
+
     // Continue with valid data...
-} 
+}
 ```

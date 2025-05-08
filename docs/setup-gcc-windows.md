@@ -1,6 +1,6 @@
 # Setting Up GCC on Windows for WebP Support
 
-This guide will help you set up GCC on Windows, which is required for the `chai2010/webp` package used in the GreenTrade.eu backend.
+This guide will help you set up GCC on Windows, which is required for the `chai2010/webp` package used in the GreenVue.eu backend.
 
 ## Why GCC is Required
 
@@ -19,11 +19,13 @@ You have three main options for setting up GCC on Windows:
 MSYS2 provides an easy way to install GCC and other Unix-like tools on Windows.
 
 1. **Download and install MSYS2**:
+
    - Go to https://www.msys2.org/
    - Download the installer for your system (typically x86_64)
    - Run the installer and follow the instructions
 
 2. **Install GCC and related tools**:
+
    - Open "MSYS2 MINGW64" from the Start menu
    - Run the following command:
      ```bash
@@ -31,6 +33,7 @@ MSYS2 provides an easy way to install GCC and other Unix-like tools on Windows.
      ```
 
 3. **Add MinGW to your PATH**:
+
    - Right-click on "This PC" or "My Computer" and select "Properties"
    - Click on "Advanced system settings"
    - Click on "Environment Variables"
@@ -54,10 +57,12 @@ MSYS2 provides an easy way to install GCC and other Unix-like tools on Windows.
 TDM-GCC is another easy option for Windows that focuses specifically on GCC.
 
 1. **Download TDM-GCC**:
+
    - Go to https://jmeubank.github.io/tdm-gcc/
    - Download the installer for the latest version
 
 2. **Install TDM-GCC**:
+
    - Run the installer
    - Select "Create" when asked about the installation type
    - Follow the rest of the installation with default options
@@ -76,6 +81,7 @@ TDM-GCC is another easy option for Windows that focuses specifically on GCC.
 If you're having trouble with GCC setup, you can use Docker instead:
 
 1. **Install Docker Desktop**:
+
    - Download and install from https://www.docker.com/products/docker-desktop
 
 2. **Run the Application in Docker**:
@@ -108,10 +114,12 @@ docker-compose up
 ### Common Issues
 
 1. **"gcc: command not found"**:
+
    - Make sure GCC is in your PATH
    - Restart your terminal or command prompt after updating PATH
 
 2. **Missing libwebp**:
+
    - If you see errors about missing WebP libraries, install them:
      - For MSYS2: `pacman -S mingw-w64-x86_64-libwebp`
      - For TDM-GCC: You may need to install libwebp separately
@@ -126,4 +134,4 @@ docker-compose up
 
 - WebP project page: https://developers.google.com/speed/webp
 - chai2010/webp Go package: https://github.com/chai2010/webp
-- MSYS2 package search: https://packages.msys2.org/ 
+- MSYS2 package search: https://packages.msys2.org/

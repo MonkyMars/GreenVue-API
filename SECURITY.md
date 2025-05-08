@@ -2,22 +2,23 @@
 
 ## Supported Versions
 
-We currently support the production GreenTrade API service only.  
+We currently support the production GreenVue API service only.  
 Security patches and updates are applied continuously.
 
-| Deployment | Supported |
-| ---------- | --------- |
-| GreenTrade API (production) | ✅ |
+| Deployment                | Supported |
+| ------------------------- | --------- |
+| GreenVue API (production) | ✅        |
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in GreenTrade API, **please do not open a public issue**.
+If you discover a security vulnerability in GreenVue API, **please do not open a public issue**.
 
 Instead, report it privately by emailing:
 
-**greentrade.security@protonmail.com**
+**greenvue.security@protonmail.com**
 
 Please include:
+
 - Detailed description of the vulnerability
 - Steps to reproduce
 - Potential impact assessment
@@ -39,7 +40,7 @@ We aim to acknowledge all security reports within **48 hours**, and provide a re
 
 ## Platform Integrity
 
-GreenTrade API is a **centralized service** operated by the GreenTrade team.  
+GreenVue API is a **centralized service** operated by the GreenVue team.  
 Users **cannot self-host** the backend.  
 We maintain full control over the production environment to ensure service integrity, reliability, and security.
 
@@ -49,4 +50,4 @@ We maintain full control over the production environment to ensure service integ
 
 We thank all individuals who report security vulnerabilities responsibly.
 
-Together, we make GreenTrade stronger and safer.
+Together, we make GreenVue stronger and safer.
