@@ -11,7 +11,7 @@ import (
 )
 
 // View name for PostgreSQL that fetches the user's favorites with listings and seller information
-const viewName string = "user_favorites_with_listings_and_seller"
+const viewName string = "user_favorites_view"
 
 func GetFavorites(c *fiber.Ctx) error {
 	id := c.Params("user_id")
