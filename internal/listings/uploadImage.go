@@ -30,6 +30,7 @@ func UploadHandler(c *fiber.Ctx) error {
 	form, err := c.MultipartForm()
 
 	if err != nil {
+		log.Println("Error parsing form data:", err)
 		return errors.BadRequest("Failed to parse form data: " + err.Error())
 	}
 
@@ -74,6 +75,7 @@ func UploadHandler(c *fiber.Ctx) error {
 		}
 
 		if totalFiles == 0 {
+			log.Println("No files found in the form data")
 			return errors.BadRequest("No files were submitted. Make sure to include files in your FormData.")
 		}
 	} else {

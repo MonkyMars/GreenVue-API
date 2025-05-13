@@ -18,8 +18,7 @@ var (
 )
 
 type Claims struct {
-	UserID string `json:"sub"`
-	Email  string `json:"email"`
+	UserId string `json:"user_id"`
 	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
@@ -45,23 +44,23 @@ func getJWTSecrets() (access []byte, refresh []byte) {
 func GenerateTokenPair(userID, email string) (*TokenPair, error) {
 	// Generate access token
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
-		UserID: userID,
-		Email:  email,
+		UserId: userID,
 		Role:   "authenticated", // required for Supabase RLS
 		RegisteredClaims: jwt.RegisteredClaims{
-			Audience:  []string{"authenticated"},
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    "greenvue",                                    // Issuer of the token
+			Subject:   userID,                                        // Subject of the token
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)), // Expiration time (1 hour)
+			IssuedAt:  jwt.NewNumericDate(time.Now()),                // Time when the token was issued
 		},
 	})
 
 	// Generate refresh token
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
-		UserID: userID,
-		Email:  email,
+		UserId: userID,
 		Role:   "authenticated", // required for Supabase RLS
 		RegisteredClaims: jwt.RegisteredClaims{
-			Audience:  []string{"authenticated"},
+			Issuer:    "greenvue",
+			Subject:   userID,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -178,7 +177,7 @@ func RefreshTokenHandler(c *fiber.Ctx) error {
 	}
 
 	// Generate new token pair
-	tokens, err := GenerateTokenPair(claims.UserID, claims.Email)
+	tokens, err := GenerateTokenPair(claims.UserId, claims.Role)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "failed to generate tokens")
 	}

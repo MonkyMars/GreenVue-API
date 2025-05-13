@@ -20,10 +20,10 @@ func TestGenerateAndValidateTokens(t *testing.T) {
 
 	// Test data
 	userID := "test-user-123"
-	email := "test@example.com"
+	role := "authenticated"
 
 	// Generate token pair
-	tokenPair, err := auth.GenerateTokenPair(userID, email)
+	tokenPair, err := auth.GenerateTokenPair(userID, role)
 	if err != nil {
 		t.Fatalf("Failed to generate token pair: %v", err)
 	}
@@ -45,11 +45,11 @@ func TestGenerateAndValidateTokens(t *testing.T) {
 		t.Errorf("Failed to validate access token: %v", err)
 	} else {
 		// Verify claims
-		if claims.UserID != userID {
-			t.Errorf("Expected user ID %s, got %s", userID, claims.UserID)
+		if claims.UserId != userID {
+			t.Errorf("Expected user ID %s, got %s", userID, claims.UserId)
 		}
-		if claims.Email != email {
-			t.Errorf("Expected email %s, got %s", email, claims.Email)
+		if claims.Role != role {
+			t.Errorf("Expected email %s, got %s", role, claims.Role)
 		}
 	}
 
@@ -59,11 +59,11 @@ func TestGenerateAndValidateTokens(t *testing.T) {
 		t.Errorf("Failed to validate refresh token: %v", refreshErr)
 	} else {
 		// Verify refresh token claims
-		if refreshClaims.UserID != userID {
-			t.Errorf("Expected user ID %s in refresh token, got %s", userID, refreshClaims.UserID)
+		if refreshClaims.UserId != userID {
+			t.Errorf("Expected user ID %s in refresh token, got %s", userID, refreshClaims.UserId)
 		}
-		if refreshClaims.Email != email {
-			t.Errorf("Expected email %s in refresh token, got %s", email, refreshClaims.Email)
+		if refreshClaims.Role != role {
+			t.Errorf("Expected email %s in refresh token, got %s", role, refreshClaims.Role)
 		}
 	}
 }

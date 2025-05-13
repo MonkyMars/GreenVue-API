@@ -145,15 +145,17 @@ func (s *SupabaseClient) POST(c *fiber.Ctx, table string, data any, useServiceKe
 		Authorization = "Bearer " + s.APIKey
 	} else {
 		Authorization = c.Get("Authorization")
+		fmt.Println("Using Authorization from context", Authorization)
 	}
 
 	req.Header.Add("apikey", s.APIKey)
-	req.Header.Add("Authorization", Authorization)
+	req.Header.Set("Authorization", Authorization)
 	req.Header.Add("Prefer", "return=representation")
 	req.Header.Add("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
+	fmt.Println("Auth Header:", req.Header.Get("Authorization"))
 	if err != nil {
 		fmt.Println("Error sending request:", err)
 		return nil, err
