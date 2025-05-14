@@ -106,8 +106,10 @@ func signInWithSupabase(idToken string) (map[string]any, error) {
 		os.Getenv("SUPABASE_URL")+"/auth/v1/token?grant_type=id_token",
 		bytes.NewBuffer(jsonBody),
 	)
+
+	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("apikey", os.Getenv("SUPABASE_ANON_KEY"))
+	req.Header.Set("apikey", os.Getenv("SUPABASE_ANON"))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
