@@ -90,7 +90,7 @@ func HandleGoogleCallback(c *fiber.Ctx) error {
 	}
 
 	// Send token info to client (or set a cookie)
-	query := fmt.Sprintf("/account?access_token=%s&refresh_token=%s&user_id=%s&expires_in=%d", supabaseResp.AccessToken, supabaseResp.RefreshToken, supabaseResp.UserId.Id, supabaseResp.ExpiresIn)
+	query := fmt.Sprintf("?access_token=%s&refresh_token=%s&user_id=%s&expires_in=%d", supabaseResp.AccessToken, supabaseResp.RefreshToken, supabaseResp.UserId.Id, supabaseResp.ExpiresIn)
 	return c.Redirect(siteUrl + query)
 }
 
