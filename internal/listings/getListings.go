@@ -24,7 +24,7 @@ func GetListings(c *fiber.Ctx) error {
 
 	query := fmt.Sprintf("select=*&limit=%s&order=created_at.desc", limit)
 
-	data, err := client.GET(c, viewName, query)
+	data, err := client.GET(viewName, query)
 
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch listings: " + err.Error())
@@ -58,7 +58,7 @@ func GetListingById(c *fiber.Ctx) error {
 
 	query := fmt.Sprintf("select=*&id=eq.%s", listingID)
 
-	data, err := client.GET(c, viewName, query)
+	data, err := client.GET(viewName, query)
 
 	if err != nil {
 		if strings.Contains(err.Error(), "invalid input syntax") {
@@ -94,7 +94,7 @@ func GetListingByCategory(c *fiber.Ctx) error {
 		return errors.BadRequest("Category is required")
 	}
 
-	data, err := client.GET(c, viewName, "select=*&category=eq."+category)
+	data, err := client.GET(viewName, "select=*&category=eq."+category)
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch listings by category: " + err.Error())
 	}
@@ -122,7 +122,7 @@ func GetListingBySeller(c *fiber.Ctx) error {
 	}
 
 	query := fmt.Sprintf("select=*&seller_id=eq.%s", sellerID)
-	data, err := client.GET(c, viewName, query)
+	data, err := client.GET(viewName, query)
 	if err != nil {
 		fmt.Printf("Error from Supabase: %v\n", err)
 		return errors.DatabaseError("Failed to fetch listings by seller: " + err.Error())

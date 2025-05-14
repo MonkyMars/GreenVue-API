@@ -56,21 +56,21 @@ func setupMiddleware(app *fiber.App, cfg *config.Config) {
 	app.Use(logger.New(logger.Config{
 		Format: "[${time}] [${ip}] ${status} - ${method} ${path} - ${latency}\n",
 	}))
-
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: func() string {
 			if cfg.Environment != "production" {
-				return "*" // Allow all origins in development
+				return "http://localhost:3000,http://localhost:8080,http://localhost:8081,http://127.0.0.1:3000,http://192.168.178.10:3000,http://192.168.178.10"
 			}
 			// Specify allowed origins in production
 			allowedOrigins := []string{
 				"https://www.greenvue.eu",
+				"https://greenvue.eu",
 			}
 			return strings.Join(allowedOrigins, ",")
 		}(),
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS,PATCH",
 		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
-		AllowCredentials: false,
+		AllowCredentials: true, // Enable credentials for cookies
 	}))
 
 	// Configure custom rate limiter with different limits for different endpoints
@@ -152,9 +152,11 @@ func setupRoutes(app *fiber.App) {
 // setupAuthRoutes configures authentication routes
 func setupAuthRoutes(app *fiber.App) {
 	app.Post("/auth/login", auth.LoginUser)
+	app.Get("/auth/login/google", auth.HandleGoogleLogin)
+	app.Get("/auth/callback/google", auth.HandleGoogleCallback)
 	app.Post("/auth/register", auth.RegisterUser)
 	app.Post("/auth/refresh", auth.RefreshTokenHandler)
-
+	app.Post("/auth/logout", auth.LogoutUser)
 }
 
 // setupPublicListingRoutes configures public listing routes
@@ -202,8 +204,8 @@ func setupProtectedReviewRoutes(router fiber.Router) {
 }
 
 // setupPublicReviewRoutes configures public review routes
-func setupPublicReviewRoutes(router fiber.Router) {
-	router.Get("/reviews/:seller_id", reviews.GetReviews)
+func setupPublicReviewRoutes(app *fiber.App) {
+	app.Get("/reviews/:seller_id", reviews.GetReviews)
 }
 
 // setupFavoritesRoutes configures favorites routes

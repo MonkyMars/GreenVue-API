@@ -26,7 +26,7 @@ func GetUserById(c *fiber.Ctx) error {
 
 	// Get user by ID using the standardized GET operation
 	query := fmt.Sprintf("id=eq.%s", userId)
-	data, err := client.GET(c, viewName, query)
+	data, err := client.GET(viewName, query)
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch user: " + err.Error())
 	}
@@ -65,7 +65,7 @@ func GetUserByAccessToken(c *fiber.Ctx) error {
 
 	// Get user by ID using the standardized GET operation
 	query := fmt.Sprintf("id=eq.%s", claims.UserId)
-	data, err := client.GET(c, viewName, query)
+	data, err := client.GET(viewName, query)
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch user: " + err.Error())
 	}

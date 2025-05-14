@@ -31,7 +31,7 @@ func RegisterUser(c *fiber.Ctx) error {
 
 	// Sign up the user (this is a specialized operation that doesn't fit standard CRUD)
 	// We'll continue to use the SignUp method which is kept in the repository for auth operations
-	user, err := client.SignUp(payload.Email, payload.Password)
+	user, err := client.SignUp(lib.SanitizeInput(payload.Email), payload.Password)
 
 	if err != nil {
 		return errors.DatabaseError("Failed to register user: " + err.Error())
@@ -65,9 +65,11 @@ func RegisterUser(c *fiber.Ctx) error {
 	tokens, err := GenerateTokenPair(user.ID, user.Email)
 	if err != nil {
 		return errors.InternalServerError("Failed to generate authentication tokens")
-	}
+	} // Set the tokens as secure cookies for web clients
+	SetTokenCookie(c, tokens.AccessToken)
+	SetRefreshTokenCookie(c, tokens.RefreshToken)
 
-	// Return success response with tokens
+	// Return success response with tokens for React Native clients
 	return errors.SuccessResponse(c, fiber.Map{
 		"userId":       user.ID,
 		"accessToken":  tokens.AccessToken,

@@ -87,12 +87,8 @@ func NewSupabaseClient(useServiceKey ...bool) *SupabaseClient {
 }
 
 // GET performs a GET request to fetch data with optional query parameters
-func (s *SupabaseClient) GET(c *fiber.Ctx, table, query string) ([]byte, error) {
+func (s *SupabaseClient) GET(table, query string) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?%s", s.URL, table, query)
-
-	if c == nil {
-		return nil, fmt.Errorf("fiber context is nil")
-	}
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -100,7 +96,7 @@ func (s *SupabaseClient) GET(c *fiber.Ctx, table, query string) ([]byte, error) 
 	}
 
 	req.Header.Add("apikey", s.APIKey)
-	req.Header.Add("Authorization", c.Get("Authorization"))
+	req.Header.Add("Authorization", s.APIKey)
 	req.Header.Add("Accept", "application/json")
 
 	client := &http.Client{Timeout: 10 * time.Second}

@@ -32,7 +32,7 @@ func GetMessagesByConversationID(c *fiber.Ctx) error {
 	}
 
 	query := fmt.Sprintf("conversation_id=eq.%s", conversationID)
-	data, err := client.GET(c, "messages", query)
+	data, err := client.GET("messages", query)
 
 	if err != nil {
 		return errors.InternalServerError("Failed to retrieve messages: " + err.Error())
