@@ -10,8 +10,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-const viewName = "users_with_auth_info"
-
 func GetUserById(c *fiber.Ctx) error {
 	userId := c.Params("id")
 
@@ -26,7 +24,7 @@ func GetUserById(c *fiber.Ctx) error {
 
 	// Get user by ID using the standardized GET operation
 	query := fmt.Sprintf("id=eq.%s", userId)
-	data, err := client.GET(viewName, query)
+	data, err := client.GET("users", query)
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch user: " + err.Error())
 	}
@@ -65,7 +63,7 @@ func GetUserByAccessToken(c *fiber.Ctx) error {
 
 	// Get user by ID using the standardized GET operation
 	query := fmt.Sprintf("id=eq.%s", claims.UserId)
-	data, err := client.GET(viewName, query)
+	data, err := client.GET("users", query)
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch user: " + err.Error())
 	}
