@@ -101,8 +101,8 @@ func HandleGoogleLogin(c *fiber.Ctx) error {
 		Name:     "oauthstate",
 		Value:    state,
 		HTTPOnly: true,
-		Secure:   false,
-		SameSite: "Lax",
+		Secure:   true,
+		SameSite: "None",
 	})
 
 	clientID := os.Getenv("GOOGLE_CLIENT_ID")
