@@ -96,15 +96,14 @@ func HandleGoogleLogin(c *fiber.Ctx) error {
 	// Get the hostname and extract domain for the cookie
 	host := c.Hostname()
 	var domain string
-
 	// For local development, don't set the domain at all
 	if cfg.Environment != "production" {
 		domain = ""
 	} else {
-		// For production, set the domain to match your site
-		// This ensures the cookie works across www and non-www versions
-		if strings.HasPrefix(host, "www.") {
-			domain = host[4:] // Remove www. prefix
+		// For production, use the parent domain to share cookies across subdomains
+		// This ensures the cookie works for all subdomains (www, api, etc)
+		if strings.Contains(host, "greenvue.eu") {
+			domain = "greenvue.eu" // Parent domain shared by all subdomains
 		} else {
 			domain = host
 		}
