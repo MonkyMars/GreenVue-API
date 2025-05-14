@@ -17,6 +17,17 @@ type GoogleTokenResponse struct {
 	IDToken string `json:"id_token"`
 }
 
+type User struct {
+	Id string `json:"id"`
+}
+
+type SupabaseResp struct {
+	UserId       User   `json:"user"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int64  `json:"expires_in"`
+}
+
 func HandleGoogleCallback(c *fiber.Ctx) error {
 	// Check for error parameter from OAuth provider
 	if errorMsg := c.Query("error"); errorMsg != "" {
@@ -64,13 +75,13 @@ func HandleGoogleCallback(c *fiber.Ctx) error {
 	}
 
 	// Send Google ID token to Supabase
-	supabaseResp, err := signInWithSupabase(tokenResp.IDToken)
+	_, err = signInWithSupabase(c, tokenResp.IDToken)
 	if err != nil {
 		return errors.InternalServerError("Failed to sign in with Supabase: " + err.Error())
 	}
 
 	// Send token info to client (or set a cookie)
-	return c.JSON(supabaseResp)
+	return c.Redirect(os.Getenv("URL"))
 }
 
 func exchangeCodeForGoogleToken(code string) (*GoogleTokenResponse, error) {
@@ -94,7 +105,7 @@ func exchangeCodeForGoogleToken(code string) (*GoogleTokenResponse, error) {
 	return &tokenResp, nil
 }
 
-func signInWithSupabase(idToken string) (map[string]any, error) {
+func signInWithSupabase(c *fiber.Ctx, idToken string) (SupabaseResp, error) {
 	body := map[string]string{
 		"provider": "google",
 		"id_token": idToken,
@@ -114,14 +125,24 @@ func signInWithSupabase(idToken string) (map[string]any, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return SupabaseResp{}, err
 	}
 	defer resp.Body.Close()
 
 	var supabaseResp map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&supabaseResp); err != nil {
-		return nil, err
+		return SupabaseResp{}, err
 	}
 
-	return supabaseResp, nil
+	tokens := SupabaseResp{
+		UserId:       User{Id: supabaseResp["user"].(map[string]any)["id"].(string)},
+		AccessToken:  supabaseResp["access_token"].(string),
+		RefreshToken: supabaseResp["refresh_token"].(string),
+		ExpiresIn:    int64(supabaseResp["expires_in"].(float64)),
+	}
+
+	SetTokenCookie(c, tokens.AccessToken)
+	SetRefreshTokenCookie(c, tokens.RefreshToken)
+
+	return tokens, nil
 }
