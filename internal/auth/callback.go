@@ -75,13 +75,23 @@ func HandleGoogleCallback(c *fiber.Ctx) error {
 	}
 
 	// Send Google ID token to Supabase
-	_, err = signInWithSupabase(c, tokenResp.IDToken)
+	supabaseResp, err := signInWithSupabase(c, tokenResp.IDToken)
 	if err != nil {
 		return errors.InternalServerError("Failed to sign in with Supabase: " + err.Error())
 	}
 
+	SetTokenCookie(c, supabaseResp.AccessToken)
+	SetRefreshTokenCookie(c, supabaseResp.RefreshToken)
+
+	siteUrl := os.Getenv("URL")
+	if siteUrl == "" {
+		log.Println("URL environment variable is not set")
+		return c.Redirect("https://www.greenvue.eu/login")
+	}
+
 	// Send token info to client (or set a cookie)
-	return c.Redirect(os.Getenv("URL"))
+	query := fmt.Sprintf("?=access_token=%s&refresh_token=%s&user_id=%s&expires_in=%d", supabaseResp.AccessToken, supabaseResp.RefreshToken, supabaseResp.UserId.Id, supabaseResp.ExpiresIn)
+	return c.Redirect(siteUrl + query)
 }
 
 func exchangeCodeForGoogleToken(code string) (*GoogleTokenResponse, error) {
@@ -140,9 +150,6 @@ func signInWithSupabase(c *fiber.Ctx, idToken string) (SupabaseResp, error) {
 		RefreshToken: supabaseResp["refresh_token"].(string),
 		ExpiresIn:    int64(supabaseResp["expires_in"].(float64)),
 	}
-
-	SetTokenCookie(c, tokens.AccessToken)
-	SetRefreshTokenCookie(c, tokens.RefreshToken)
 
 	return tokens, nil
 }
