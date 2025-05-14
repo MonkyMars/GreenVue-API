@@ -5,12 +5,15 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"greenvue-eu/internal/config"
 	"greenvue-eu/internal/db"
 	"greenvue-eu/lib"
 	"greenvue-eu/lib/errors"
 	"log"
 	"net/url"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -70,18 +73,10 @@ func LoginUser(c *fiber.Ctx) error {
 
 // LogoutUser handles user logout by clearing cookies
 func LogoutUser(c *fiber.Ctx) error {
-	log.Printf("Processing logout request from %s", c.IP())
-
-	// Log auth state before logout
-	cookies := c.GetReqHeaders()["Cookie"]
-	log.Printf("Cookies before logout: %v", cookies)
-
 	// Clear all authentication cookies
 	ClearAuthCookies(c)
 
-	// Log success
-	log.Printf("User logged out successfully")
-
+	// Send success response
 	return errors.SuccessResponse(c, fiber.Map{
 		"message": "Successfully logged out",
 	})
@@ -95,14 +90,40 @@ func generateStateToken() string {
 
 func HandleGoogleLogin(c *fiber.Ctx) error {
 	state := generateStateToken()
+	// Load config to determine environment
+	cfg := config.LoadConfig()
 
-	// Save state in cookie or session
+	// Get the hostname and extract domain for the cookie
+	host := c.Hostname()
+	var domain string
+
+	// For local development, don't set the domain at all
+	if cfg.Environment != "production" {
+		domain = ""
+	} else {
+		// For production, set the domain to match your site
+		// This ensures the cookie works across www and non-www versions
+		if strings.HasPrefix(host, "www.") {
+			domain = host[4:] // Remove www. prefix
+		} else {
+			domain = host
+		}
+	}
+
+	// Log the state for debugging
+	log.Printf("Generated OAuth state: %s", state)
+
+	// Save state in cookie with proper settings
 	c.Cookie(&fiber.Cookie{
 		Name:     "oauthstate",
 		Value:    state,
+		Path:     "/",
+		Domain:   domain,
+		MaxAge:   3600,                      // 1 hour
+		Expires:  time.Now().Add(time.Hour), // 1 hour
 		HTTPOnly: true,
-		Secure:   true,
-		SameSite: "None",
+		Secure:   cfg.Environment == "production", // Only secure in production
+		SameSite: "Lax",                           // Use Lax for better compatibility
 	})
 
 	clientID := os.Getenv("GOOGLE_CLIENT_ID")
