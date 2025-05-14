@@ -155,6 +155,7 @@ func setupAuthRoutes(app *fiber.App) {
 	app.Get("/auth/login/google", auth.HandleGoogleLogin)
 	app.Get("/auth/callback/google", auth.HandleGoogleCallback)
 	app.Post("/auth/register", auth.RegisterUser)
+	app.Post("/auth/register/google", auth.HandleGoogleRegister)
 	app.Post("/auth/refresh", auth.RefreshTokenHandler)
 	app.Post("/auth/logout", auth.LogoutUser)
 }
