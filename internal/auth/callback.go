@@ -75,7 +75,7 @@ func HandleGoogleCallback(c *fiber.Ctx) error {
 	}
 
 	// Send Google ID token to Supabase
-	supabaseResp, err := signInWithSupabase(c, tokenResp.IDToken)
+	supabaseResp, err := signInWithSupabase(tokenResp.IDToken)
 	if err != nil {
 		return errors.InternalServerError("Failed to sign in with Supabase: " + err.Error())
 	}
@@ -90,7 +90,7 @@ func HandleGoogleCallback(c *fiber.Ctx) error {
 	}
 
 	// Send token info to client (or set a cookie)
-	query := fmt.Sprintf("?access_token=%s&refresh_token=%s&user_id=%s&expires_in=%d", supabaseResp.AccessToken, supabaseResp.RefreshToken, supabaseResp.UserId.Id, supabaseResp.ExpiresIn)
+	query := fmt.Sprintf("/account?access_token=%s&refresh_token=%s&user_id=%s&expires_in=%d", supabaseResp.AccessToken, supabaseResp.RefreshToken, supabaseResp.UserId.Id, supabaseResp.ExpiresIn)
 	return c.Redirect(siteUrl + query)
 }
 
@@ -115,7 +115,7 @@ func exchangeCodeForGoogleToken(code string) (*GoogleTokenResponse, error) {
 	return &tokenResp, nil
 }
 
-func signInWithSupabase(c *fiber.Ctx, idToken string) (SupabaseResp, error) {
+func signInWithSupabase(idToken string) (SupabaseResp, error) {
 	body := map[string]string{
 		"provider": "google",
 		"id_token": idToken,
