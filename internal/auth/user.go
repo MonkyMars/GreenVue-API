@@ -115,7 +115,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	userUpdate.ID = userId
 
 	// Update user using the standardized PATCH operation
-	data, err := client.PATCH(c, "users", userId, userUpdate)
+	data, err := client.PATCH("users", userId, userUpdate)
 	if err != nil {
 		return errors.DatabaseError("Failed to update user: " + err.Error())
 	}

@@ -84,7 +84,7 @@ func AddFavorite(c *fiber.Ctx) error {
 		ListingID: payload.ListingID,
 	}
 
-	responseData, err := client.POST(c, "favorites", newFavorite)
+	responseData, err := client.POST("favorites", newFavorite)
 	if err != nil {
 		return errors.DatabaseError("Failed to insert favorite: " + err.Error())
 	}

@@ -279,7 +279,7 @@ func handleUserRegistration(c *fiber.Ctx, supabaseResp SupabaseResp) error {
 		}
 
 		// Insert user into the database
-		_, err = client.POST(c, "users", newUser, true)
+		_, err = client.POST("users", newUser)
 		if err != nil {
 			log.Printf("Failed to store Google user in database: %v", err)
 			return fmt.Errorf("failed to store user in database: %v", err)

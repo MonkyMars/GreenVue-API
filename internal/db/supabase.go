@@ -119,7 +119,7 @@ func (s *SupabaseClient) GET(table, query string) ([]byte, error) {
 }
 
 // POST creates a new record
-func (s *SupabaseClient) POST(c *fiber.Ctx, table string, data any, useServiceKey ...bool) ([]byte, error) {
+func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?select=*", s.URL, table)
 
 	jsonData, err := json.Marshal(data)
@@ -136,16 +136,8 @@ func (s *SupabaseClient) POST(c *fiber.Ctx, table string, data any, useServiceKe
 		return nil, err
 	}
 
-	var Authorization string
-	if len(useServiceKey) > 0 && useServiceKey[0] {
-		Authorization = "Bearer " + s.APIKey
-	} else {
-		Authorization = c.Get("Authorization")
-		fmt.Println("Using Authorization from context", Authorization)
-	}
-
 	req.Header.Add("apikey", s.APIKey)
-	req.Header.Set("Authorization", Authorization)
+	req.Header.Set("Authorization", "Bearer "+s.APIKey)
 	req.Header.Add("Prefer", "return=representation")
 	req.Header.Add("Content-Type", "application/json")
 
@@ -176,7 +168,7 @@ func (s *SupabaseClient) POST(c *fiber.Ctx, table string, data any, useServiceKe
 }
 
 // PATCH updates an existing record by ID
-func (s *SupabaseClient) PATCH(c *fiber.Ctx, table string, id string, data any) ([]byte, error) {
+func (s *SupabaseClient) PATCH(table string, id string, data any) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?id=eq.%s", s.URL, table, id)
 
 	jsonData, err := json.Marshal(data)
@@ -190,7 +182,7 @@ func (s *SupabaseClient) PATCH(c *fiber.Ctx, table string, id string, data any) 
 	}
 
 	req.Header.Add("apikey", s.APIKey)
-	req.Header.Add("Authorization", c.Get("Authorization"))
+	req.Header.Add("Authorization", "Bearer "+s.APIKey)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Prefer", "return=representation") // Ensures Supabase returns the updated record
 

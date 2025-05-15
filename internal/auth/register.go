@@ -62,7 +62,7 @@ func RegisterUser(c *fiber.Ctx) error {
 	}
 
 	// Insert user into the database using standardized Create operation
-	_, err = client.POST(c, "users", newUser, true)
+	_, err = client.POST("users", newUser)
 
 	if err != nil {
 		return errors.DatabaseError("Failed to store user in database: " + err.Error())
@@ -200,7 +200,7 @@ func HandleGoogleRegister(c *fiber.Ctx) error {
 		}
 
 		// Insert user into the database
-		data, err = client.POST(c, "users", newUser, true)
+		data, err = client.POST("users", newUser)
 		if err != nil {
 			log.Printf("Failed to store Google user in database: %v", err)
 			return errors.DatabaseError("Failed to store Google user in database: " + err.Error())

@@ -77,12 +77,12 @@ func (r *SupabaseRepository) GetByID(ctx context.Context, table string, id strin
 
 // Create creates a new record
 func (r *SupabaseRepository) Create(ctx context.Context, table string, data any) ([]byte, error) {
-	return r.client.POST(&fiber.Ctx{}, table, data)
+	return r.client.POST(table, data)
 }
 
 // Update updates a record by ID
 func (r *SupabaseRepository) Update(ctx context.Context, table string, id string, data any) ([]byte, error) {
-	return r.client.PATCH(&fiber.Ctx{}, table, id, data)
+	return r.client.PATCH(table, id, data)
 }
 
 // Delete deletes a record by ID

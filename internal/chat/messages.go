@@ -77,7 +77,7 @@ func PostMessage(c *fiber.Ctx) error {
 	}
 
 	// Marshal the map into JSON bytes
-	insertedData, err := client.POST(c, "messages", newMessage)
+	insertedData, err := client.POST("messages", newMessage)
 	if err != nil {
 		return errors.InternalServerError("Failed to post message: " + err.Error())
 	}
