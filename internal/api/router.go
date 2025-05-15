@@ -158,6 +158,7 @@ func setupAuthRoutes(app *fiber.App) {
 	app.Post("/auth/register", auth.RegisterUser)
 	app.Post("/auth/refresh", auth.RefreshTokenHandler)
 	app.Post("/auth/logout", auth.LogoutUser)
+	app.Get("/auth/confirm_email", auth.VerifyEmailRedirect)
 }
 
 // setupPublicListingRoutes configures public listing routes

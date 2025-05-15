@@ -3,6 +3,8 @@ package auth
 import (
 	"greenvue-eu/internal/db"
 	"greenvue-eu/lib/errors"
+	"log"
+	"net/url"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -37,4 +39,33 @@ func ResendConfirmationEmail(c *fiber.Ctx) error {
 	}
 
 	return errors.SuccessResponse(c, "Confirmation email resent successfully")
+}
+
+func VerifyEmailRedirect(c *fiber.Ctx) error {
+	redirect_uri := c.Query("redirect_uri")
+	metaData := c.Query("metadata")
+
+	log.Println(metaData)
+
+	if redirect_uri == "" {
+		return errors.BadRequest("Missing redirect_uri parameter")
+	}
+
+	// Check if the redirect_uri is a valid URL
+	_, err := url.ParseRequestURI(redirect_uri)
+	if err != nil {
+		return errors.BadRequest("Invalid redirect_uri parameter")
+	}
+
+	// Add verified = true to supabase user
+	client := db.GetGlobalClient()
+
+	if client == nil {
+		return errors.InternalServerError("Failed to create database client")
+	}
+
+	// Get user ID from the request body
+
+	// Redirect to the specified URL
+	return c.Redirect(redirect_uri, fiber.StatusFound)
 }

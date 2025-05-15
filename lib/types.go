@@ -8,15 +8,15 @@ import (
 )
 
 type User struct {
-	ID           string  `json:"id"`
-	Email        string  `json:"email"`
-	Name         string  `json:"name,omitempty"`
-	Location     string  `json:"location,omitempty"`
-	Bio          string  `json:"bio,omitempty"`
-	CreatedAt    string  `json:"created_at,omitempty"`
-	Rating       float32 `json:"rating,omitempty"`
-	Verified     bool    `json:"verified,omitempty"`
-	LastSignInAt string  `json:"last_sign_in_at,omitempty"`
+	ID            string  `json:"id"`
+	Email         string  `json:"email"`
+	Name          string  `json:"name,omitempty"`
+	Location      string  `json:"location,omitempty"`
+	Bio           string  `json:"bio,omitempty"`
+	CreatedAt     string  `json:"created_at,omitempty"`
+	Rating        float32 `json:"rating,omitempty"`
+	Verified      bool    `json:"verified,omitempty"`
+	EmailVerified bool    `json:"email_verified"`
 }
 
 type PublicUser struct {

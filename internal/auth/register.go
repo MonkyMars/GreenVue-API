@@ -146,7 +146,7 @@ func HandleGoogleRegister(c *fiber.Ctx) error {
 		log.Printf("Failed to get user profile, status: %d", resp.StatusCode)
 	} else {
 		defer resp.Body.Close()
-		var userProfile map[string]interface{}
+		var userProfile map[string]any
 		if err := json.NewDecoder(resp.Body).Decode(&userProfile); err != nil {
 			log.Printf("Failed to decode user profile: %v", err)
 		} else {
@@ -160,7 +160,7 @@ func HandleGoogleRegister(c *fiber.Ctx) error {
 
 			// Extract user's name
 			// First try to get from user_metadata
-			if userMetadata, ok := userProfile["user_metadata"].(map[string]interface{}); ok {
+			if userMetadata, ok := userProfile["user_metadata"].(map[string]any); ok {
 				if fullName, ok := userMetadata["full_name"].(string); ok && fullName != "" {
 					userName = fullName
 					log.Printf("Using full_name from user_metadata: %s", userName)
@@ -192,10 +192,11 @@ func HandleGoogleRegister(c *fiber.Ctx) error {
 	if !userExists {
 		// Create a user record using the standardized type
 		newUser := lib.User{
-			ID:       supabaseResp.UserId.Id,
-			Email:    userEmail,
-			Name:     userName,
-			Location: payload.Location,
+			ID:            supabaseResp.UserId.Id,
+			Email:         userEmail,
+			Name:          userName,
+			Location:      payload.Location,
+			EmailVerified: true,
 		}
 
 		// Insert user into the database
