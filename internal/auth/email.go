@@ -147,17 +147,17 @@ func VerifyEmailRedirect(c *fiber.Ctx) error {
 		return errors.InternalServerError("Failed to fetch user data: " + err.Error())
 	}
 
-	var user *lib.User
+	var user []lib.User
 
 	if err := json.Unmarshal(data, &user); err != nil {
 		return errors.InternalServerError("Failed to parse user data: " + err.Error())
 	}
 
-	if user.Email != email {
+	if user[0].Email != email {
 		return errors.BadRequest("Email does not match user ID")
 	}
 
-	if user.Email != email {
+	if user[0].Email != email {
 		return errors.BadRequest("Email does not match user ID")
 	}
 
