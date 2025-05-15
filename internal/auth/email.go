@@ -67,9 +67,54 @@ func VerifyEmailRedirect(c *fiber.Ctx) error {
 			return errors.BadRequest("Invalid metadata format: " + err.Error())
 		}
 
-		if err := json.Unmarshal([]byte(decodedMetadata), &parsedMetadata); err != nil {
-			log.Println("Failed to parse metadata:", err, "Raw metadata:", metaData, "Decoded:", decodedMetadata)
-			return errors.BadRequest("Invalid metadata JSON: " + err.Error())
+		// Parse the metadata string directly
+		parsedMetadata = make(map[string]any)
+
+		// Split the string by spaces and commas to extract key-value pairs
+		// Format is typically "map[key:value key2:value2]"
+		if len(decodedMetadata) > 4 && decodedMetadata[:4] == "map[" {
+			// Remove the "map[" prefix and "]" suffix
+			content := decodedMetadata[4 : len(decodedMetadata)-1]
+
+			// Custom parsing for the map string format
+			var key string
+			inKey := true
+			current := ""
+
+			for i := 0; i < len(content); i++ {
+				char := content[i]
+
+				if inKey && char == ':' {
+					key = current
+					current = ""
+					inKey = false
+				} else if !inKey && (char == ' ' || i == len(content)-1) {
+					// If it's the last character, include it
+					if i == len(content)-1 {
+						current += string(char)
+					}
+
+					// Convert value to appropriate type if needed
+					if current == "true" {
+						parsedMetadata[key] = true
+					} else if current == "false" {
+						parsedMetadata[key] = false
+					} else {
+						parsedMetadata[key] = current
+					}
+
+					current = ""
+					inKey = true
+					// Skip the space
+					if i < len(content)-1 && content[i+1] == ' ' {
+						i++
+					}
+				} else {
+					current += string(char)
+				}
+			}
+		} else {
+			return errors.BadRequest("Unrecognized metadata format")
 		}
 	}
 
