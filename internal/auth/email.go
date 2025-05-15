@@ -162,7 +162,7 @@ func VerifyEmailRedirect(c *fiber.Ctx) error {
 	}
 
 	// Set verified to true
-	_, err = client.PATCH("users", query, map[string]any{
+	_, err = client.PATCH("users", user[0].ID, map[string]any{
 		"email_verified": true,
 	})
 
