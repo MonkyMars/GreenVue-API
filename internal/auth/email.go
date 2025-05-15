@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"greenvue-eu/internal/db"
@@ -69,13 +68,13 @@ func VerifyEmailRedirect(c *fiber.Ctx) error {
 		return errors.BadRequest("Missing metadata")
 	}
 
-	decodedMetadata, err := base64.URLEncoding.DecodeString(metaData)
+	decodedMetadata, err := url.QueryUnescape(metaData)
 	if err != nil {
 		return errors.BadRequest("Invalid metadata format: " + err.Error())
 	}
 
 	var parsedMetadata map[string]any
-	if err := json.Unmarshal(decodedMetadata, &parsedMetadata); err != nil {
+	if err := json.Unmarshal([]byte(decodedMetadata), &parsedMetadata); err != nil {
 		return errors.BadRequest("Invalid JSON metadata: " + err.Error())
 	}
 
