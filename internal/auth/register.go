@@ -199,13 +199,17 @@ func HandleGoogleRegister(c *fiber.Ctx) error {
 		}
 
 		// Insert user into the database
-		_, err = client.POST(c, "users", newUser, true)
+		data, err = client.POST(c, "users", newUser, true)
 		if err != nil {
 			log.Printf("Failed to store Google user in database: %v", err)
 			return errors.DatabaseError("Failed to store Google user in database: " + err.Error())
 		}
 
+		log.Println(string(data))
+
 		log.Printf("Successfully created new Google user in database with ID: %s", supabaseResp.UserId.Id)
+	} else {
+		log.Println("Google user already exists in database, no need to create")
 	}
 
 	// Generate JWT tokens for the user
