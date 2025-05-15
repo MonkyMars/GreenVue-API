@@ -6,6 +6,7 @@ import (
 	"greenvue-eu/internal/db"
 	"greenvue-eu/lib"
 	"greenvue-eu/lib/errors"
+	"log"
 	"net/url"
 
 	"github.com/gofiber/fiber/v2"
@@ -47,6 +48,8 @@ func VerifyEmailRedirect(c *fiber.Ctx) error {
 	redirect_uri := c.Query("redirect_uri")
 	metaData := c.Query("metadata")
 
+	log.Println(metaData)
+
 	if redirect_uri == "" {
 		return errors.BadRequest("Missing redirect_uri parameter")
 	}
@@ -65,15 +68,25 @@ func VerifyEmailRedirect(c *fiber.Ctx) error {
 		}
 
 		if err := json.Unmarshal([]byte(decodedMetadata), &parsedMetadata); err != nil {
+			log.Println("Failed to parse metadata:", err, "Raw metadata:", metaData, "Decoded:", decodedMetadata)
 			return errors.BadRequest("Invalid metadata JSON: " + err.Error())
 		}
 	}
 
+	// Check if parsedMetadata is not nil before accessing it
+	if parsedMetadata == nil {
+		return errors.BadRequest("Missing metadata")
+	}
+
 	// Extract the sub value
 	userID, ok := parsedMetadata["sub"].(string)
-	Email := parsedMetadata["email"].(string)
 	if !ok {
 		return errors.BadRequest("Missing or invalid user ID in metadata")
+	}
+
+	email, ok := parsedMetadata["email"].(string)
+	if !ok {
+		return errors.BadRequest("Missing or invalid email in metadata")
 	}
 
 	// Fetch user data to see if user exists and if email and user id match
@@ -89,17 +102,17 @@ func VerifyEmailRedirect(c *fiber.Ctx) error {
 		return errors.InternalServerError("Failed to fetch user data: " + err.Error())
 	}
 
-	if len(data) == 0 {
-		return errors.NotFound("User not found")
-	}
-
 	var user *lib.User
 
 	if err := json.Unmarshal(data, &user); err != nil {
 		return errors.InternalServerError("Failed to parse user data: " + err.Error())
 	}
 
-	if user.Email != Email {
+	if user.Email != email {
+		return errors.BadRequest("Email does not match user ID")
+	}
+
+	if user.Email != email {
 		return errors.BadRequest("Email does not match user ID")
 	}
 
