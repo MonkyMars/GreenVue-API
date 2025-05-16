@@ -1,18 +1,16 @@
 package db
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
 	"greenvue/lib"
-	"io"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
-	"encoding/json"
-
+	"github.com/go-resty/resty/v2"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -91,29 +89,21 @@ func NewSupabaseClient(useServiceKey ...bool) *SupabaseClient {
 func (s *SupabaseClient) GET(table, query string) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?%s", s.URL, table, query)
 
-	req, err := http.NewRequest("GET", url, nil)
+	client := resty.New().
+		SetTimeout(10*time.Second).
+		SetHeader("apikey", s.APIKey).
+		SetHeader("Authorization", s.APIKey).
+		SetHeader("Accept", "application/json")
+
+	resp, err := client.R().Get(url)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Add("apikey", s.APIKey)
-	req.Header.Add("Authorization", s.APIKey)
-	req.Header.Add("Accept", "application/json")
+	body := resp.Body()
 
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("supabase error: status %d - %s", resp.StatusCode, string(body))
+	if resp.StatusCode() < 200 || resp.StatusCode() >= 300 {
+		return nil, fmt.Errorf("supabase error: status %d - %s", resp.StatusCode(), string(body))
 	}
 
 	return body, nil
@@ -123,45 +113,30 @@ func (s *SupabaseClient) GET(table, query string) ([]byte, error) {
 func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?select=*", s.URL, table)
 
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		fmt.Println("Error marshaling data:", err)
-		return nil, fmt.Errorf("error marshaling request data: %w", err)
-	}
+	client := resty.New().
+		SetTimeout(10*time.Second).
+		SetHeader("apikey", s.APIKey).
+		SetHeader("Authorization", "Bearer "+s.APIKey).
+		SetHeader("Prefer", "return=representation").
+		SetHeader("Content-Type", "application/json")
 
-	payload := strings.NewReader(string(jsonData))
+	resp, err := client.R().
+		SetBody(data).
+		Post(url)
 
-	req, err := http.NewRequest("POST", url, payload)
-	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return nil, err
-	}
-
-	req.Header.Add("apikey", s.APIKey)
-	req.Header.Set("Authorization", "Bearer "+s.APIKey)
-	req.Header.Add("Prefer", "return=representation")
-	req.Header.Add("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	fmt.Println("Auth Header:", req.Header.Get("Authorization"))
 	if err != nil {
 		fmt.Println("Error sending request:", err)
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading response: %w", err)
-	}
+	body := resp.Body()
 
 	// Empty response is valid in some cases
 	if len(body) == 0 {
 		return []byte("{}"), nil
 	}
 
-	if resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode() != http.StatusCreated {
 		return nil, fmt.Errorf("supabase error: %s", string(body))
 	}
 
@@ -172,35 +147,25 @@ func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
 func (s *SupabaseClient) PATCH(table string, id string, data any) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?id=eq.%s", s.URL, table, id)
 
-	jsonData, err := json.Marshal(data)
+	client := resty.New().
+		SetTimeout(10*time.Second).
+		SetHeader("apikey", s.APIKey).
+		SetHeader("Authorization", "Bearer "+s.APIKey).
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Prefer", "return=representation") // Ensures Supabase returns the updated record
+
+	resp, err := client.R().
+		SetBody(data).
+		Patch(url)
+
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return nil, err
-	}
+	respBody := resp.Body()
 
-	req.Header.Add("apikey", s.APIKey)
-	req.Header.Add("Authorization", "Bearer "+s.APIKey)
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Prefer", "return=representation") // Ensures Supabase returns the updated record
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("supabase PATCH error (%d): %s", resp.StatusCode, string(respBody))
+	if resp.StatusCode() < 200 || resp.StatusCode() >= 300 {
+		return nil, fmt.Errorf("supabase PATCH error (%d): %s", resp.StatusCode(), string(respBody))
 	}
 
 	return respBody, nil
@@ -210,29 +175,21 @@ func (s *SupabaseClient) PATCH(table string, id string, data any) ([]byte, error
 func (s *SupabaseClient) DELETE(c *fiber.Ctx, table, conditions string) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?%s", s.URL, table, conditions)
 
-	req, err := http.NewRequest("DELETE", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create DELETE request: %w", err)
-	}
+	client := resty.New().
+		SetTimeout(10*time.Second).
+		SetHeader("apikey", s.APIKey).
+		SetHeader("Authorization", c.Get("Authorization")).
+		SetHeader("Prefer", "return=minimal") // More efficient for DELETE operations
 
-	req.Header.Add("apikey", s.APIKey)
-	req.Header.Add("Authorization", c.Get("Authorization"))
-	req.Header.Add("Prefer", "return=minimal") // More efficient for DELETE operations
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := client.R().Delete(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute DELETE request: %w", err)
 	}
-	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read DELETE response: %w", err)
-	}
+	respBody := resp.Body()
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("DELETE operation failed (status %d): %s", resp.StatusCode, string(respBody))
+	if resp.StatusCode() < 200 || resp.StatusCode() >= 300 {
+		return nil, fmt.Errorf("DELETE operation failed (status %d): %s", resp.StatusCode(), string(respBody))
 	}
 
 	return respBody, nil
@@ -242,12 +199,6 @@ func (s *SupabaseClient) DELETE(c *fiber.Ctx, table, conditions string) ([]byte,
 func (s *SupabaseClient) UploadImage(filename, bucket string, image []byte) ([]byte, error) {
 	url := fmt.Sprintf("%s/storage/v1/object/%s/%s", s.URL, bucket, filename)
 	fmt.Printf("Uploading to URL: %s\n", url)
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(image))
-	if err != nil {
-		fmt.Printf("Error creating request: %v\n", err)
-		return nil, err
-	}
 
 	contentType := "image/jpeg"
 	if strings.HasSuffix(filename, ".png") {
@@ -260,28 +211,27 @@ func (s *SupabaseClient) UploadImage(filename, bucket string, image []byte) ([]b
 
 	fmt.Printf("Using content type: %s\n", contentType)
 
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Add("apikey", s.APIKey)
-	req.Header.Add("Authorization", "Bearer "+s.APIKey)
+	client := resty.New().
+		SetTimeout(30*time.Second).
+		SetHeader("Content-Type", contentType).
+		SetHeader("apikey", s.APIKey).
+		SetHeader("Authorization", "Bearer "+s.APIKey)
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := client.R().
+		SetBody(image).
+		Post(url)
+
 	if err != nil {
 		fmt.Printf("Error sending request: %v\n", err)
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Printf("Error reading response: %v\n", err)
-		return nil, err
-	}
+	body := resp.Body()
 
-	fmt.Printf("Status code: %d\n", resp.StatusCode)
-	if resp.StatusCode >= 400 {
+	fmt.Printf("Status code: %d\n", resp.StatusCode())
+	if resp.StatusCode() >= 400 {
 		fmt.Printf("Error response: %s\n", string(body))
-		return nil, fmt.Errorf("supabase storage error (%d): %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("supabase storage error (%d): %s", resp.StatusCode(), string(body))
 	}
 
 	return body, nil
@@ -292,42 +242,30 @@ func (s *SupabaseClient) SignUp(email, password string) (*lib.User, error) {
 	url := fmt.Sprintf("%s/auth/v1/signup", s.URL)
 
 	// Create request payload
-	payload, err := json.Marshal(map[string]string{
+	payload := map[string]string{
 		"email":    email,
 		"password": password,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	// Create HTTP request
-	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
+	client := resty.New().
+		SetTimeout(10*time.Second).
+		SetHeader("Content-Type", "application/json").
+		SetHeader("apikey", s.APIKey).
+		SetHeader("Authorization", "Bearer "+s.APIKey).
+		SetHeader("Prefer", "return=representation")
 
-	// Set headers
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("apikey", s.APIKey)
-	req.Header.Set("Authorization", "Bearer "+s.APIKey)
-	req.Header.Set("Prefer", "return=representation")
+	resp, err := client.R().
+		SetBody(payload).
+		Post(url)
 
-	// Send request
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
 
-	// Read response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
+	body := resp.Body()
 
 	// Check for HTTP errors
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode() != http.StatusOK && resp.StatusCode() != http.StatusCreated {
 		return nil, fmt.Errorf("failed to sign up user: %s", string(body))
 	}
 
@@ -360,41 +298,29 @@ func (s *SupabaseClient) Login(email, password string) (*lib.AuthResponse, error
 	url := fmt.Sprintf("%s/auth/v1/token?grant_type=password", s.URL)
 
 	// Create request payload
-	payload, err := json.Marshal(map[string]string{
+	payload := map[string]string{
 		"email":    email,
 		"password": password,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	// Create HTTP request
-	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
+	client := resty.New().
+		SetTimeout(10*time.Second).
+		SetHeader("Content-Type", "application/json").
+		SetHeader("apikey", s.APIKey).
+		SetHeader("Authorization", "Bearer "+s.APIKey)
 
-	// Set headers
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("apikey", s.APIKey)
-	req.Header.Set("Authorization", "Bearer "+s.APIKey)
+	resp, err := client.R().
+		SetBody(payload).
+		Post(url)
 
-	// Send request
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
 
-	// Read response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
+	body := resp.Body()
 
 	// Check for HTTP errors
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("login failed: %s", string(body))
 	}
 
@@ -411,43 +337,28 @@ func (s *SupabaseClient) ResendConfirmationEmail(email, resend_type string) erro
 	url := fmt.Sprintf("%s/auth/v1/resend", s.URL)
 
 	// Create request payload
-	payload, err := json.Marshal(map[string]string{
+	payload := map[string]string{
 		"type":  resend_type,
 		"email": email,
-	})
-
-	if err != nil {
-		return fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	// Create HTTP request
-	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
+	client := resty.New().
+		SetTimeout(10*time.Second).
+		SetHeader("Content-Type", "application/json").
+		SetHeader("apikey", s.APIKey).
+		SetHeader("Authorization", "Bearer "+s.APIKey)
 
-	// Set headers
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("apikey", s.APIKey)
-	req.Header.Set("Authorization", "Bearer "+s.APIKey)
+	resp, err := client.R().
+		SetBody(payload).
+		Post(url)
 
-	// Send request
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
-
-	// Read response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
-	}
 
 	// Check for HTTP errors
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("resend confirmation email failed: %s", string(body))
+	if resp.StatusCode() != http.StatusOK {
+		return fmt.Errorf("resend confirmation email failed: %s", string(resp.Body()))
 	}
 
 	return nil

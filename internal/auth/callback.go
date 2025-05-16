@@ -1,20 +1,19 @@
 package auth
 
 import (
-	"bytes"
 	"fmt"
 	"greenvue/internal/db"
 	"greenvue/lib"
 	"greenvue/lib/errors"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"time"
 
 	"encoding/json"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -105,24 +104,30 @@ func HandleGoogleCallback(c *fiber.Ctx) error {
 }
 
 func exchangeCodeForGoogleToken(code string) (*GoogleTokenResponse, error) {
-	data := url.Values{}
-	data.Set("code", code)
-	data.Set("client_id", os.Getenv("GOOGLE_CLIENT_ID"))
-	data.Set("client_secret", os.Getenv("GOOGLE_CLIENT_SECRET"))
-	data.Set("redirect_uri", os.Getenv("REDIRECT_URI"))
-	data.Set("grant_type", "authorization_code")
+	formData := map[string]string{
+		"code":          code,
+		"client_id":     os.Getenv("GOOGLE_CLIENT_ID"),
+		"client_secret": os.Getenv("GOOGLE_CLIENT_SECRET"),
+		"redirect_uri":  os.Getenv("REDIRECT_URI"),
+		"grant_type":    "authorization_code",
+	}
 
-	resp, err := http.PostForm("https://oauth2.googleapis.com/token", data)
+	client := resty.New().SetTimeout(10 * time.Second)
+	resp, err := client.R().
+		SetFormData(formData).
+		SetResult(&GoogleTokenResponse{}).
+		Post("https://oauth2.googleapis.com/token")
+
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	var tokenResp GoogleTokenResponse
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return nil, err
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("failed to exchange code: status %d", resp.StatusCode())
 	}
-	return &tokenResp, nil
+
+	tokenResp := resp.Result().(*GoogleTokenResponse)
+	return tokenResp, nil
 }
 
 func signInWithSupabase(idToken string) (SupabaseResp, error) {
@@ -130,27 +135,21 @@ func signInWithSupabase(idToken string) (SupabaseResp, error) {
 		"provider": "google",
 		"id_token": idToken,
 	}
-	jsonBody, _ := json.Marshal(body)
 
-	req, _ := http.NewRequest(
-		"POST",
-		os.Getenv("SUPABASE_URL")+"/auth/v1/token?grant_type=id_token",
-		bytes.NewBuffer(jsonBody),
-	)
+	client := resty.New().SetTimeout(10 * time.Second)
+	resp, err := client.R().
+		SetHeader("Accept", "application/json").
+		SetHeader("Content-Type", "application/json").
+		SetHeader("apikey", os.Getenv("SUPABASE_ANON")).
+		SetBody(body).
+		Post(os.Getenv("SUPABASE_URL") + "/auth/v1/token?grant_type=id_token")
 
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("apikey", os.Getenv("SUPABASE_ANON"))
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
 	if err != nil {
 		return SupabaseResp{}, err
 	}
-	defer resp.Body.Close()
 
 	var supabaseResp map[string]any
-	if err := json.NewDecoder(resp.Body).Decode(&supabaseResp); err != nil {
+	if err := json.Unmarshal(resp.Body(), &supabaseResp); err != nil {
 		return SupabaseResp{}, err
 	}
 
@@ -208,28 +207,27 @@ func handleUserRegistration(supabaseResp SupabaseResp) error {
 	// Get user details (email, name) from Supabase user profile
 	userEmail := ""
 	userName := ""
-	picture := ""
-
-	// Get user profile from Supabase to extract email and name
+	picture := "" // Get user profile from Supabase to extract email and name
 	userUrl := fmt.Sprintf("%s/auth/v1/user", os.Getenv("SUPABASE_URL"))
-	req, _ := http.NewRequest("GET", userUrl, nil)
-	req.Header.Set("Authorization", "Bearer "+supabaseResp.AccessToken)
-	req.Header.Set("apikey", os.Getenv("SUPABASE_ANON"))
-	httpClient := &http.Client{Timeout: 10 * time.Second}
-	resp, err := httpClient.Do(req)
+
+	restyClient := resty.New().SetTimeout(10 * time.Second)
+	resp, err := restyClient.R().
+		SetHeader("Authorization", "Bearer "+supabaseResp.AccessToken).
+		SetHeader("apikey", os.Getenv("SUPABASE_ANON")).
+		Get(userUrl)
+
 	if err != nil {
 		log.Printf("Failed to get user profile: %v", err)
 		return fmt.Errorf("failed to get user profile: %v", err)
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("Failed to get user profile, status: %d", resp.StatusCode)
-		return fmt.Errorf("failed to get user profile, status: %d", resp.StatusCode)
+	if resp.StatusCode() != http.StatusOK {
+		log.Printf("Failed to get user profile, status: %d", resp.StatusCode())
+		return fmt.Errorf("failed to get user profile, status: %d", resp.StatusCode())
 	}
 
-	defer resp.Body.Close()
 	var userProfile map[string]any
-	if err := json.NewDecoder(resp.Body).Decode(&userProfile); err != nil {
+	if err := json.Unmarshal(resp.Body(), &userProfile); err != nil {
 		log.Printf("Failed to decode user profile: %v", err)
 		return fmt.Errorf("failed to decode user profile: %v", err)
 	}

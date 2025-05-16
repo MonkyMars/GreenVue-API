@@ -5,14 +5,15 @@ import (
 	"greenvue/internal/db"
 	"greenvue/lib"
 	"greenvue/lib/errors"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"encoding/json"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -159,33 +160,21 @@ func VerifyEmailRedirect(c *fiber.Ctx) error {
 	if len(user) == 0 {
 		return errors.BadRequest("User not found")
 	}
-
 	if user[0].Email != email {
 		return errors.BadRequest("Email does not match user ID")
 	}
-
 	// Check if email link is expired
-	httpClient := &http.Client{}
-	req, err := http.NewRequest("GET", redirectURI, nil)
-	if err != nil {
-		return errors.InternalServerError("Failed to create request: " + err.Error())
-	}
+	restyClient := resty.New().SetTimeout(10 * time.Second)
+	resp, err := restyClient.R().Get(redirectURI)
 
-	resp, err := httpClient.Do(req)
 	if err != nil {
 		return errors.InternalServerError("Failed to send request: " + err.Error())
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode() != http.StatusOK {
 		return errors.InternalServerError("Email verification link is expired or invalid")
 	}
 
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return errors.InternalServerError("Failed to read response body: " + err.Error())
-	}
-
+	bodyBytes := resp.Body()
 	if strings.Contains(string(bodyBytes), "expired") {
 		return errors.InternalServerError("Email verification link is expired or invalid")
 	}

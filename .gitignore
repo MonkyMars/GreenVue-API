@@ -2,3 +2,6 @@
 
 # VsCode
 .vscode
+
+# executables
+*.exe
