@@ -220,6 +220,9 @@ func HandleGoogleRegister(c *fiber.Ctx) error {
 			Provider:      "google",
 		}
 
+		log.Println("Creating new Google user in database...")
+		log.Println(newUser)
+
 		// Insert user into the database
 		data, err = client.POST("users", newUser)
 		if err != nil {
