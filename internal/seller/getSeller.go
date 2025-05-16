@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/goccy/go-json"
+	"encoding/json"
 
 	"greenvue/internal/db"
 	"greenvue/lib"

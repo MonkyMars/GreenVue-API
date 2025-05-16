@@ -5,7 +5,7 @@ import (
 	"greenvue/internal/db"
 	"greenvue/lib/errors"
 
-	"github.com/goccy/go-json"
+	"encoding/json"
 
 	"github.com/gofiber/fiber/v2"
 )
