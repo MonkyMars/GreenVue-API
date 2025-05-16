@@ -248,22 +248,37 @@ func ValidateToken(tokenString string, expectedType string) (*Claims, error) {
 		return nil, errors.New("invalid token type specified")
 	}
 
-	// Store the original token string for later comparison after parsing
-	originalToken := tokenString
+	// Split the token into its parts to check for tampering first
+	parts := strings.Split(tokenString, ".")
+	if len(parts) != 3 {
+		return nil, ErrInvalidToken
+	}
 
-	// Parse the token
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
-		// Ensure that the signing method is HMAC
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("unexpected signing method")
-		}
-		return secret, nil
-	})
+	// Use ParseWithClaims with strict validation options
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		&Claims{},
+		func(token *jwt.Token) (any, error) {
+			// Ensure that the signing method is HMAC
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, errors.New("unexpected signing method")
+			}
+			return secret, nil
+		},
+		jwt.WithValidMethods([]string{"HS256"}),
+		jwt.WithStrictDecoding(),
+		jwt.WithExpirationRequired(),
+	)
 
 	// Handle parsing errors
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, ErrExpiredToken
+		}
+		if errors.Is(err, jwt.ErrTokenSignatureInvalid) ||
+			errors.Is(err, jwt.ErrTokenMalformed) ||
+			errors.Is(err, jwt.ErrTokenNotValidYet) {
+			return nil, ErrTokenTampering
 		}
 		return nil, ErrInvalidToken
 	}
@@ -279,24 +294,25 @@ func ValidateToken(tokenString string, expectedType string) (*Claims, error) {
 		return nil, ErrTokenTypeMismatch
 	}
 
-	// Verify token hasn't been tampered with by re-signing it and comparing
-	// with the original token (exact string match)
-	var verificationSecret []byte
-	if claims.Type == TokenTypeAccess {
-		verificationSecret = accessSecret
-	} else {
-		verificationSecret = refreshSecret
-	}
+	// For the most rigorous verification, we need to regenerate the token
+	// with the exact same claims and ensure it matches the original
 
-	// Regenerate the token with the parsed claims
-	verifiedToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	verifiedTokenString, err := verifiedToken.SignedString(verificationSecret)
+	// Create a new token with the same signing method
+	newToken := jwt.New(jwt.SigningMethodHS256)
+
+	// Copy all claims exactly as they were in the original token
+	newToken.Claims = claims
+
+	// Sign the token with the same secret
+	verifiedTokenString, err := newToken.SignedString(secret)
 	if err != nil {
 		return nil, err
 	}
 
+	// Compare the original token with our regenerated token - they must match exactly
 	// Use constant-time comparison to prevent timing attacks
-	if subtle.ConstantTimeCompare([]byte(originalToken), []byte(verifiedTokenString)) != 1 {
+	if subtle.ConstantTimeCompare([]byte(tokenString), []byte(verifiedTokenString)) != 1 {
+		log.Printf("Token tampering detected: token strings don't match exactly")
 		return nil, ErrTokenTampering
 	}
 
