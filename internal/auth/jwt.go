@@ -378,6 +378,8 @@ func RefreshTokenHandler(c *fiber.Ctx) error {
 
 	// Check for refresh token in cookie first (cookies take precedence)
 	refreshCookie := c.Cookies(RefreshTokenCookieName)
+	log.Println("Refresh token from cookie:", refreshCookie)
+
 	if refreshCookie != "" {
 		refreshToken = refreshCookie
 	} else {
@@ -400,7 +402,7 @@ func RefreshTokenHandler(c *fiber.Ctx) error {
 	if err != nil {
 		// If refresh token is invalid or expired, clear all cookies
 		ClearAuthCookies(c)
-		return fiber.NewError(fiber.StatusUnauthorized, "invalid refresh token")
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid refresh token "+err.Error())
 	}
 
 	// Generate new token pair
