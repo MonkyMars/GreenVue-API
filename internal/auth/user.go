@@ -11,7 +11,7 @@ import (
 )
 
 func GetUserById(c *fiber.Ctx) error {
-	userId := c.Params("id")
+	userId := c.Params("user_id")
 
 	if userId == "" {
 		return errors.BadRequest("User ID is required")
@@ -89,7 +89,7 @@ func GetUserByAccessToken(c *fiber.Ctx) error {
 }
 
 func UpdateUser(c *fiber.Ctx) error {
-	userId := c.Params("id")
+	userId := c.Params("user_id")
 
 	if userId == "" {
 		return errors.BadRequest("User ID is required")

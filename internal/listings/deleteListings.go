@@ -12,7 +12,7 @@ func DeleteListingById(c *fiber.Ctx) error {
 	client := db.GetGlobalClient()
 
 	// Extract listing ID from request path
-	listingId := c.Params("id")
+	listingId := c.Params("listing_id")
 
 	if client == nil {
 		return errors.InternalServerError("Database connection failed")

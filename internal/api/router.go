@@ -165,15 +165,15 @@ func setupAuthRoutes(app *fiber.App) {
 func setupPublicListingRoutes(app *fiber.App) {
 	app.Get("/listings", listings.GetListings)
 	app.Get("/listings/category/:category", listings.GetListingByCategory)
-	app.Get("/listings/seller/:sellerId", listings.GetListingBySeller)
-	app.Get("/listings/:id", listings.GetListingById)
+	app.Get("/listings/seller/:seller_id", listings.GetListingBySeller)
+	app.Get("/listings/:listing_id", listings.GetListingById)
 }
 
 // setupProtectedListingRoutes configures protected listing routes
 func setupProtectedListingRoutes(router fiber.Router) {
 	router.Post("/listings", listings.PostListing)
 	router.Post("/upload/listing_image", listings.UploadHandler)
-	router.Delete("/listings/:id", listings.DeleteListingById)
+	router.Delete("/listings/:listing_id", listings.DeleteListingById)
 }
 
 // setupSellerRoutes configures seller routes
@@ -184,15 +184,15 @@ func setupSellerRoutes(router fiber.Router) {
 // setupUserRoutes configures user routes
 func setupUserRoutes(router fiber.Router) {
 	router.Get("/auth/me", auth.GetUserByAccessToken)
-	router.Get("/auth/user/:id", auth.GetUserById)
+	router.Get("/auth/user/:user_id", auth.GetUserById)
 	router.Post("/auth/resend_email", auth.ResendConfirmationEmail)
-	router.Put("/auth/user/:id", auth.UpdateUser)
+	router.Put("/auth/user/:user_id", auth.UpdateUser)
 }
 
 // setupChatRoutes configures chat routes
 func setupChatRoutes(router fiber.Router) {
 	// Conversation routes
-	router.Get("/chat/conversation/:userId", chat.GetConversations)
+	router.Get("/chat/conversation/:user_id", chat.GetConversations)
 	router.Post("/chat/conversation", chat.CreateConversation)
 
 	// Message routes
@@ -222,9 +222,4 @@ func setupFavoritesRoutes(router fiber.Router) {
 func setupHealthRoutes(router fiber.Router) {
 	router.Get("/health", health.HealthCheck)
 	router.Get("/health/detailed", health.DetailedHealth)
-
-	// Prevents 404 spam for favicon.ico
-	router.Get("/favicon.ico", func(c *fiber.Ctx) error {
-		return errors.ErrNotFound
-	})
 }

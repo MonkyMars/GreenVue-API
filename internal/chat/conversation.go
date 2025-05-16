@@ -96,7 +96,7 @@ func CreateConversation(c *fiber.Ctx) error {
 }
 
 func GetConversations(c *fiber.Ctx) error {
-	userId := c.Params("userId")
+	userId := c.Params("user_id")
 	if userId == "" {
 		return errors.BadRequest("User ID is required")
 	}

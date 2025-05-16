@@ -296,20 +296,46 @@ func AuthMiddleware() fiber.Handler {
 			return response.Unauthorized("invalid or expired token " + err.Error())
 		}
 
-		// // Check for the presence of user_id in the body, only if required
-		// var payload struct {
-		// 	UserId string `json:"user_id,omitempty"`
-		// }
+		switch c.Method() {
+		case fiber.MethodPost:
+			var payload struct {
+				UserId string `json:"user_id"`
+			}
 
-		// // Parse the request body to check for user ID if it's a POST or relevant request
-		// if err := c.BodyParser(&payload); err != nil && err != fiber.ErrBadRequest {
-		// 	return response.BadRequest("invalid request format")
-		// }
+			if err := c.BodyParser(&payload); err != nil {
+				return response.BadRequest("invalid request format")
+			}
 
-		// // If user_id is in the body, validate it matches the token's claims
-		// if payload.UserId != "" && payload.UserId != claims.UserId {
-		// 	return response.Unauthorized("user ID in request body does not match token claims")
-		// }
+			// Only validate if user_id is included in the body
+			if payload.UserId != "" && payload.UserId != claims.UserId {
+				return response.Unauthorized("user ID in request body does not match token claims")
+			}
+
+		case fiber.MethodGet:
+			userId := c.Query("user_id")
+			// Only validate if user_id is included in the query
+			if userId != "" && userId != claims.UserId {
+				return response.Unauthorized("user ID in query does not match token claims")
+			}
+		case fiber.MethodDelete:
+			userId := c.Query("user_id")
+
+			if userId != "" && userId != claims.UserId {
+				return response.Unauthorized("user ID in query does not match token claims")
+			}
+		case fiber.MethodPatch:
+			var payload struct {
+				UserId string `json:"user_id"`
+			}
+
+			if err := c.BodyParser(&payload); err != nil {
+				return response.BadRequest("invalid request format")
+			}
+
+			if payload.UserId != "" && payload.UserId != claims.UserId {
+				return response.Unauthorized("user ID in request body does not match token claims")
+			}
+		}
 
 		// Store claims in context for later use
 		c.Locals("user", claims)

@@ -47,7 +47,7 @@ func GetListings(c *fiber.Ctx) error {
 
 func GetListingById(c *fiber.Ctx) error {
 	client := db.GetGlobalClient()
-	listingID := c.Params("id")
+	listingID := c.Params("listing_id")
 
 	if client == nil {
 		return errors.InternalServerError("Database connection failed. Please check SUPABASE_URL and SUPABASE_ANON.")
@@ -112,7 +112,7 @@ func GetListingByCategory(c *fiber.Ctx) error {
 
 func GetListingBySeller(c *fiber.Ctx) error {
 	client := db.GetGlobalClient()
-	sellerID := c.Params("sellerId")
+	sellerID := c.Params("seller_id")
 
 	if client == nil {
 		return errors.InternalServerError("Database connection failed. Please check SUPABASE_URL and SUPABASE_ANON.")
