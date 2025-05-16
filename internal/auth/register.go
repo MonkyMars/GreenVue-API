@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"greenvue-eu/internal/db"
-	"greenvue-eu/lib"
-	"greenvue-eu/lib/errors"
+	"greenvue/internal/db"
+	"greenvue/lib"
+	"greenvue/lib/errors"
 	"log"
 
 	"github.com/gofiber/fiber/v2"

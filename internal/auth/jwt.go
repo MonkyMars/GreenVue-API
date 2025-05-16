@@ -2,8 +2,8 @@ package auth
 
 import (
 	"errors"
-	"greenvue-eu/internal/config"
-	response "greenvue-eu/lib/errors"
+	"greenvue/internal/config"
+	response "greenvue/lib/errors"
 	"log"
 	"os"
 	"strings"

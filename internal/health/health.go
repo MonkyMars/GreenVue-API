@@ -1,8 +1,8 @@
 package health
 
 import (
-	"greenvue-eu/internal/db"
-	"greenvue-eu/lib/errors"
+	"greenvue/internal/db"
+	"greenvue/lib/errors"
 	"runtime"
 	"time"
 

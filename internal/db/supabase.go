@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"greenvue-eu/lib"
+	"greenvue/lib"
 	"io"
 	"net/http"
 	"os"

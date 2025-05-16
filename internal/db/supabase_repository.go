@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"greenvue-eu/lib"
+	"greenvue/lib"
 )
 
 // SupabaseListingRepository implements ListingRepository using the new Repository interface

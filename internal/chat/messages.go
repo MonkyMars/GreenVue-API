@@ -3,8 +3,8 @@ package chat
 import (
 	"encoding/json"
 	"fmt"
-	"greenvue-eu/internal/db"
-	"greenvue-eu/lib/errors"
+	"greenvue/internal/db"
+	"greenvue/lib/errors"
 	"log" // Import log package
 	"time"
 

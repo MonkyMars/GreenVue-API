@@ -1,4 +1,4 @@
-module greenvue-eu
+module greenvue
 
 go 1.24.1
 

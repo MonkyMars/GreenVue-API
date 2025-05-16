@@ -1,7 +1,7 @@
 package validation_test
 
 import (
-	"greenvue-eu/lib/validation"
+	"greenvue/lib/validation"
 	"testing"
 )
 
