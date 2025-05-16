@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
@@ -24,9 +23,6 @@ func LoginUser(c *fiber.Ctx) error {
 		return errors.InternalServerError("Failed to create database client")
 	}
 
-	// Create a new repository instance to use standardized operations
-	repo := db.NewSupabaseRepository(client)
-
 	// Define payload struct
 	var payload struct {
 		Email    string `json:"email"`
@@ -48,7 +44,7 @@ func LoginUser(c *fiber.Ctx) error {
 
 	// Authenticate user (this is a specialized operation that doesn't fit standard CRUD)
 	// We'll continue to use the Login method which is kept in the client for auth operations
-	authResp, err := repo.Login(context.Background(), lib.SanitizeInput(payload.Email), lib.SanitizeInput(payload.Password))
+	authResp, err := client.Login(lib.SanitizeInput(payload.Email), lib.SanitizeInput(payload.Password))
 	if err != nil {
 		log.Printf("Login error for email %s: %v", payload.Email, err)
 		return errors.Unauthorized("Invalid credentials")
