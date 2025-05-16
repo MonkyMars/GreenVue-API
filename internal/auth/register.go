@@ -35,6 +35,10 @@ func RegisterUser(c *fiber.Ctx) error {
 	}
 
 	// No need to validate username and email since it happens on the frontend using zod.
+	// Still we can check if it's empty
+	if payload.Email == "" || payload.Password == "" || payload.Name == "" {
+		return errors.BadRequest("Missing required user registration fields")
+	}
 
 	// Sign up the user (this is a specialized operation that doesn't fit standard CRUD)
 	// We'll continue to use the SignUp method which is kept in the repository for auth operations
@@ -53,16 +57,19 @@ func RegisterUser(c *fiber.Ctx) error {
 		return errors.DatabaseError("User registration failed: received empty user ID from auth provider")
 	}
 
-	// Create a user record using the standardized type
+	// Create a user record using the standardized type lib.User
 	newUser := lib.User{
 		ID:       user.ID,
 		Name:     payload.Name,
 		Email:    payload.Email,
 		Location: payload.Location,
+		Provider: "email",
 	}
 
 	// Insert user into the database using standardized Create operation
-	_, err = client.POST("users", newUser)
+	data, err := client.POST("users", newUser)
+
+	log.Println(string(data))
 
 	if err != nil {
 		return errors.DatabaseError("Failed to store user in database: " + err.Error())
@@ -73,8 +80,7 @@ func RegisterUser(c *fiber.Ctx) error {
 	if err != nil {
 		return errors.InternalServerError("Failed to generate authentication tokens")
 	} // Set the tokens as secure cookies for web clients
-	SetTokenCookie(c, tokens.AccessToken)
-	SetRefreshTokenCookie(c, tokens.RefreshToken)
+	SetAuthCookies(c, tokens)
 
 	// Return success response with tokens for React Native clients
 	return errors.SuccessResponse(c, fiber.Map{
@@ -132,10 +138,17 @@ func HandleGoogleRegister(c *fiber.Ctx) error {
 	} // Get user details (email, name) from Supabase user profile
 	userEmail := ""
 	userName := ""
+	picture := ""
 
 	// Get user profile from Supabase to extract email and name
 	userUrl := fmt.Sprintf("%s/auth/v1/user", os.Getenv("SUPABASE_URL"))
-	req, _ := http.NewRequest("GET", userUrl, nil)
+
+	req, err := http.NewRequest("GET", userUrl, nil)
+	if err != nil {
+		log.Printf("Failed to create user profile request: %v", err)
+		return errors.InternalServerError("Failed to create user profile request")
+	}
+
 	req.Header.Set("Authorization", "Bearer "+supabaseResp.AccessToken)
 	req.Header.Set("apikey", os.Getenv("SUPABASE_ANON"))
 	httpClient := &http.Client{Timeout: 10 * time.Second}
@@ -168,6 +181,12 @@ func HandleGoogleRegister(c *fiber.Ctx) error {
 					userName = name
 					log.Printf("Using name from user_metadata: %s", userName)
 				}
+				if userPicture, ok := userMetadata["picture"].(string); ok && userPicture != "" {
+					picture = userPicture
+					log.Printf("User profile picture URL: %s", picture)
+				} else {
+					log.Printf("No profile picture found in user_metadata")
+				}
 			}
 
 			// If name is still empty, try to get it from other fields
@@ -193,10 +212,12 @@ func HandleGoogleRegister(c *fiber.Ctx) error {
 		// Create a user record using the standardized type
 		newUser := lib.User{
 			ID:            supabaseResp.UserId.Id,
-			Email:         userEmail,
-			Name:          userName,
-			Location:      payload.Location,
+			Email:         lib.SanitizeInput(userEmail),
+			Name:          lib.SanitizeInput(userName),
+			Location:      lib.SanitizeInput(payload.Location),
 			EmailVerified: true,
+			Picture:       picture,
+			Provider:      "google",
 		}
 
 		// Insert user into the database
@@ -220,8 +241,7 @@ func HandleGoogleRegister(c *fiber.Ctx) error {
 	}
 
 	// Set the tokens as secure cookies for web clients
-	SetTokenCookie(c, tokens.AccessToken)
-	SetRefreshTokenCookie(c, tokens.RefreshToken)
+	SetAuthCookies(c, tokens)
 
 	// Return success response with tokens for React Native clients
 	return errors.SuccessResponse(c, fiber.Map{

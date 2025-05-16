@@ -87,8 +87,14 @@ func HandleGoogleCallback(c *fiber.Ctx) error { // Check for error parameter fro
 		return errors.InternalServerError("Failed to sign in with Supabase: " + err.Error())
 	}
 
-	SetTokenCookie(c, supabaseResp.AccessToken)
-	SetRefreshTokenCookie(c, supabaseResp.RefreshToken)
+	// Set the tokens in a cookie
+	tokens := TokenPair{
+		AccessToken:  supabaseResp.AccessToken,
+		RefreshToken: supabaseResp.RefreshToken,
+	}
+
+	SetAuthCookies(c, &tokens)
+
 	siteUrl := os.Getenv("URL")
 	if siteUrl == "" {
 		log.Println("URL environment variable is not set")

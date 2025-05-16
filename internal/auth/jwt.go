@@ -154,6 +154,14 @@ func SetRefreshTokenCookie(c *fiber.Ctx, token string) {
 	c.Cookie(cookie)
 }
 
+func SetAuthCookies(c *fiber.Ctx, tokens *TokenPair) {
+	// Set the access token cookie
+	SetTokenCookie(c, tokens.AccessToken)
+
+	// Set the refresh token cookie
+	SetRefreshTokenCookie(c, tokens.RefreshToken)
+}
+
 func getJWTSecrets() (access []byte, refresh []byte) {
 	accessSecret := os.Getenv("JWT_ACCESS_SECRET")
 	refreshSecret := os.Getenv("JWT_REFRESH_SECRET")
@@ -374,8 +382,7 @@ func RefreshTokenHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "failed to generate tokens")
 	} // Set the tokens as secure cookies for web clients
-	SetTokenCookie(c, tokens.AccessToken)
-	SetRefreshTokenCookie(c, tokens.RefreshToken)
+	SetAuthCookies(c, tokens)
 
 	return response.SuccessResponse(c, fiber.Map{
 		"accessToken":  tokens.AccessToken,

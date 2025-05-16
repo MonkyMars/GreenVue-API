@@ -59,8 +59,7 @@ func LoginUser(c *fiber.Ctx) error {
 	if err != nil {
 		return errors.InternalServerError("Failed to generate tokens")
 	} // Set the tokens as secure cookies for web clients
-	SetTokenCookie(c, tokens.AccessToken)
-	SetRefreshTokenCookie(c, tokens.RefreshToken)
+	SetAuthCookies(c, tokens)
 
 	// Return login success response with JWT tokens for React Native clients
 	return errors.SuccessResponse(c, fiber.Map{

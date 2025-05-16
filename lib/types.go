@@ -17,6 +17,8 @@ type User struct {
 	Rating        float32 `json:"rating,omitempty"`
 	Verified      bool    `json:"verified,omitempty"`
 	EmailVerified bool    `json:"email_verified"`
+	Picture       string  `json:"picture,omitempty"`
+	Provider      string  `json:"provider,omitempty"`
 }
 
 type PublicUser struct {
@@ -27,6 +29,7 @@ type PublicUser struct {
 	CreatedAt string  `json:"created_at"`
 	Rating    float32 `json:"rating"`
 	Verified  bool    `json:"verified"`
+	Picture   string  `json:"picture,omitempty"`
 }
 
 type AuthResponse struct {
