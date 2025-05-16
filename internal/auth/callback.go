@@ -153,12 +153,31 @@ func signInWithSupabase(idToken string) (SupabaseResp, error) {
 		return SupabaseResp{}, err
 	}
 
-	tokens := SupabaseResp{
-		UserId:       User{Id: supabaseResp["user"].(map[string]any)["id"].(string)},
-		AccessToken:  supabaseResp["access_token"].(string),
-		RefreshToken: supabaseResp["refresh_token"].(string),
-		ExpiresIn:    int64(supabaseResp["expires_in"].(float64)),
+	UserId := supabaseResp["user"].(map[string]any)["id"].(string)
+	if UserId == "" {
+		return SupabaseResp{}, fmt.Errorf("user ID not found in Supabase response")
 	}
+
+	Email := supabaseResp["user"].(map[string]any)["email"].(string)
+	if Email == "" {
+		return SupabaseResp{}, fmt.Errorf("email not found in Supabase response")
+	}
+
+	authTokens, err := GenerateTokenPair(UserId, Email)
+	if err != nil {
+		return SupabaseResp{}, fmt.Errorf("failed to generate token pair: %v", err)
+	}
+
+	tokens := SupabaseResp{
+		UserId: User{
+			Id: UserId,
+		},
+		AccessToken:  authTokens.AccessToken,
+		RefreshToken: authTokens.RefreshToken,
+		ExpiresIn:    authTokens.ExpiresIn,
+	}
+
+	log.Println(authTokens.AccessToken)
 
 	return tokens, nil
 }
@@ -208,7 +227,7 @@ func handleUserRegistration(supabaseResp SupabaseResp) error {
 	}
 
 	defer resp.Body.Close()
-	var userProfile map[string]interface{}
+	var userProfile map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&userProfile); err != nil {
 		log.Printf("Failed to decode user profile: %v", err)
 		return fmt.Errorf("failed to decode user profile: %v", err)
@@ -225,7 +244,7 @@ func handleUserRegistration(supabaseResp SupabaseResp) error {
 
 	// Extract user's name
 	// First try to get from user_metadata
-	if userMetadata, ok := userProfile["user_metadata"].(map[string]interface{}); ok {
+	if userMetadata, ok := userProfile["user_metadata"].(map[string]any); ok {
 		if fullName, ok := userMetadata["full_name"].(string); ok && fullName != "" {
 			userName = fullName
 			log.Printf("Using full_name from user_metadata: %s", userName)
