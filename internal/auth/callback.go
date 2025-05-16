@@ -107,7 +107,7 @@ func HandleGoogleCallback(c *fiber.Ctx) error { // Check for error parameter fro
 	// and create them if they don't
 	if isRegistration {
 		// Get user details and create user record if needed
-		err = handleUserRegistration(c, supabaseResp)
+		err = handleUserRegistration(supabaseResp)
 		if err != nil {
 			log.Printf("Registration error: %v", err)
 			return errors.InternalServerError("Failed to complete registration: " + err.Error())
@@ -187,7 +187,7 @@ func signInWithSupabase(idToken string) (SupabaseResp, error) {
 
 // handleUserRegistration handles creating a user record in our custom users table
 // when a user signs up with Google OAuth.
-func handleUserRegistration(c *fiber.Ctx, supabaseResp SupabaseResp) error {
+func handleUserRegistration(supabaseResp SupabaseResp) error {
 
 	// Create Supabase client to interact with the database
 	client := db.NewSupabaseClient(true)
@@ -210,6 +210,7 @@ func handleUserRegistration(c *fiber.Ctx, supabaseResp SupabaseResp) error {
 	// Get user details (email, name) from Supabase user profile
 	userEmail := ""
 	userName := ""
+	picture := ""
 
 	// Get user profile from Supabase to extract email and name
 	userUrl := fmt.Sprintf("%s/auth/v1/user", os.Getenv("SUPABASE_URL"))
@@ -254,6 +255,12 @@ func handleUserRegistration(c *fiber.Ctx, supabaseResp SupabaseResp) error {
 			userName = name
 			log.Printf("Using name from user_metadata: %s", userName)
 		}
+		if userPicture, ok := userMetadata["picture"].(string); ok && userPicture != "" {
+			picture = userPicture
+			log.Printf("User profile picture URL: %s", picture)
+		} else {
+			log.Printf("No profile picture found in user_metadata")
+		}
 	}
 
 	// If name is still empty, try to get it from other fields
@@ -277,11 +284,12 @@ func handleUserRegistration(c *fiber.Ctx, supabaseResp SupabaseResp) error {
 	if !userExists {
 		// Create a user record using the standardized type
 		newUser := lib.User{
-			ID:    supabaseResp.UserId.Id,
-			Email: userEmail,
-			Name:  userName,
-			// Location will be empty initially, user can update it later
-			Location: "",
+			ID:            supabaseResp.UserId.Id,
+			Email:         lib.SanitizeInput(userEmail),
+			Name:          lib.SanitizeInput(userName),
+			EmailVerified: true,
+			Picture:       picture,
+			Provider:      "google",
 		}
 
 		// Insert user into the database
