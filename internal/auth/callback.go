@@ -32,7 +32,8 @@ type SupabaseResp struct {
 	ExpiresIn    int64  `json:"expires_in"`
 }
 
-func HandleGoogleCallback(c *fiber.Ctx) error { // Check for error parameter from OAuth provider
+func HandleGoogleCallback(c *fiber.Ctx) error {
+	// Check for error parameter from OAuth provider
 	if errorMsg := c.Query("error"); errorMsg != "" {
 		errorDescription := c.Query("error_description")
 		log.Printf("OAuth error: %s - %s", errorMsg, errorDescription)
@@ -47,32 +48,9 @@ func HandleGoogleCallback(c *fiber.Ctx) error { // Check for error parameter fro
 
 	// Check if this is a registration or login flow
 	stateFromQuery := c.Query("state")
-	stateFromCookie := c.Cookies("oauthstate")
 
-	// Track if this is a registration flow (state="register")
-	log.Printf("Auth flow type: %s", stateFromQuery)
-
-	// Log all cookies for debugging
-	cookies := c.GetReqHeaders()["Cookie"]
-	log.Printf("All cookies: %v", cookies)
-
-	log.Printf("Query State: %s", stateFromQuery)
-	log.Printf("Cookie State: %s", stateFromCookie)
-
-	if stateFromCookie == "" || stateFromQuery == "" {
-		log.Println("Missing state parameter in query or cookie")
-		log.Println("State from cookie:", stateFromCookie)
-		log.Println("State from query:", stateFromQuery)
+	if stateFromQuery == "" {
 		return errors.BadRequest("Missing state parameter")
-	}
-	// Validate that states match
-	if stateFromCookie != stateFromQuery {
-		log.Println("State mismatch: cookie state does not match query state")
-		log.Printf("Cookie state: %s, Query state: %s", stateFromCookie, stateFromQuery)
-
-		// Instead of failing immediately, try to continue with the authentication flow
-		// This is a workaround for cross-domain cookie issues
-		log.Println("Attempting to continue with authentication despite state mismatch")
 	}
 
 	// Exchange code for Google tokens
