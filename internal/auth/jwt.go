@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"crypto/subtle"
 	"errors"
 	"greenvue/internal/config"
 	response "greenvue/lib/errors"
@@ -14,18 +15,27 @@ import (
 )
 
 var (
-	ErrInvalidToken = errors.New("invalid token")
-	ErrExpiredToken = errors.New("token has expired")
+	ErrInvalidToken      = errors.New("invalid token")
+	ErrExpiredToken      = errors.New("token has expired")
+	ErrTokenTypeMismatch = errors.New("token type mismatch")
+	ErrTokenTampering    = errors.New("token has been tampered with")
 )
+
 var (
 	cfg      = config.LoadConfig()
 	Secure   bool
 	SameSite string
 )
 
+const (
+	TokenTypeAccess  = "access_token"
+	TokenTypeRefresh = "refresh_token"
+)
+
 type Claims struct {
 	UserId string `json:"user_id"`
 	Role   string `json:"role"`
+	Type   string `json:"type"` // New field to identify token type
 	jwt.RegisteredClaims
 }
 
@@ -182,6 +192,7 @@ func GenerateTokenPair(userID, email string) (*TokenPair, error) {
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		UserId: userID,
 		Role:   "authenticated",
+		Type:   TokenTypeAccess, // Specify token type
 		RegisteredClaims: jwt.RegisteredClaims{
 			Audience:  []string{"greenvue-client"},          // Audience of the token
 			Issuer:    "greenvue",                           // Issuer of the token
@@ -195,6 +206,7 @@ func GenerateTokenPair(userID, email string) (*TokenPair, error) {
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		UserId: userID,
 		Role:   "authenticated",
+		Type:   TokenTypeRefresh, // Specify token type
 		RegisteredClaims: jwt.RegisteredClaims{
 			Audience:  []string{"greenvue-client"},
 			Issuer:    "greenvue",
@@ -223,17 +235,32 @@ func GenerateTokenPair(userID, email string) (*TokenPair, error) {
 }
 
 // ValidateToken validates a JWT token and returns the claims
-func ValidateToken(tokenString string, isRefresh bool) (*Claims, error) {
+func ValidateToken(tokenString string, expectedType string) (*Claims, error) {
 	accessSecret, refreshSecret := getJWTSecrets()
-	secret := accessSecret
-	if isRefresh {
+
+	// Determine which secret to use based on expected token type
+	var secret []byte
+	if expectedType == TokenTypeAccess {
+		secret = accessSecret
+	} else if expectedType == TokenTypeRefresh {
 		secret = refreshSecret
+	} else {
+		return nil, errors.New("invalid token type specified")
 	}
 
+	// Store the original token string for later comparison after parsing
+	originalToken := tokenString
+
+	// Parse the token
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
+		// Ensure that the signing method is HMAC
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
 		return secret, nil
 	})
 
+	// Handle parsing errors
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, ErrExpiredToken
@@ -241,9 +268,36 @@ func ValidateToken(tokenString string, isRefresh bool) (*Claims, error) {
 		return nil, ErrInvalidToken
 	}
 
+	// Extract and validate claims
 	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
 		return nil, ErrInvalidToken
+	}
+
+	// Verify token type matches expected type
+	if claims.Type != expectedType {
+		return nil, ErrTokenTypeMismatch
+	}
+
+	// Verify token hasn't been tampered with by re-signing it and comparing
+	// with the original token (exact string match)
+	var verificationSecret []byte
+	if claims.Type == TokenTypeAccess {
+		verificationSecret = accessSecret
+	} else {
+		verificationSecret = refreshSecret
+	}
+
+	// Regenerate the token with the parsed claims
+	verifiedToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	verifiedTokenString, err := verifiedToken.SignedString(verificationSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	// Use constant-time comparison to prevent timing attacks
+	if subtle.ConstantTimeCompare([]byte(originalToken), []byte(verifiedTokenString)) != 1 {
+		return nil, ErrTokenTampering
 	}
 
 	return claims, nil
@@ -286,14 +340,14 @@ func AuthMiddleware() fiber.Handler {
 			return c.Next()
 		}
 
-		// Validate token
-		claims, err := ValidateToken(tokenString, false)
+		// Validate token as an access token specifically
+		claims, err := ValidateToken(tokenString, TokenTypeAccess)
 		if err != nil {
 			// If the token is invalid or expired, clear the cookies
-			if err == ErrInvalidToken || err == ErrExpiredToken {
+			if err == ErrInvalidToken || err == ErrExpiredToken || err == ErrTokenTypeMismatch || err == ErrTokenTampering {
 				ClearAuthCookies(c)
 			}
-			return response.Unauthorized("invalid or expired token " + err.Error())
+			return response.Unauthorized("authentication failed: " + err.Error())
 		}
 
 		switch c.Method() {
@@ -363,8 +417,8 @@ func GetAccessToken(c *fiber.Ctx) (*Claims, error) {
 		return nil, response.Unauthorized("invalid or missing token")
 	}
 
-	// Validate token
-	claims, err := ValidateToken(tokenString, false)
+	// Validate token as an access token specifically
+	claims, err := ValidateToken(tokenString, TokenTypeAccess)
 	if err != nil {
 		return nil, err
 	}
@@ -397,19 +451,22 @@ func RefreshTokenHandler(c *fiber.Ctx) error {
 	if refreshToken == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "missing refresh token")
 	}
-	// Validate refresh token
-	claims, err := ValidateToken(refreshToken, true)
+
+	// Validate refresh token - specifically checking it's a refresh token type
+	claims, err := ValidateToken(refreshToken, TokenTypeRefresh)
 	if err != nil {
 		// If refresh token is invalid or expired, clear all cookies
 		ClearAuthCookies(c)
-		return fiber.NewError(fiber.StatusUnauthorized, "invalid refresh token "+err.Error())
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid refresh token: "+err.Error())
 	}
 
 	// Generate new token pair
 	tokens, err := GenerateTokenPair(claims.UserId, claims.Role)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "failed to generate tokens")
-	} // Set the tokens as secure cookies for web clients
+	}
+
+	// Set the tokens as secure cookies for web clients
 	SetAuthCookies(c, tokens)
 
 	return response.SuccessResponse(c, fiber.Map{
