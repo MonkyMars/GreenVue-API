@@ -1,7 +1,7 @@
 package auth_test
 
 import (
-	"greenvue-eu/internal/auth"
+	"greenvue/internal/auth"
 	"os"
 	"testing"
 )
@@ -40,7 +40,7 @@ func TestGenerateAndValidateTokens(t *testing.T) {
 	}
 
 	// Validate access token
-	claims, err := auth.ValidateToken(tokenPair.AccessToken, false)
+	claims, err := auth.ValidateToken(tokenPair.AccessToken, "access_token")
 	if err != nil {
 		t.Errorf("Failed to validate access token: %v", err)
 	} else {
@@ -54,7 +54,7 @@ func TestGenerateAndValidateTokens(t *testing.T) {
 	}
 
 	// Validate refresh token with the proper isRefresh flag
-	refreshClaims, refreshErr := auth.ValidateToken(tokenPair.RefreshToken, true)
+	refreshClaims, refreshErr := auth.ValidateToken(tokenPair.RefreshToken, "refresh_token")
 	if refreshErr != nil {
 		t.Errorf("Failed to validate refresh token: %v", refreshErr)
 	} else {
@@ -76,7 +76,7 @@ func TestExpiredToken(t *testing.T) {
 
 	invalidToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 
-	_, err := auth.ValidateToken(invalidToken, false)
+	_, err := auth.ValidateToken(invalidToken, "access_token")
 	if err == nil {
 		t.Error("Expected error for invalid token, got nil")
 	}
@@ -110,14 +110,14 @@ func TestTokenSecurity(t *testing.T) {
 	}
 
 	// First token should not validate with second secret
-	_, err = auth.ValidateToken(firstTokenPair.AccessToken, false)
+	_, err = auth.ValidateToken(firstTokenPair.AccessToken, "access_token")
 	if err == nil {
 		t.Error("First token should not validate with second secret")
 	}
 
 	// Restore first secret and validate first token
 	os.Setenv("JWT_ACCESS_SECRET", firstAccessSecret)
-	_, err = auth.ValidateToken(firstTokenPair.AccessToken, false)
+	_, err = auth.ValidateToken(firstTokenPair.AccessToken, "access_token")
 	if err != nil {
 		t.Errorf("First token should validate with first secret: %v", err)
 	}

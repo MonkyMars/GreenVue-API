@@ -2,9 +2,9 @@ package reviews
 
 import (
 	"encoding/json"
-	"greenvue-eu/internal/db"
-	"greenvue-eu/lib"
-	"greenvue-eu/lib/errors"
+	"greenvue/internal/db"
+	"greenvue/lib"
+	"greenvue/lib/errors"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -31,7 +31,7 @@ func PostReview(c *fiber.Ctx) error {
 	}
 
 	// Use standardized POST operation
-	data, err := client.POST(c, "reviews", review)
+	data, err := client.POST("reviews", review)
 	if err != nil {
 		return errors.DatabaseError("Failed to post review: " + err.Error())
 	}

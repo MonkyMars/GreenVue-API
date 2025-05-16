@@ -8,15 +8,17 @@ import (
 )
 
 type User struct {
-	ID           string  `json:"id"`
-	Email        string  `json:"email"`
-	Name         string  `json:"name,omitempty"`
-	Location     string  `json:"location,omitempty"`
-	Bio          string  `json:"bio,omitempty"`
-	CreatedAt    string  `json:"created_at,omitempty"`
-	Rating       float32 `json:"rating,omitempty"`
-	Verified     bool    `json:"verified,omitempty"`
-	LastSignInAt string  `json:"last_sign_in_at,omitempty"`
+	ID            string  `json:"id"`
+	Email         string  `json:"email"`
+	Name          string  `json:"name,omitempty"`
+	Location      string  `json:"location,omitempty"`
+	Bio           string  `json:"bio,omitempty"`
+	CreatedAt     string  `json:"created_at,omitempty"`
+	Rating        float32 `json:"rating,omitempty"`
+	Verified      bool    `json:"verified,omitempty"`
+	EmailVerified bool    `json:"email_verified"`
+	Picture       string  `json:"picture,omitempty"`
+	Provider      string  `json:"provider,omitempty"`
 }
 
 type PublicUser struct {
@@ -27,6 +29,7 @@ type PublicUser struct {
 	CreatedAt string  `json:"created_at"`
 	Rating    float32 `json:"rating"`
 	Verified  bool    `json:"verified"`
+	Picture   string  `json:"picture,omitempty"`
 }
 
 type AuthResponse struct {

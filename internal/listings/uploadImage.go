@@ -2,7 +2,7 @@ package listings
 
 import (
 	"fmt"
-	"greenvue-eu/lib/errors"
+	"greenvue/lib/errors"
 	"image"
 	_ "image/jpeg" // register JPEG format
 	_ "image/png"  // register PNG format
@@ -13,7 +13,7 @@ import (
 	"mime/multipart"
 	"os"
 
-	"greenvue-eu/lib"
+	"greenvue/lib"
 
 	"github.com/chai2010/webp"
 	"github.com/gofiber/fiber/v2"

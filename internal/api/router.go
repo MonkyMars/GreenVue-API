@@ -1,15 +1,15 @@
 package api
 
 import (
-	"greenvue-eu/internal/auth"
-	"greenvue-eu/internal/chat"
-	"greenvue-eu/internal/config"
-	"greenvue-eu/internal/favorites"
-	"greenvue-eu/internal/health"
-	"greenvue-eu/internal/listings"
-	"greenvue-eu/internal/reviews"
-	"greenvue-eu/internal/seller"
-	"greenvue-eu/lib/errors"
+	"greenvue/internal/auth"
+	"greenvue/internal/chat"
+	"greenvue/internal/config"
+	"greenvue/internal/favorites"
+	"greenvue/internal/health"
+	"greenvue/internal/listings"
+	"greenvue/internal/reviews"
+	"greenvue/internal/seller"
+	"greenvue/lib/errors"
 	"log"
 	"strings"
 	"time"
@@ -56,21 +56,21 @@ func setupMiddleware(app *fiber.App, cfg *config.Config) {
 	app.Use(logger.New(logger.Config{
 		Format: "[${time}] [${ip}] ${status} - ${method} ${path} - ${latency}\n",
 	}))
-
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: func() string {
 			if cfg.Environment != "production" {
-				return "*" // Allow all origins in development
+				return "http://localhost:3000,http://localhost:8080,http://localhost:8081,http://127.0.0.1:3000,http://192.168.178.10:3000,http://192.168.178.10"
 			}
 			// Specify allowed origins in production
 			allowedOrigins := []string{
 				"https://www.greenvue.eu",
+				"https://greenvue.eu",
 			}
 			return strings.Join(allowedOrigins, ",")
 		}(),
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS,PATCH",
 		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
-		AllowCredentials: false,
+		AllowCredentials: true, // Enable credentials for cookies
 	}))
 
 	// Configure custom rate limiter with different limits for different endpoints
@@ -152,24 +152,28 @@ func setupRoutes(app *fiber.App) {
 // setupAuthRoutes configures authentication routes
 func setupAuthRoutes(app *fiber.App) {
 	app.Post("/auth/login", auth.LoginUser)
+	app.Get("/auth/login/google", auth.HandleGoogleLogin)
+	app.Get("/auth/register/google", auth.HandleGoogleRegistrationStart)
+	app.Get("/auth/callback/google", auth.HandleGoogleCallback)
 	app.Post("/auth/register", auth.RegisterUser)
 	app.Post("/auth/refresh", auth.RefreshTokenHandler)
-
+	app.Post("/auth/logout", auth.LogoutUser)
+	app.Get("/auth/confirm_email", auth.VerifyEmailRedirect)
 }
 
 // setupPublicListingRoutes configures public listing routes
 func setupPublicListingRoutes(app *fiber.App) {
 	app.Get("/listings", listings.GetListings)
 	app.Get("/listings/category/:category", listings.GetListingByCategory)
-	app.Get("/listings/seller/:sellerId", listings.GetListingBySeller)
-	app.Get("/listings/:id", listings.GetListingById)
+	app.Get("/listings/seller/:seller_id", listings.GetListingBySeller)
+	app.Get("/listings/:listing_id", listings.GetListingById)
 }
 
 // setupProtectedListingRoutes configures protected listing routes
 func setupProtectedListingRoutes(router fiber.Router) {
 	router.Post("/listings", listings.PostListing)
 	router.Post("/upload/listing_image", listings.UploadHandler)
-	router.Delete("/listings/:id", listings.DeleteListingById)
+	router.Delete("/listings/:listing_id", listings.DeleteListingById)
 }
 
 // setupSellerRoutes configures seller routes
@@ -180,15 +184,15 @@ func setupSellerRoutes(router fiber.Router) {
 // setupUserRoutes configures user routes
 func setupUserRoutes(router fiber.Router) {
 	router.Get("/auth/me", auth.GetUserByAccessToken)
-	router.Get("/auth/user/:id", auth.GetUserById)
+	router.Get("/auth/user/:user_id", auth.GetUserById)
 	router.Post("/auth/resend_email", auth.ResendConfirmationEmail)
-	router.Put("/auth/user/:id", auth.UpdateUser)
+	router.Put("/auth/user/:user_id", auth.UpdateUser)
 }
 
 // setupChatRoutes configures chat routes
 func setupChatRoutes(router fiber.Router) {
 	// Conversation routes
-	router.Get("/chat/conversation/:userId", chat.GetConversations)
+	router.Get("/chat/conversation/:user_id", chat.GetConversations)
 	router.Post("/chat/conversation", chat.CreateConversation)
 
 	// Message routes
@@ -202,8 +206,8 @@ func setupProtectedReviewRoutes(router fiber.Router) {
 }
 
 // setupPublicReviewRoutes configures public review routes
-func setupPublicReviewRoutes(router fiber.Router) {
-	router.Get("/reviews/:seller_id", reviews.GetReviews)
+func setupPublicReviewRoutes(app *fiber.App) {
+	app.Get("/reviews/:seller_id", reviews.GetReviews)
 }
 
 // setupFavoritesRoutes configures favorites routes
@@ -218,9 +222,4 @@ func setupFavoritesRoutes(router fiber.Router) {
 func setupHealthRoutes(router fiber.Router) {
 	router.Get("/health", health.HealthCheck)
 	router.Get("/health/detailed", health.DetailedHealth)
-
-	// Prevents 404 spam for favicon.ico
-	router.Get("/favicon.ico", func(c *fiber.Ctx) error {
-		return errors.ErrNotFound
-	})
 }

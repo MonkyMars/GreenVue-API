@@ -1,8 +1,8 @@
 package health
 
 import (
-	"greenvue-eu/internal/db"
-	"greenvue-eu/lib/errors"
+	"greenvue/internal/db"
+	"greenvue/lib/errors"
 	"runtime"
 	"time"
 
@@ -67,7 +67,7 @@ func DetailedHealth(c *fiber.Ctx) error {
 	client := db.GetGlobalClient()
 
 	start := time.Now()
-	_, err := client.GET(c, "listings", "select=*")
+	_, err := client.GET("listings", "select=*")
 	dbLatencyMs = time.Since(start).Milliseconds()
 
 	if err != nil {

@@ -1,7 +1,7 @@
 package security_test
 
 import (
-	"greenvue-eu/lib/security"
+	"greenvue/lib/security"
 	"testing"
 )
 

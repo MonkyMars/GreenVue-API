@@ -3,17 +3,15 @@ package auth
 import (
 	"encoding/json"
 	"fmt"
-	"greenvue-eu/internal/db"
-	"greenvue-eu/lib"
-	"greenvue-eu/lib/errors"
+	"greenvue/internal/db"
+	"greenvue/lib"
+	"greenvue/lib/errors"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-const viewName = "users_with_auth_info"
-
 func GetUserById(c *fiber.Ctx) error {
-	userId := c.Params("id")
+	userId := c.Params("user_id")
 
 	if userId == "" {
 		return errors.BadRequest("User ID is required")
@@ -26,7 +24,7 @@ func GetUserById(c *fiber.Ctx) error {
 
 	// Get user by ID using the standardized GET operation
 	query := fmt.Sprintf("id=eq.%s", userId)
-	data, err := client.GET(c, viewName, query)
+	data, err := client.GET("users", query)
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch user: " + err.Error())
 	}
@@ -65,7 +63,7 @@ func GetUserByAccessToken(c *fiber.Ctx) error {
 
 	// Get user by ID using the standardized GET operation
 	query := fmt.Sprintf("id=eq.%s", claims.UserId)
-	data, err := client.GET(c, viewName, query)
+	data, err := client.GET("users", query)
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch user: " + err.Error())
 	}
@@ -91,7 +89,7 @@ func GetUserByAccessToken(c *fiber.Ctx) error {
 }
 
 func UpdateUser(c *fiber.Ctx) error {
-	userId := c.Params("id")
+	userId := c.Params("user_id")
 
 	if userId == "" {
 		return errors.BadRequest("User ID is required")
@@ -117,7 +115,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	userUpdate.ID = userId
 
 	// Update user using the standardized PATCH operation
-	data, err := client.PATCH(c, "users", userId, userUpdate)
+	data, err := client.PATCH("users", userId, userUpdate)
 	if err != nil {
 		return errors.DatabaseError("Failed to update user: " + err.Error())
 	}

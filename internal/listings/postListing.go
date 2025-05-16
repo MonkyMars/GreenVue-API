@@ -2,9 +2,9 @@ package listings
 
 import (
 	"encoding/json"
-	"greenvue-eu/internal/db"
-	"greenvue-eu/lib"
-	"greenvue-eu/lib/errors"
+	"greenvue/internal/db"
+	"greenvue/lib"
+	"greenvue/lib/errors"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -65,7 +65,7 @@ func PostListing(c *fiber.Ctx) error {
 	}
 
 	// Insert into Supabase using standardized repository method
-	listingData, err := client.POST(c, "listings", listing)
+	listingData, err := client.POST("listings", listing)
 	if err != nil {
 		return errors.DatabaseError("Failed to create listing: " + err.Error())
 	}

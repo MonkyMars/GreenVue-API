@@ -3,9 +3,9 @@ package favorites
 import (
 	"encoding/json"
 	"fmt"
-	"greenvue-eu/internal/db"
-	"greenvue-eu/lib"
-	"greenvue-eu/lib/errors"
+	"greenvue/internal/db"
+	"greenvue/lib"
+	"greenvue/lib/errors"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -25,7 +25,7 @@ func GetFavorites(c *fiber.Ctx) error {
 		return errors.InternalServerError("Database connection failed. Please check SUPABASE_URL and SUPABASE_ANON.")
 	}
 
-	data, err := client.GET(c, viewName, "select=*&user_id=eq."+id)
+	data, err := client.GET(viewName, "select=*&user_id=eq."+id)
 
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch favorites: " + err.Error())
@@ -69,7 +69,7 @@ func AddFavorite(c *fiber.Ctx) error {
 
 	// Step 2: Check if favorite already exists
 	query := fmt.Sprintf("select=*&user_id=eq.%s&listing_id=eq.%s", payload.UserID, payload.ListingID)
-	existingFavorites, err := client.GET(c, "favorites", query)
+	existingFavorites, err := client.GET("favorites", query)
 	if err != nil {
 		return errors.DatabaseError("Failed to query favorites: " + err.Error())
 	}
@@ -84,7 +84,7 @@ func AddFavorite(c *fiber.Ctx) error {
 		ListingID: payload.ListingID,
 	}
 
-	responseData, err := client.POST(c, "favorites", newFavorite)
+	responseData, err := client.POST("favorites", newFavorite)
 	if err != nil {
 		return errors.DatabaseError("Failed to insert favorite: " + err.Error())
 	}
@@ -147,7 +147,7 @@ func IsFavorite(c *fiber.Ctx) error {
 
 	// Step 2: Check if favorite exists
 	query := fmt.Sprintf("user_id=eq.%s&listing_id=eq.%s", userID, listingID)
-	existingFavorites, err := client.GET(c, "favorites", query)
+	existingFavorites, err := client.GET("favorites", query)
 	if err != nil {
 		return errors.DatabaseError("Failed to query favorites: " + err.Error())
 	}

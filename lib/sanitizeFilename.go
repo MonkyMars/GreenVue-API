@@ -27,6 +27,7 @@ func SanitizeInput(input string) string {
 
 	// Replace multiple spaces with single space
 	multipleSpaces := regexp.MustCompile(`\s+`)
+
 	sanitized = multipleSpaces.ReplaceAllString(sanitized, " ")
 
 	return sanitized

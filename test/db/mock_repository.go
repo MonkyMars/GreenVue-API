@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"greenvue-eu/lib"
+	"greenvue/lib"
 	"sync"
 	"time"
 )

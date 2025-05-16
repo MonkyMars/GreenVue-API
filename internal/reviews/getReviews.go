@@ -3,9 +3,9 @@ package reviews
 import (
 	"encoding/json"
 	"fmt"
-	"greenvue-eu/internal/db"
-	"greenvue-eu/lib"
-	"greenvue-eu/lib/errors"
+	"greenvue/internal/db"
+	"greenvue/lib"
+	"greenvue/lib/errors"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -28,7 +28,7 @@ func GetReviews(c *fiber.Ctx) error {
 	query := fmt.Sprintf("select=*&limit=%s&seller_id=eq.%s", limit, selectedSeller)
 
 	// Use standardized GET operation
-	data, err := client.GET(c, viewName, query)
+	data, err := client.GET(viewName, query)
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch reviews: " + err.Error())
 	}

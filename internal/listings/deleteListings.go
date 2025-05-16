@@ -1,8 +1,8 @@
 package listings
 
 import (
-	"greenvue-eu/internal/db"
-	"greenvue-eu/lib/errors"
+	"greenvue/internal/db"
+	"greenvue/lib/errors"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -12,7 +12,7 @@ func DeleteListingById(c *fiber.Ctx) error {
 	client := db.GetGlobalClient()
 
 	// Extract listing ID from request path
-	listingId := c.Params("id")
+	listingId := c.Params("listing_id")
 
 	if client == nil {
 		return errors.InternalServerError("Database connection failed")
