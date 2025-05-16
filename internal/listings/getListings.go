@@ -1,12 +1,13 @@
 package listings
 
 import (
-	"encoding/json"
 	"fmt"
 	"greenvue/internal/db"
 	"greenvue/lib"
 	"greenvue/lib/errors"
 	"strings"
+
+	"github.com/goccy/go-json"
 
 	"github.com/gofiber/fiber/v2"
 )

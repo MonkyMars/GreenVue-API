@@ -1,10 +1,11 @@
 package chat
 
 import (
-	"encoding/json"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"

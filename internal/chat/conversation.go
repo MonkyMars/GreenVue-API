@@ -1,10 +1,11 @@
 package chat
 
 import (
-	"encoding/json"
 	"fmt"
 	"greenvue/internal/db"
 	"greenvue/lib/errors"
+
+	"github.com/goccy/go-json"
 
 	"github.com/gofiber/fiber/v2"
 )

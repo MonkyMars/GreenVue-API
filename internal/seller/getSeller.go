@@ -1,9 +1,10 @@
 package seller
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
+
+	"github.com/goccy/go-json"
 
 	"greenvue/internal/db"
 	"greenvue/lib"

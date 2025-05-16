@@ -2,7 +2,6 @@ package auth
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"greenvue/internal/db"
 	"greenvue/lib"
@@ -13,6 +12,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/gofiber/fiber/v2"
 )
