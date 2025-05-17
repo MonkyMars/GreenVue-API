@@ -108,7 +108,6 @@ type FetchedFavorite struct {
 	SellerVerified  bool    `json:"seller_verified"`
 }
 
-// Moved from db package
 type Listing struct {
 	ID            string   `json:"id,omitempty"`
 	CreatedAt     string   `json:"created_at,omitempty"`
@@ -124,7 +123,6 @@ type Listing struct {
 	SellerID      string   `json:"seller_id"`
 }
 
-// Moved from db package
 type FetchedListing struct {
 	ID            string   `json:"id,omitempty"`
 	CreatedAt     string   `json:"created_at,omitempty"`
@@ -158,4 +156,12 @@ type QueryParams struct {
 	Direction string         `json:"-"`
 	Data      map[string]any `json:"-"`
 	FiberMap  fiber.Map      `json:"-"`
+}
+
+type CompleteUser struct {
+	User      User              `json:"user"`
+	Listings  []FetchedListing  `json:"listings"`
+	Reviews   []FetchedReview   `json:"reviews"`
+	Messages  []Message         `json:"messages"`
+	Favorites []FetchedFavorite `json:"favorites"`
 }

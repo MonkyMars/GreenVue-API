@@ -187,6 +187,7 @@ func setupUserRoutes(router fiber.Router) {
 	router.Get("/auth/user/:user_id", auth.GetUserById)
 	router.Post("/auth/resend_email", auth.ResendConfirmationEmail)
 	router.Patch("/auth/user/:user_id", auth.UpdateUser)
+	router.Get("/auth/download_user_data", auth.DownloadUserData)
 }
 
 // setupChatRoutes configures chat routes
