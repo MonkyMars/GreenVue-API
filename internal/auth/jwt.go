@@ -486,6 +486,7 @@ func RefreshTokenHandler(c *fiber.Ctx) error {
 	SetAuthCookies(c, tokens)
 
 	return response.SuccessResponse(c, fiber.Map{
+		"userId":       claims.UserId,
 		"accessToken":  tokens.AccessToken,
 		"refreshToken": tokens.RefreshToken,
 		"expiresIn":    tokens.ExpiresIn,

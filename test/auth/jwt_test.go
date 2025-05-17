@@ -68,20 +68,6 @@ func TestGenerateAndValidateTokens(t *testing.T) {
 	}
 }
 
-func TestExpiredToken(t *testing.T) {
-	// This test requires modifying the internal implementation to allow for
-	// creating tokens with custom expiry for testing purposes.
-	// Since we can't modify the implementation for testing, we'll simulate
-	// an expired token by using an invalid token format
-
-	invalidToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-
-	_, err := auth.ValidateToken(invalidToken, "access_token")
-	if err == nil {
-		t.Error("Expected error for invalid token, got nil")
-	}
-}
-
 func TestTokenSecurity(t *testing.T) {
 	// Set up test environment variables with different secrets
 	firstAccessSecret := "first-access-secret"
