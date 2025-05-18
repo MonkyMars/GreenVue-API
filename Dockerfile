@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.24.1-alpine AS builder
+FROM golang:1.24.3-alpine AS builder
 
 # Install required dependencies (GCC + WebP)
 RUN apk add --no-cache gcc musl-dev libwebp-dev
