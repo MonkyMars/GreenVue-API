@@ -97,13 +97,8 @@ func setupMiddleware(app *fiber.App, cfg *config.Config) {
 
 			path := c.Path()
 
-			// Don't cache auth-related routes
-			if strings.HasPrefix(path, "/auth") {
-				return true
-			}
-
-			// Don't cache health checks and chat routes.
-			if strings.Contains(path, "health") || strings.HasPrefix(path, "/chat") {
+			// Don't cache health checks, chat and auth routes.
+			if strings.Contains(path, "/health") || strings.Contains(path, "/chat") || strings.Contains(path, "/auth") {
 				return true
 			}
 
@@ -184,7 +179,6 @@ func setupSellerRoutes(router fiber.Router) {
 // setupUserRoutes configures user routes
 func setupUserRoutes(router fiber.Router) {
 	router.Get("/auth/me", auth.GetUserByAccessToken)
-	router.Get("/auth/user", auth.GetUserById)
 	router.Post("/auth/resend_email", auth.ResendConfirmationEmail)
 	router.Patch("/auth/user", auth.UpdateUser)
 	router.Get("/auth/download_user_data", auth.DownloadUserData)

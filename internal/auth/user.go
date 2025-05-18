@@ -11,53 +11,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func GetUserById(c *fiber.Ctx) error {
-	claims, ok := c.Locals("user").(*Claims)
-	if !ok {
-		return errors.Unauthorized("Invalid token claims")
-	}
-
-	userId := claims.UserId
-
-	if userId == "" {
-		return errors.BadRequest("User ID is required")
-	}
-
-	client := db.GetGlobalClient()
-	if client == nil {
-		return errors.InternalServerError("Failed to create database client")
-	}
-
-	// Get user by ID using the standardized GET operation
-	query := fmt.Sprintf("id=eq.%s", userId)
-	data, err := client.GET("users", query)
-	if err != nil {
-		return errors.DatabaseError("Failed to fetch user: " + err.Error())
-	}
-
-	// Handle empty response
-	if len(data) == 0 || string(data) == "[]" {
-		return errors.NotFound("User not found")
-	}
-
-	// Parse the user data
-	var users []lib.User
-	if err := json.Unmarshal(data, &users); err != nil {
-		return errors.InternalServerError("Failed to parse user data")
-	}
-
-	if len(users) == 0 {
-		return errors.NotFound("User not found")
-	}
-
-	return errors.SuccessResponse(c, fiber.Map{
-		"user": users[0],
-	})
-}
-
 func GetUserByAccessToken(c *fiber.Ctx) error {
 	// Get claims from context (set by AuthMiddleware)
 	claims, ok := c.Locals("user").(*Claims)
+
 	if !ok {
 		return errors.Unauthorized("Invalid token claims")
 	}

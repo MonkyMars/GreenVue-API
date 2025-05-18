@@ -71,6 +71,9 @@ func LogoutUser(c *fiber.Ctx) error {
 	// Clear all authentication cookies
 	ClearAuthCookies(c)
 
+	// Clear the user session
+	c.Locals("user", nil)
+
 	// Send success response
 	return errors.SuccessResponse(c, fiber.Map{
 		"message": "Successfully logged out",
