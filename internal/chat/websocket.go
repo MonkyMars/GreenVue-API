@@ -139,7 +139,9 @@ func handleChatWebSocket(c *websocket.Conn) {
 		for range client.pingTimer.C {
 			if time.Since(client.lastPingTime) > pingTimeout {
 				log.Printf("WebSocket ping timeout for User %s, Conversation %s", userID, conversationID)
-				c.Close()
+				if err := c.Close(); err != nil {
+					log.Println("Error closing WebSocket:", err)
+				}
 				return
 			}
 			client.pingTimer.Reset(pingTimeout)
