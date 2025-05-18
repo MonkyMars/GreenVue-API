@@ -12,7 +12,12 @@ import (
 )
 
 func GetUserById(c *fiber.Ctx) error {
-	userId := c.Params("user_id")
+	claims, ok := c.Locals("user").(*Claims)
+	if !ok {
+		return errors.Unauthorized("Invalid token claims")
+	}
+
+	userId := claims.UserId
 
 	if userId == "" {
 		return errors.BadRequest("User ID is required")
@@ -90,7 +95,12 @@ func GetUserByAccessToken(c *fiber.Ctx) error {
 }
 
 func UpdateUser(c *fiber.Ctx) error {
-	userId := c.Params("user_id")
+	claims, ok := c.Locals("user").(*Claims)
+	if !ok {
+		return errors.Unauthorized("Invalid token claims")
+	}
+
+	userId := claims.UserId
 
 	if userId == "" {
 		return errors.BadRequest("User ID is required")

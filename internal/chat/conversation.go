@@ -2,6 +2,7 @@ package chat
 
 import (
 	"fmt"
+	"greenvue/internal/auth"
 	"greenvue/internal/db"
 	"greenvue/lib/errors"
 
@@ -97,7 +98,12 @@ func CreateConversation(c *fiber.Ctx) error {
 }
 
 func GetConversations(c *fiber.Ctx) error {
-	userId := c.Params("user_id")
+	claims, ok := c.Locals("user").(*auth.Claims)
+	if !ok {
+		return errors.Unauthorized("Invalid token claims")
+	}
+
+	userId := claims.UserId
 	if userId == "" {
 		return errors.BadRequest("User ID is required")
 	}

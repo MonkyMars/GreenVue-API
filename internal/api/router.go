@@ -184,16 +184,16 @@ func setupSellerRoutes(router fiber.Router) {
 // setupUserRoutes configures user routes
 func setupUserRoutes(router fiber.Router) {
 	router.Get("/auth/me", auth.GetUserByAccessToken)
-	router.Get("/auth/user/:user_id", auth.GetUserById)
+	router.Get("/auth/user", auth.GetUserById)
 	router.Post("/auth/resend_email", auth.ResendConfirmationEmail)
-	router.Patch("/auth/user/:user_id", auth.UpdateUser)
+	router.Patch("/auth/user", auth.UpdateUser)
 	router.Get("/auth/download_user_data", auth.DownloadUserData)
 }
 
 // setupChatRoutes configures chat routes
 func setupChatRoutes(router fiber.Router) {
 	// Conversation routes
-	router.Get("/chat/conversation/:user_id", chat.GetConversations)
+	router.Get("/chat/conversation", chat.GetConversations)
 	router.Post("/chat/conversation", chat.CreateConversation)
 
 	// Message routes

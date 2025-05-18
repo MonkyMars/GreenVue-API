@@ -129,7 +129,7 @@ func VerifyEmailRedirect(c *fiber.Ctx) error {
 	}
 
 	// Extract fields
-	userID, ok := parsedMetadata["sub"].(string)
+	userId, ok := parsedMetadata["sub"].(string)
 	if !ok {
 		return errors.BadRequest("Missing or invalid user ID in metadata")
 	}
@@ -146,7 +146,7 @@ func VerifyEmailRedirect(c *fiber.Ctx) error {
 	}
 
 	// Check if user exists and matches
-	query := fmt.Sprintf("id=eq.%s", userID)
+	query := fmt.Sprintf("id=eq.%s", userId)
 	data, err := client.GET("users", query)
 	if err != nil {
 		return errors.InternalServerError("Failed to fetch user data: " + err.Error())
