@@ -1,8 +1,9 @@
 package lib
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type User struct {
@@ -44,13 +45,13 @@ type FetchedListing struct {
 	Title         string    `json:"title"`
 	ImageUrl      []string  `json:"imageUrl"`
 
-	SellerID        uuid.UUID `json:"seller_id"`
-	SellerUsername  string    `json:"seller_username"`
-	SellerBio       *string   `json:"seller_bio"`
-	SellerCreatedAt time.Time `json:"seller_created_at"`
-	SellerRating    float32   `json:"seller_rating"`
-	SellerVerified  bool      `json:"seller_verified"`
-	Bids 				 []FetchedBid `json:"bids"`
+	SellerID        uuid.UUID    `json:"seller_id"`
+	SellerUsername  string       `json:"seller_username"`
+	SellerBio       string       `json:"seller_bio"`
+	SellerCreatedAt time.Time    `json:"seller_created_at"`
+	SellerRating    float32      `json:"seller_rating"`
+	SellerVerified  bool         `json:"seller_verified"`
+	Bids            []FetchedBid `json:"bids"`
 }
 
 type FetchedFavorite struct {
@@ -73,7 +74,7 @@ type FetchedFavorite struct {
 
 	SellerID        uuid.UUID `json:"seller_id"`
 	SellerUsername  string    `json:"seller_username"`
-	SellerBio       *string   `json:"seller_bio"`
+	SellerBio       string    `json:"seller_bio"`
 	SellerCreatedAt time.Time `json:"seller_created_at"`
 	SellerRating    float32   `json:"seller_rating"`
 	SellerVerified  bool      `json:"seller_verified"`
@@ -84,7 +85,7 @@ type FetchedReview struct {
 	CreatedAt        time.Time `json:"created_at"`
 	Rating           int       `json:"rating"`
 	UserID           uuid.UUID `json:"user_id"`
-	UserName         *string   `json:"user_name"`
+	UserName         string    `json:"user_name"`
 	SellerID         uuid.UUID `json:"seller_id"`
 	Title            string    `json:"title"`
 	Content          string    `json:"content"`
