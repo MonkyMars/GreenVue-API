@@ -12,7 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-const viewName string = "listings_with_seller"
+const viewName string = "listing_details_view"
 
 func GetListings(c *fiber.Ctx) error {
 	client := db.GetGlobalClient()
@@ -21,7 +21,7 @@ func GetListings(c *fiber.Ctx) error {
 		return errors.InternalServerError("Database connection failed. Please check SUPABASE_URL and SUPABASE_ANON.")
 	}
 
-	limit := c.Query("limit", "50")
+	limit := c.Query("limit")
 
 	query := fmt.Sprintf("select=*&limit=%s&order=created_at.desc", limit)
 

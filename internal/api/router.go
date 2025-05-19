@@ -90,6 +90,12 @@ func setupMiddleware(app *fiber.App, cfg *config.Config) {
 	// Cache middleware with exclusions for auth and non-GET requests
 	app.Use(cache.New(cache.Config{
 		Next: func(c *fiber.Ctx) bool {
+
+			// Don't cache in development
+			if cfg.Environment != "production" {
+				return true
+			}
+
 			// Don't cache non-GET requests
 			if c.Method() != fiber.MethodGet {
 				return true

@@ -50,6 +50,7 @@ type FetchedListing struct {
 	SellerCreatedAt time.Time `json:"seller_created_at"`
 	SellerRating    float32   `json:"seller_rating"`
 	SellerVerified  bool      `json:"seller_verified"`
+	Bids 				 []FetchedBid `json:"bids"`
 }
 
 type FetchedFavorite struct {
