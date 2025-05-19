@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 // View name for PostgreSQL that fetches the user's favorites with listings and seller information
@@ -51,15 +52,15 @@ func GetFavorites(c *fiber.Ctx) error {
 func AddFavorite(c *fiber.Ctx) error {
 
 	var payload struct {
-		UserID    string `json:"user_id"`
-		ListingID string `json:"listing_id"`
+		UserID    uuid.UUID `json:"user_id"`
+		ListingID uuid.UUID `json:"listing_id"`
 	}
 	if err := c.BodyParser(&payload); err != nil {
 		return errors.BadRequest("Invalid request body: " + err.Error())
 	}
 
 	// Step 1: Validate params
-	if payload.UserID == "" || payload.ListingID == "" {
+	if payload.UserID == uuid.Nil || payload.ListingID == uuid.Nil {
 		return errors.BadRequest("user_id and listing_id are required.")
 	}
 

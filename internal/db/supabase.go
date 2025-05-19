@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 // Global client instance and mutex for thread safety
@@ -144,7 +145,7 @@ func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
 }
 
 // PATCH updates an existing record by ID
-func (s *SupabaseClient) PATCH(table string, id string, data any) ([]byte, error) {
+func (s *SupabaseClient) PATCH(table string, id uuid.UUID, data any) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?id=eq.%s", s.URL, table, id)
 
 	client := resty.New().
@@ -271,8 +272,8 @@ func (s *SupabaseClient) SignUp(email, password string) (*lib.User, error) {
 
 	// Parse JSON response based on actual Supabase structure
 	var userResp struct {
-		ID    string `json:"id"`
-		Email string `json:"email"`
+		ID    uuid.UUID `json:"id"`
+		Email string    `json:"email"`
 	}
 
 	if err := json.Unmarshal(body, &userResp); err != nil {
@@ -280,7 +281,7 @@ func (s *SupabaseClient) SignUp(email, password string) (*lib.User, error) {
 	}
 
 	// Check if user ID exists
-	if userResp.ID == "" {
+	if userResp.ID == (uuid.UUID{}) {
 		return nil, fmt.Errorf("user ID missing in response")
 	}
 

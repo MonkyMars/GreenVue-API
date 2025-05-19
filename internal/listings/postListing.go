@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 func PostListing(c *fiber.Ctx) error {
@@ -27,7 +28,7 @@ func PostListing(c *fiber.Ctx) error {
 		EcoScore      float32        `json:"ecoScore"`
 		EcoAttributes []string       `json:"ecoAttributes"`
 		ImageUrl      map[string]any `json:"imageUrl"`
-		SellerID      string         `json:"seller_id"`
+		SellerID      uuid.UUID      `json:"seller_id"`
 	}
 
 	if err := c.BodyParser(&payload); err != nil {

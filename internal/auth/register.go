@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 func RegisterUser(c *fiber.Ctx) error {
@@ -50,7 +51,7 @@ func RegisterUser(c *fiber.Ctx) error {
 		return errors.DatabaseError("User registration failed: received nil user from auth provider")
 	}
 
-	if user.ID == "" {
+	if user.ID == uuid.Nil {
 		return errors.DatabaseError("User registration failed: received empty user ID from auth provider")
 	}
 
