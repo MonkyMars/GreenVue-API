@@ -1,0 +1,105 @@
+package lib
+
+import (
+	"github.com/google/uuid"
+	"time"
+)
+
+type User struct {
+	ID            uuid.UUID `json:"id"`
+	Email         string    `json:"email"`
+	Name          string    `json:"name,omitempty"`
+	Location      string    `json:"location,omitempty"`
+	Bio           string    `json:"bio,omitempty"`
+	CreatedAt     time.Time `json:"created_at,omitempty"`
+	Rating        float32   `json:"rating,omitempty"`
+	Verified      bool      `json:"verified,omitempty"`
+	EmailVerified bool      `json:"email_verified"`
+	Picture       string    `json:"picture,omitempty"`
+	Provider      string    `json:"provider,omitempty"`
+}
+
+type PublicUser struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	Location  string    `json:"location"`
+	Bio       string    `json:"bio"`
+	CreatedAt time.Time `json:"created_at"`
+	Rating    float32   `json:"rating"`
+	Verified  bool      `json:"verified"`
+	Picture   string    `json:"picture,omitempty"`
+}
+
+type FetchedListing struct {
+	ID            uuid.UUID `json:"id"`
+	CreatedAt     time.Time `json:"created_at"`
+	Description   string    `json:"description"`
+	Category      string    `json:"category"`
+	Condition     string    `json:"condition"`
+	Price         float64   `json:"price"`
+	Location      string    `json:"location"`
+	EcoScore      float32   `json:"ecoScore"`
+	EcoAttributes []string  `json:"ecoAttributes"`
+	Negotiable    bool      `json:"negotiable"`
+	Title         string    `json:"title"`
+	ImageUrl      []string  `json:"imageUrl"`
+
+	SellerID        uuid.UUID `json:"seller_id"`
+	SellerUsername  string    `json:"seller_username"`
+	SellerBio       *string   `json:"seller_bio"`
+	SellerCreatedAt time.Time `json:"seller_created_at"`
+	SellerRating    float32   `json:"seller_rating"`
+	SellerVerified  bool      `json:"seller_verified"`
+}
+
+type FetchedFavorite struct {
+	ID          uuid.UUID `json:"id"`
+	UserID      uuid.UUID `json:"user_id"`
+	ListingID   uuid.UUID `json:"listing_id"`
+	FavoritedAt time.Time `json:"favorited_at"`
+
+	CreatedAt     time.Time `json:"created_at"`
+	Description   string    `json:"description"`
+	Category      string    `json:"category"`
+	Condition     string    `json:"condition"`
+	Price         float64   `json:"price"`
+	Location      string    `json:"location"`
+	EcoScore      float32   `json:"ecoScore"`
+	EcoAttributes []string  `json:"ecoAttributes"`
+	Negotiable    bool      `json:"negotiable"`
+	Title         string    `json:"title"`
+	ImageUrl      []string  `json:"imageUrl"`
+
+	SellerID        uuid.UUID `json:"seller_id"`
+	SellerUsername  string    `json:"seller_username"`
+	SellerBio       *string   `json:"seller_bio"`
+	SellerCreatedAt time.Time `json:"seller_created_at"`
+	SellerRating    float32   `json:"seller_rating"`
+	SellerVerified  bool      `json:"seller_verified"`
+}
+
+type FetchedReview struct {
+	ID               uuid.UUID `json:"id"`
+	CreatedAt        time.Time `json:"created_at"`
+	Rating           int       `json:"rating"`
+	UserID           uuid.UUID `json:"user_id"`
+	UserName         *string   `json:"user_name"`
+	SellerID         uuid.UUID `json:"seller_id"`
+	Title            string    `json:"title"`
+	Content          string    `json:"content"`
+	HelpfulCount     int       `json:"helpful_count"`
+	VerifiedPurchase bool      `json:"verified_purchase"`
+}
+
+type FetchedBid struct {
+	// Bid data
+	ID        uuid.UUID `json:"id"`
+	ListingID uuid.UUID `json:"listing_id"`
+	UserID    uuid.UUID `json:"user_id"`
+	Price     float64   `json:"price"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// User data
+	UserName    string `json:"user_name"`
+	UserPicture string `json:"user_picture"`
+}

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 func GetUserByAccessToken(c *fiber.Ctx) error {
@@ -59,7 +60,7 @@ func UpdateUser(c *fiber.Ctx) error {
 
 	userId := claims.UserId
 
-	if userId == "" {
+	if userId == uuid.Nil {
 		return errors.BadRequest("User ID is required")
 	}
 

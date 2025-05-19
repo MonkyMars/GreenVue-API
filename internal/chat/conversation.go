@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 type Conversation struct {
@@ -104,7 +105,7 @@ func GetConversations(c *fiber.Ctx) error {
 	}
 
 	userId := claims.UserId
-	if userId == "" {
+	if userId == uuid.Nil {
 		return errors.BadRequest("User ID is required")
 	}
 

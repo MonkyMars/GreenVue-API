@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 func PostReview(c *fiber.Ctx) error {
@@ -22,7 +23,7 @@ func PostReview(c *fiber.Ctx) error {
 	}
 
 	// Validate required fields
-	if review.UserID == "" || review.SellerID == "" {
+	if review.UserID == uuid.Nil || review.SellerID == uuid.Nil {
 		return errors.BadRequest("UserID, SellerID, and ListingID are required")
 	}
 

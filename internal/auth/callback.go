@@ -15,6 +15,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 type GoogleTokenResponse struct {
@@ -22,7 +23,7 @@ type GoogleTokenResponse struct {
 }
 
 type User struct {
-	Id string `json:"id"`
+	Id uuid.UUID `json:"id"`
 }
 
 type SupabaseResp struct {
@@ -153,8 +154,8 @@ func signInWithSupabase(idToken string) (SupabaseResp, error) {
 		return SupabaseResp{}, err
 	}
 
-	UserId := supabaseResp["user"].(map[string]any)["id"].(string)
-	if UserId == "" {
+	UserId := supabaseResp["user"].(map[string]any)["id"].(uuid.UUID)
+	if UserId == uuid.Nil {
 		return SupabaseResp{}, fmt.Errorf("user ID not found in Supabase response")
 	}
 

@@ -12,6 +12,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 var (
@@ -33,9 +34,9 @@ const (
 )
 
 type Claims struct {
-	UserId string `json:"user_id"`
-	Role   string `json:"role"`
-	Type   string `json:"type"` // New field to identify token type
+	UserId uuid.UUID `json:"user_id"`
+	Role   string    `json:"role"`
+	Type   string    `json:"type"` // New field to identify token type
 	jwt.RegisteredClaims
 }
 
@@ -184,7 +185,7 @@ func getJWTSecrets() (access []byte, refresh []byte) {
 }
 
 // GenerateTokenPair creates a new access token and refresh token
-func GenerateTokenPair(userID, email string) (*TokenPair, error) {
+func GenerateTokenPair(userID uuid.UUID, email string) (*TokenPair, error) {
 	accessExpiration := time.Now().Add(time.Duration(AccessCookieMaxAge) * time.Second)
 	refreshExpiration := time.Now().Add(time.Duration(RefreshCookieMaxAge) * time.Second)
 
@@ -196,7 +197,7 @@ func GenerateTokenPair(userID, email string) (*TokenPair, error) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			Audience:  []string{"greenvue-client"},          // Audience of the token
 			Issuer:    "greenvue",                           // Issuer of the token
-			Subject:   userID,                               // Subject of the token
+			Subject:   userID.String(),                      // Subject of the token
 			ExpiresAt: jwt.NewNumericDate(accessExpiration), // Expiration time (1 hour)
 			IssuedAt:  jwt.NewNumericDate(time.Now()),       // Time when the token was issued
 		},
@@ -210,7 +211,7 @@ func GenerateTokenPair(userID, email string) (*TokenPair, error) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			Audience:  []string{"greenvue-client"},
 			Issuer:    "greenvue",
-			Subject:   userID,
+			Subject:   userID.String(),
 			ExpiresAt: jwt.NewNumericDate(refreshExpiration),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -369,7 +370,7 @@ func AuthMiddleware() fiber.Handler {
 		switch c.Method() {
 		case fiber.MethodPost:
 			var payload struct {
-				UserId string `json:"user_id"`
+				UserId uuid.UUID `json:"user_id"`
 			}
 
 			if err := c.BodyParser(&payload); err != nil {
@@ -377,20 +378,26 @@ func AuthMiddleware() fiber.Handler {
 			}
 
 			// Only validate if user_id is included in the body
-			if payload.UserId != "" && payload.UserId != claims.UserId {
+			if payload.UserId != uuid.Nil && payload.UserId != claims.UserId {
 				return response.Unauthorized("user ID in request body does not match token claims")
 			}
 
 		case fiber.MethodGet:
 			userId := c.Query("user_id")
-			// Only validate if user_id is included in the query
-			if userId != "" && userId != claims.UserId {
-				return response.Unauthorized("user ID in query does not match token claims")
+			// Validate user ID in query string
+			if userId != "" {
+				parsedID, err := uuid.Parse(userId)
+				if err != nil {
+					return response.BadRequest("invalid user ID format")
+				}
+				if parsedID != claims.UserId {
+					return response.Unauthorized("user ID in query does not match token claims")
+				}
 			}
 		case fiber.MethodDelete:
 			userId := c.Query("user_id")
 
-			if userId != "" && userId != claims.UserId {
+			if userId != "" && userId != claims.UserId.String() {
 				return response.Unauthorized("user ID in query does not match token claims")
 			}
 		case fiber.MethodPatch:
@@ -402,7 +409,7 @@ func AuthMiddleware() fiber.Handler {
 				return response.BadRequest("invalid request format")
 			}
 
-			if payload.UserId != "" && payload.UserId != claims.UserId {
+			if payload.UserId != "" && payload.UserId != claims.UserId.String() {
 				return response.Unauthorized("user ID in request body does not match token claims")
 			}
 		}
