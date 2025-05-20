@@ -154,8 +154,11 @@ func signInWithSupabase(idToken string) (SupabaseResp, error) {
 		return SupabaseResp{}, err
 	}
 
-	UserId := supabaseResp["user"].(map[string]any)["id"].(uuid.UUID)
-	if UserId == uuid.Nil {
+	UserId := supabaseResp["user"].(map[string]any)["id"].(string)
+
+	UserUuid, err := uuid.Parse(UserId)
+
+	if err != nil || UserUuid == uuid.Nil {
 		return SupabaseResp{}, fmt.Errorf("user ID not found in Supabase response")
 	}
 
@@ -164,14 +167,14 @@ func signInWithSupabase(idToken string) (SupabaseResp, error) {
 		return SupabaseResp{}, fmt.Errorf("email not found in Supabase response")
 	}
 
-	authTokens, err := GenerateTokenPair(UserId, Email)
+	authTokens, err := GenerateTokenPair(UserUuid, Email)
 	if err != nil {
 		return SupabaseResp{}, fmt.Errorf("failed to generate token pair: %v", err)
 	}
 
 	tokens := SupabaseResp{
 		UserId: User{
-			Id: UserId,
+			Id: UserUuid,
 		},
 		AccessToken:  authTokens.AccessToken,
 		RefreshToken: authTokens.RefreshToken,

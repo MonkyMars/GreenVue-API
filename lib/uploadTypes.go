@@ -30,17 +30,15 @@ type Review struct {
 }
 
 type Listing struct {
-	ID            uuid.UUID `json:"id,omitempty"`
-	CreatedAt     time.Time `json:"created_at"`
+	Title         string    `json:"title"`
 	Description   string    `json:"description"`
 	Category      string    `json:"category"`
 	Condition     string    `json:"condition"`
 	Price         float64   `json:"price"`
-	EcoScore      float32   `json:"ecoScore"`
-	EcoAttributes []string  `json:"ecoAttributes"`
 	Negotiable    bool      `json:"negotiable"`
-	Title         string    `json:"title"`
-	ImageUrl      []string  `json:"imageUrl"`
+	EcoScore      float32   `json:"eco_score"`
+	EcoAttributes []string  `json:"eco_attributes"`
+	ImageUrl      []string  `json:"image_urls"`
 	SellerID      uuid.UUID `json:"seller_id"`
 }
 

@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 )
 
 func PostListing(c *fiber.Ctx) error {
@@ -18,52 +17,24 @@ func PostListing(c *fiber.Ctx) error {
 		return errors.InternalServerError("Failed to create client")
 	}
 
-	var payload struct {
-		Title         string         `json:"title"`
-		Description   string         `json:"description"`
-		Category      string         `json:"category"`
-		Condition     string         `json:"condition"`
-		Price         float64        `json:"price"`
-		Negotiable    bool           `json:"negotiable"`
-		EcoScore      float32        `json:"ecoScore"`
-		EcoAttributes []string       `json:"ecoAttributes"`
-		ImageUrl      map[string]any `json:"imageUrl"`
-		SellerID      uuid.UUID      `json:"seller_id"`
-	}
-
-	if err := c.BodyParser(&payload); err != nil {
+	var listing lib.Listing
+	if err := c.BodyParser(&listing); err != nil {
 		return errors.BadRequest("Failed to parse JSON payload: " + err.Error())
 	}
 
-	// Parse image URLs (as before)
-	var imageUrl []string
-	if payload.ImageUrl != nil {
-		if urls, exists := payload.ImageUrl["urls"]; exists {
-			switch urlsTyped := urls.(type) {
-			case []any:
-				for _, item := range urlsTyped {
-					if str, ok := item.(string); ok {
-						imageUrl = append(imageUrl, str)
-					}
-				}
-			case string:
-				imageUrl = append(imageUrl, urlsTyped)
-			}
-		}
-	}
-
 	// Build the listing object using the lib.Listing type now
-	listing := lib.Listing{
-		Title:         lib.SanitizeInput(payload.Title),
-		Description:   lib.SanitizeInput(payload.Description),
-		Category:      payload.Category,
-		Condition:     payload.Condition,
-		Price:         payload.Price,
-		Negotiable:    payload.Negotiable,
-		EcoScore:      payload.EcoScore,
-		EcoAttributes: payload.EcoAttributes,
-		ImageUrl:      imageUrl,
-		SellerID:      payload.SellerID,
+
+	listing = lib.Listing{
+		Title:         lib.SanitizeInput(listing.Title),
+		Description:   lib.SanitizeInput(listing.Description),
+		Category:      listing.Category,
+		Condition:     listing.Condition,
+		Price:         listing.Price,
+		Negotiable:    listing.Negotiable,
+		EcoScore:      listing.EcoScore,
+		EcoAttributes: listing.EcoAttributes,
+		ImageUrl:      listing.ImageUrl,
+		SellerID:      listing.SellerID,
 	}
 
 	// Insert into Supabase using standardized repository method

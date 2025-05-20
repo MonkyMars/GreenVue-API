@@ -9,15 +9,15 @@ import (
 type User struct {
 	ID            uuid.UUID `json:"id"`
 	Email         string    `json:"email"`
-	Name          string    `json:"name,omitempty"`
-	Location      string    `json:"location,omitempty"`
-	Bio           string    `json:"bio,omitempty"`
-	CreatedAt     time.Time `json:"created_at,omitempty"`
-	Rating        float32   `json:"rating,omitempty"`
-	Verified      bool      `json:"verified,omitempty"`
+	Name          string    `json:"name"`
+	Location      string    `json:"location"`
+	Bio           string    `json:"bio"`
+	CreatedAt     time.Time `json:"created_at"`
+	Rating        float32   `json:"rating"`
+	Verified      bool      `json:"verified"`
 	EmailVerified bool      `json:"email_verified"`
-	Picture       string    `json:"picture,omitempty"`
-	Provider      string    `json:"provider,omitempty"`
+	Picture       string    `json:"picture"`
+	Provider      string    `json:"provider"`
 }
 
 type PublicUser struct {
@@ -28,7 +28,7 @@ type PublicUser struct {
 	CreatedAt time.Time `json:"created_at"`
 	Rating    float32   `json:"rating"`
 	Verified  bool      `json:"verified"`
-	Picture   string    `json:"picture,omitempty"`
+	Picture   string    `json:"picture"`
 }
 
 type FetchedListing struct {
@@ -39,11 +39,11 @@ type FetchedListing struct {
 	Condition     string    `json:"condition"`
 	Price         float64   `json:"price"`
 	Location      string    `json:"location"`
-	EcoScore      float32   `json:"ecoScore"`
-	EcoAttributes []string  `json:"ecoAttributes"`
+	EcoScore      float32   `json:"eco_score"`
+	EcoAttributes []string  `json:"eco_attributes"`
 	Negotiable    bool      `json:"negotiable"`
 	Title         string    `json:"title"`
-	ImageUrl      []string  `json:"imageUrl"`
+	ImageUrl      []string  `json:"image_urls"`
 
 	SellerID        uuid.UUID    `json:"seller_id"`
 	SellerUsername  string       `json:"seller_username"`
