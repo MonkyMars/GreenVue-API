@@ -2,9 +2,11 @@ package favorites
 
 import (
 	"fmt"
+	"greenvue/internal/auth"
 	"greenvue/internal/db"
 	"greenvue/lib"
 	"greenvue/lib/errors"
+	"log"
 
 	"encoding/json"
 
@@ -16,9 +18,11 @@ import (
 const viewName string = "user_favorites_view"
 
 func GetFavorites(c *fiber.Ctx) error {
-	id := c.Params("user_id")
-	if id == "" {
-		return errors.BadRequest("id is required")
+	claims, ok := c.Locals("user").(*auth.Claims)
+
+	if !ok {
+		log.Println(claims, ok)
+		return errors.Unauthorized("Invalid or missing authentication")
 	}
 
 	client := db.GetGlobalClient()
@@ -27,7 +31,7 @@ func GetFavorites(c *fiber.Ctx) error {
 		return errors.InternalServerError("Database connection failed. Please check SUPABASE_URL and SUPABASE_ANON.")
 	}
 
-	data, err := client.GET(viewName, "select=*&user_id=eq."+id)
+	data, err := client.GET(viewName, "select=*&user_id=eq."+claims.UserId.String())
 
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch favorites: " + err.Error())
@@ -52,16 +56,20 @@ func GetFavorites(c *fiber.Ctx) error {
 func AddFavorite(c *fiber.Ctx) error {
 
 	var payload struct {
-		UserID    uuid.UUID `json:"user_id"`
 		ListingID uuid.UUID `json:"listing_id"`
 	}
 	if err := c.BodyParser(&payload); err != nil {
 		return errors.BadRequest("Invalid request body: " + err.Error())
 	}
 
+	claims, ok := c.Locals("user").(*auth.Claims)
+	if !ok {
+		return errors.Unauthorized("Invalid or missing authentication")
+	}
+
 	// Step 1: Validate params
-	if payload.UserID == uuid.Nil || payload.ListingID == uuid.Nil {
-		return errors.BadRequest("user_id and listing_id are required.")
+	if payload.ListingID == uuid.Nil {
+		return errors.BadRequest("listing_id is required.")
 	}
 
 	client := db.GetGlobalClient()
@@ -70,7 +78,7 @@ func AddFavorite(c *fiber.Ctx) error {
 	}
 
 	// Step 2: Check if favorite already exists
-	query := fmt.Sprintf("select=*&user_id=eq.%s&listing_id=eq.%s", payload.UserID, payload.ListingID)
+	query := fmt.Sprintf("select=*&user_id=eq.%s&listing_id=eq.%s", claims.UserId, payload.ListingID)
 	existingFavorites, err := client.GET("favorites", query)
 	if err != nil {
 		return errors.DatabaseError("Failed to query favorites: " + err.Error())
@@ -82,7 +90,7 @@ func AddFavorite(c *fiber.Ctx) error {
 
 	// Step 3: Create new favorite using standardized POST operation
 	newFavorite := lib.Favorite{
-		UserID:    payload.UserID,
+		UserID:    claims.UserId,
 		ListingID: payload.ListingID,
 	}
 
@@ -134,9 +142,15 @@ func DeleteFavorite(c *fiber.Ctx) error {
 }
 
 func IsFavorite(c *fiber.Ctx) error {
-	userID := c.Params("user_id")
 	listingID := c.Params("listing_id")
 
+	claims, ok := c.Locals("user").(*auth.Claims)
+
+	if !ok {
+		return errors.Unauthorized("Invalid or missing authentication")
+	}
+
+	userID := claims.UserId.String()
 	// Step 1: Validate params
 	if userID == "" || listingID == "" {
 		return errors.BadRequest("user_id and listing_id are required.")

@@ -67,10 +67,10 @@ type FetchedFavorite struct {
 	Price         float64   `json:"price"`
 	Location      string    `json:"location"`
 	EcoScore      float32   `json:"ecoScore"`
-	EcoAttributes []string  `json:"ecoAttributes"`
+	EcoAttributes []string  `json:"eco_attributes"`
 	Negotiable    bool      `json:"negotiable"`
 	Title         string    `json:"title"`
-	ImageUrl      []string  `json:"imageUrl"`
+	ImageUrl      []string  `json:"image_urls"`
 
 	SellerID        uuid.UUID `json:"seller_id"`
 	SellerUsername  string    `json:"seller_username"`

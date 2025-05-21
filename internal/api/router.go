@@ -213,10 +213,10 @@ func setupPublicReviewRoutes(app *fiber.App) {
 
 // setupFavoritesRoutes configures favorites routes
 func setupFavoritesRoutes(router fiber.Router) {
-	router.Get("/favorites/:user_id", favorites.GetFavorites)
-	router.Get("/favorites/check/:listing_id/:user_id", favorites.IsFavorite)
+	router.Get("/favorites", favorites.GetFavorites)
+	router.Get("/favorites/check/:listing_id", favorites.IsFavorite)
 	router.Post("/favorites", favorites.AddFavorite)
-	router.Delete("/favorites/:listing_id/:user_id", favorites.DeleteFavorite)
+	router.Delete("/favorites/:listing_id", favorites.DeleteFavorite)
 }
 
 // setupHealthRoutes configures health check routes
