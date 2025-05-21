@@ -179,7 +179,7 @@ func setupProtectedListingRoutes(router fiber.Router) {
 
 // setupSellerRoutes configures seller routes
 func setupSellerRoutes(router fiber.Router) {
-	router.Get("/seller/:user_id", seller.GetSeller)
+	router.Get("/seller/:seller_id", seller.GetSeller)
 }
 
 // setupUserRoutes configures user routes

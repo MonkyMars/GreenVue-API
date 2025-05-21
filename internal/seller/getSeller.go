@@ -15,7 +15,9 @@ import (
 
 func GetSeller(c *fiber.Ctx) error {
 	client := db.GetGlobalClient()
-	sellerID := c.Params("user_id")
+
+	sellerID := c.Params("seller_id")
+
 	query := fmt.Sprintf("select=id,created_at,name,location,bio,rating,verified&"+
 		"id=eq.%s", url.QueryEscape(sellerID))
 
