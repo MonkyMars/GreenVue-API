@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// QueuedUploadHandler is a new version of the upload handler that queues images for background processing
+// QueuedUploadHandler processes image uploads asynchronously using the background job system
 func QueuedUploadHandler(c *fiber.Ctx) error {
 	// Extract listing title from form data
 	listingTitle := c.FormValue("listing_title")

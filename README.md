@@ -35,7 +35,9 @@ Our mission is to promote sustainability by extending the lifecycle of products 
 
   - Create, retrieve and delete listings
   - Category-based listing organization
-  - Image upload support (WebP conversion, resizing, async processing)
+  - Fully asynchronous image processing system
+  - WebP conversion and image resizing in background
+  - Immediate URL response with background processing
   - Seller-specific listings
 
 - **Background Jobs**

@@ -92,12 +92,9 @@ func GetEmailQueueStatusHandler(c *fiber.Ctx) error {
 		pendingCount = email.GlobalEmailQueue.PendingCount()
 	}
 
-	return c.JSON(fiber.Map{
-		"status": "success",
-		"data": fiber.Map{
-			"queueInitialized":   email.GlobalEmailQueue != nil,
-			"serviceInitialized": email.DefaultEmailService != nil,
-			"pendingEmails":      pendingCount,
-		},
+	return errors.SuccessResponse(c, fiber.Map{
+		"queueInitialized":   email.GlobalEmailQueue != nil,
+		"serviceInitialized": email.DefaultEmailService != nil,
+		"pendingEmails":      pendingCount,
 	})
 }

@@ -1,15 +1,16 @@
 # Image Processing Background Jobs in GreenVue API
 
-This document describes the background image processing system in the GreenVue API.
+This document describes the image processing system in the GreenVue API, which exclusively uses background jobs for all image handling.
 
 ## Overview
 
-The image processing background job system allows you to queue images to be processed asynchronously. This has several advantages:
+The GreenVue API implements a fully asynchronous image processing system with the following advantages:
 
 1. API endpoints respond quickly without waiting for image processing
 2. Failed image processing can be automatically retried
 3. Image processing can be batched to avoid overwhelming the server
 4. Image processing can be monitored and managed through the jobs API
+5. Immediate URL availability while processing happens in background
 
 ## Architecture
 

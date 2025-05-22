@@ -59,10 +59,7 @@ func GetJobs(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.JSON(fiber.Map{
-		"status": "success",
-		"data":   response,
-	})
+	return errors.SuccessResponse(c, response)
 }
 
 // GetJobByID returns a specific job by ID
@@ -84,10 +81,7 @@ func GetJobByID(c *fiber.Ctx) error {
 		IsRunning:   job.IsRunning,
 	}
 
-	return c.JSON(fiber.Map{
-		"status": "success",
-		"data":   response,
-	})
+	return errors.SuccessResponse(c, response)
 }
 
 // CreateJob creates a new job
@@ -129,7 +123,7 @@ func CreateJob(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+	return errors.SuccessResponse(c, fiber.Map{
 		"status":  "success",
 		"message": "Job created successfully",
 	})
@@ -143,46 +137,30 @@ func DeleteJob(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{
+	return errors.SuccessResponse(c, fiber.Map{
 		"status":  "success",
 		"message": "Job removed successfully",
 	})
 }
 
 // Job creation helper functions
-
 func createCleanupExpiredListingsJob(payload any) JobFunc {
 	return func(ctx context.Context) error {
-		// Sample implementation
-		// In a real app, you'd use your database logic to find and clean expired listings
-
-		// You could parse specific options from the payload
-		// var options struct {
-		//     DaysToKeep int `json:"days_to_keep"`
-		// }
-		// if payload != nil {
-		//     data, _ := json.Marshal(payload)
-		//     json.Unmarshal(data, &options)
-		// }
-
-		// Log job execution
-		// Add your business logic here...
+		// TODO: Implement cleanup logic for expired listings
 		return nil
 	}
 }
 
 func createUpdateSearchIndexJob(payload any) JobFunc {
 	return func(ctx context.Context) error {
-		// Sample implementation
-		// In a real app, this might update a search index like Elasticsearch
+		// TODO: Implement search index update logic
 		return nil
 	}
 }
 
 func createSendNotificationsJob(payload any) JobFunc {
 	return func(ctx context.Context) error {
-		// Sample implementation for sending scheduled notifications
-		// This could include email reminders, etc.
+		// TODO: Implement notification sending logic
 		return nil
 	}
 }

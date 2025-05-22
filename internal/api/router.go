@@ -190,8 +190,7 @@ func setupPublicListingRoutes(app *fiber.App) {
 // setupProtectedListingRoutes configures protected listing routes
 func setupProtectedListingRoutes(router fiber.Router) {
 	router.Post("/listings", listings.PostListing)
-	router.Post("/upload/listing_image", listings.QueuedUploadHandler) // Use the new queued upload handler
-	router.Post("/upload/listing_image/sync", listings.UploadHandler)  // Keep the old one for backward compatibility
+	router.Post("/upload/listing_image", listings.QueuedUploadHandler) // Queued image processing
 	router.Delete("/listings/:listing_id", listings.DeleteListingById)
 }
 
