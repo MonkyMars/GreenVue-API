@@ -19,7 +19,7 @@ For listing owners, the package provides:
 
 1. **PostListing**: Creates a new product listing
 2. **DeleteListingById**: Removes a listing from the marketplace
-3. **UploadHandler**: Processes image uploads for listings
+3. **QueuedUploadHandler**: Processes image uploads asynchronously with background jobs
 
 ### Database Integration
 

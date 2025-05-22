@@ -1,8 +1,6 @@
 package lib
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 )
 
@@ -14,10 +12,8 @@ type UpdateUser struct {
 }
 
 type Favorite struct {
-	ID        uuid.UUID `json:"id,omitempty"`
 	UserID    uuid.UUID `json:"user_id"`
 	ListingID uuid.UUID `json:"listing_id"`
-	CreatedAt time.Time `json:"created_at"`
 }
 
 type Review struct {

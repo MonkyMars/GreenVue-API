@@ -9,8 +9,10 @@ This documentation explains the internal workings of the GreenTrade API, detaili
 - [Chat Package](chat.md) - Real-time chat functionality
 - [Config Package](config.md) - Application configuration
 - [Database Package](db.md) - Database interactions
+- [Email System](email.md) - Email queue and background sending
 - [Favorites Package](favorites.md) - User favorites management
 - [Health Package](health.md) - Health check functionality
+- [Jobs Package](jobs.md) - Background job processing
 - [Listings Package](listings.md) - Product listings management
 - [Reviews Package](reviews.md) - User reviews system
 - [Seller Package](seller.md) - Seller information management

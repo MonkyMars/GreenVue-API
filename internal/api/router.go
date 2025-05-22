@@ -6,6 +6,7 @@ import (
 	"greenvue/internal/config"
 	"greenvue/internal/favorites"
 	"greenvue/internal/health"
+	"greenvue/internal/jobs"
 	"greenvue/internal/listings"
 	"greenvue/internal/reviews"
 	"greenvue/internal/seller"
@@ -40,9 +41,8 @@ func SetupApp(cfg *config.Config) *fiber.App {
 
 	// Setup middleware
 	setupMiddleware(app, cfg)
-
 	// Setup routes
-	setupRoutes(app)
+	setupRoutes(app, cfg)
 
 	return app
 }
@@ -125,7 +125,23 @@ func setupMiddleware(app *fiber.App, cfg *config.Config) {
 }
 
 // setupRoutes configures all the routes for the application
-func setupRoutes(app *fiber.App) {
+func setupRoutes(app *fiber.App, cfg *config.Config) {
+	// Initialize the job scheduler
+	jobs.Initialize()
+
+	// Initialize email service
+	initEmailService(cfg)
+
+	// Initialize image processing queue
+	initImageProcessingQueue()
+
+	// Setup default background jobs if not in production
+	if cfg.Environment != "production" {
+		setupDefaultEmailJob()
+		setupDefaultImageProcessingJob()
+		setupDebugRoutes(app) // Only set up debug routes in non-production
+	}
+
 	// Auth routes (public)
 	setupAuthRoutes(app)
 
@@ -148,6 +164,7 @@ func setupRoutes(app *fiber.App) {
 	setupProtectedReviewRoutes(api)
 	setupFavoritesRoutes(api)
 	setupHealthRoutes(api)
+	setupJobRoutes(api)
 }
 
 // setupAuthRoutes configures authentication routes
@@ -173,7 +190,7 @@ func setupPublicListingRoutes(app *fiber.App) {
 // setupProtectedListingRoutes configures protected listing routes
 func setupProtectedListingRoutes(router fiber.Router) {
 	router.Post("/listings", listings.PostListing)
-	router.Post("/upload/listing_image", listings.UploadHandler)
+	router.Post("/upload/listing_image", listings.QueuedUploadHandler) // Queued image processing
 	router.Delete("/listings/:listing_id", listings.DeleteListingById)
 }
 
@@ -223,4 +240,21 @@ func setupFavoritesRoutes(router fiber.Router) {
 func setupHealthRoutes(router fiber.Router) {
 	router.Get("/health", health.HealthCheck)
 	router.Get("/health/detailed", health.DetailedHealth)
+}
+
+// setupJobRoutes configures background job routes
+func setupJobRoutes(router fiber.Router) {
+	router.Get("/jobs", jobs.GetJobs)
+	router.Get("/jobs/:job_id", jobs.GetJobByID)
+	router.Post("/jobs", jobs.CreateJob)
+	router.Delete("/jobs/:job_id", jobs.DeleteJob)
+}
+
+// setupDebugRoutes configures debug routes for development/testing
+func setupDebugRoutes(app *fiber.App) {
+	debug := app.Group("/debug")
+	debug.Post("/send-test-email", TestEmailHandler)
+	debug.Get("/email-queue-status", GetEmailQueueStatusHandler)
+	debug.Get("/image-queue-status", GetImageQueueStatusHandler)
+	debug.Post("/upload-test-image", TestImageQueueHandler)
 }
