@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"greenvue/internal/db"
 	"greenvue/lib"
+	"greenvue/lib/email"
 	"greenvue/lib/errors"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -28,32 +28,52 @@ func ResendConfirmationEmail(c *fiber.Ctx) error {
 	}
 
 	if requestBody.Email == "" {
-		return errors.BadRequest("User ID is required")
+		return errors.BadRequest("Email is required")
 	}
 
-	err := client.ResendConfirmationEmail(requestBody.Email, "signup")
-
+	// Check if the user exists before queuing the email
+	query := fmt.Sprintf("email=eq.%s", requestBody.Email)
+	data, err := client.GET("users", query)
 	if err != nil {
-		if err.Error() == "user not found" {
-			return errors.NotFound("User not found")
-		}
-		if err.Error() == "email already confirmed" {
-			return errors.BadRequest("Email already confirmed")
-		}
-		if err.Error() == "email not verified" {
-			return errors.BadRequest("Email not verified")
-		}
-		return errors.InternalServerError("Failed to send confirmation email: " + err.Error())
+		return errors.InternalServerError("Failed to verify user: " + err.Error())
 	}
 
-	return errors.SuccessResponse(c, "Confirmation email resent successfully")
+	var users []lib.User
+	if err := json.Unmarshal(data, &users); err != nil {
+		return errors.InternalServerError("Failed to parse user data: " + err.Error())
+	}
+
+	if len(users) == 0 {
+		return errors.NotFound("User not found")
+	}
+
+	if users[0].EmailVerified {
+		return errors.BadRequest("Email already confirmed")
+	}
+	// Create email object for sending
+	emailToSend := email.Email{
+		ID:         lib.GenerateUUID(),
+		To:         requestBody.Email,
+		Subject:    "Please confirm your email address",
+		Type:       email.ConfirmationEmail,
+		TemplateID: "signup", // This is the resendType
+		Status:     "pending",
+		MaxRetries: 3,
+		CreatedAt:  time.Now(),
+	}
+
+	// Queue the email but don't process it immediately
+	// Let the scheduled job handle it to prevent duplicate sends
+	err = email.QueueEmail(emailToSend)
+	if err != nil {
+		return errors.InternalServerError("Failed to queue confirmation email: " + err.Error())
+	}
+	return errors.SuccessResponse(c, "Confirmation email queued successfully")
 }
 
 func VerifyEmailRedirect(c *fiber.Ctx) error {
 	redirectURI := c.Query("redirect_uri")
 	metaData := c.Query("metadata")
-
-	log.Println("Received metadata:", metaData)
 
 	if redirectURI == "" {
 		return errors.BadRequest("Missing redirect_uri parameter")

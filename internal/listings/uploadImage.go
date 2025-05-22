@@ -3,22 +3,18 @@ package listings
 import (
 	"fmt"
 	"greenvue/lib/errors"
-	"image"
 	_ "image/jpeg" // register JPEG format
 	_ "image/png"  // register PNG format
 	"io"
 
 	"bytes"
 	"log"
-	"mime/multipart"
 	"os"
 
 	"greenvue/lib"
 
-	"github.com/chai2010/webp"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/nfnt/resize"
 	storage "github.com/supabase-community/storage-go"
 )
 
@@ -120,40 +116,6 @@ func UploadHandler(c *fiber.Ctx) error {
 	return errors.SuccessResponse(c, fiber.Map{
 		"urls": uploadedURLs,
 	})
-}
-
-func convertToWebP(file multipart.File) (*bytes.Buffer, error) {
-	// Ensures we read from the beginning of the file
-	_, err := file.Seek(0, 0)
-	if err != nil {
-		log.Println("Error seeking file:", err)
-		return nil, err
-	}
-
-	// Decode image
-	img, format, err := image.Decode(file)
-	if err != nil {
-		log.Println("Error decoding image:", err)
-		log.Println("Image format:", format)
-		return nil, err
-	}
-
-	// Resize while maintaining aspect ratio (max 640px)
-	img = resize.Resize(0, 640, img, resize.Lanczos3)
-
-	// Encode to WebP
-	webpBuffer := new(bytes.Buffer)
-
-	webpOptions := &webp.Options{Quality: 80}
-	err = webp.Encode(webpBuffer, img, webpOptions)
-
-	if err != nil {
-		log.Println("Error encoding WebP:", err)
-		return nil, err
-	}
-
-	// Return the WebP buffer
-	return webpBuffer, nil
 }
 
 func uploadToSupabase(filename string, fileData *bytes.Buffer) (string, error) {

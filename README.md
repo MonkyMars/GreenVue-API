@@ -35,8 +35,18 @@ Our mission is to promote sustainability by extending the lifecycle of products 
 
   - Create, retrieve and delete listings
   - Category-based listing organization
-  - Image upload support (WebP conversion)
+  - Image upload support (WebP conversion, resizing, async processing)
   - Seller-specific listings
+
+- **Background Jobs**
+
+  - Scheduled tasks using the same API port
+  - Job management through REST API
+  - Configurable job intervals
+  - Built-in jobs for common tasks (cleanup, notifications, email sending)
+  - Asynchronous image processing for better performance
+  - [Job System Documentation](docs/jobs.md)
+  - [Image Processing Documentation](docs/images.md)
 
 - **User Profiles**
 

@@ -21,6 +21,11 @@ func ParseUUID(id string) (string, error) {
 	return id, nil
 }
 
+// GenerateUUID generates a random UUID string
+func GenerateUUID() string {
+	return uuid.New().String()
+}
+
 func StringToUUID(id string) (uuid.UUID, error) {
 	re := regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 	if !re.MatchString(id) {
