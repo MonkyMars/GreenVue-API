@@ -119,7 +119,6 @@ func setupMiddleware(app *fiber.App, cfg *config.Config) {
 		Expiration:   time.Minute,
 		CacheControl: true,
 		KeyGenerator: func(c *fiber.Ctx) string {
-			log.Println(c.OriginalURL())
 			return c.OriginalURL()
 		},
 	}))
