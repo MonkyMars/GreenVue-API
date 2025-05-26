@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"greenvue/lib"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 // ListingValidator provides validation for marketplace listings
@@ -62,28 +64,38 @@ func (vr *ValidationResult) AddError(field, message string) {
 }
 
 // ValidateListing validates a listing
-func (v *ListingValidator) ValidateListing(title, description, category, condition string, price float64) *ValidationResult {
+func (v *ListingValidator) ValidateListing(listing lib.Listing) *ValidationResult {
 	result := NewValidationResult()
 
 	// Validate title
-	if len(title) < v.TitleMinLength || len(title) > v.TitleMaxLength {
+	if len(listing.Title) < v.TitleMinLength || len(listing.Title) > v.TitleMaxLength {
 		result.AddError("title", fmt.Sprintf("Title must be between %d and %d characters", v.TitleMinLength, v.TitleMaxLength))
 	}
 
 	// Validate description
-	if len(description) < v.DescriptionMinLength || len(description) > v.DescriptionMaxLength {
+	if len(listing.Description) < v.DescriptionMinLength || len(listing.Description) > v.DescriptionMaxLength {
 		result.AddError("description", fmt.Sprintf("Description must be between %d and %d characters", v.DescriptionMinLength, v.DescriptionMaxLength))
 	}
 
 	// Validate price
-	if price < v.MinPrice || price > v.MaxPrice {
+	if listing.Price < v.MinPrice || listing.Price > v.MaxPrice {
 		result.AddError("price", fmt.Sprintf("Price must be between %f and %f", v.MinPrice, v.MaxPrice))
+	}
+
+	// Validate eco score
+	if listing.EcoScore < 0 || listing.EcoScore >= 5 {
+		result.AddError("eco_score", "Eco score must be between 0 and 5")
+	}
+
+	// Validate seller ID
+	if listing.SellerID == uuid.Nil {
+		result.AddError("seller_id", "Seller ID must be provided")
 	}
 
 	// Validate category
 	categoryValid := false
 	for _, validCategory := range v.AllowedCategories {
-		if strings.EqualFold(category, validCategory) {
+		if strings.EqualFold(listing.Category, validCategory) {
 			categoryValid = true
 			break
 		}
@@ -95,7 +107,7 @@ func (v *ListingValidator) ValidateListing(title, description, category, conditi
 	// Validate condition
 	conditionValid := false
 	for _, validCondition := range v.AllowedConditions {
-		if strings.EqualFold(condition, validCondition) {
+		if strings.EqualFold(listing.Condition, validCondition) {
 			conditionValid = true
 			break
 		}
@@ -104,17 +116,29 @@ func (v *ListingValidator) ValidateListing(title, description, category, conditi
 		result.AddError("condition", "Invalid condition")
 	}
 
+	// Validate eco attributes
+	if len(listing.EcoAttributes) > 0 {
+		for _, attr := range listing.EcoAttributes {
+			attrValid := false
+			for _, validAttr := range v.AllowedEcoAttributes {
+				if strings.EqualFold(attr, validAttr) {
+					attrValid = true
+					break
+				}
+			}
+			if !attrValid {
+				result.AddError("eco_attributes", fmt.Sprintf("Invalid eco attribute: %s", attr))
+			}
+		}
+	} else {
+		result.AddError("eco_attributes", "At least one eco attribute must be specified")
+	}
+
 	return result
 }
 
 // ValidateListing is a convenience function using the default validator
 func ValidateListing(listing lib.Listing) *ValidationResult {
 	validator := NewListingValidator()
-	return validator.ValidateListing(
-		listing.Title,
-		listing.Description,
-		listing.Category,
-		listing.Condition,
-		listing.Price,
-	)
+	return validator.ValidateListing(listing)
 }
