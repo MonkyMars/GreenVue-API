@@ -33,7 +33,7 @@ func ResendConfirmationEmail(c *fiber.Ctx) error {
 
 	// Check if the user exists before queuing the email
 	query := fmt.Sprintf("email=eq.%s", requestBody.Email)
-	data, err := client.GET("users", query)
+	data, err := client.GET("user_details", query)
 	if err != nil {
 		return errors.InternalServerError("Failed to verify user: " + err.Error())
 	}
@@ -167,7 +167,7 @@ func VerifyEmailRedirect(c *fiber.Ctx) error {
 
 	// Check if user exists and matches
 	query := fmt.Sprintf("id=eq.%s", userId)
-	data, err := client.GET("users", query)
+	data, err := client.GET("user_details", query)
 	if err != nil {
 		return errors.InternalServerError("Failed to fetch user data: " + err.Error())
 	}

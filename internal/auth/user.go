@@ -5,6 +5,7 @@ import (
 	"greenvue/internal/db"
 	"greenvue/lib"
 	"greenvue/lib/errors"
+	"greenvue/lib/location"
 
 	"encoding/json"
 
@@ -27,7 +28,7 @@ func GetUserByAccessToken(c *fiber.Ctx) error {
 
 	// Get user by ID using the standardized GET operation
 	query := fmt.Sprintf("id=eq.%s", claims.UserId)
-	data, err := client.GET("users", query)
+	data, err := client.GET("user_details", query)
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch user: " + err.Error())
 	}
@@ -65,9 +66,28 @@ func UpdateUser(c *fiber.Ctx) error {
 	}
 
 	// Parse request body into a user object
-	var userUpdate lib.UpdateUser
-	if err := c.BodyParser(&userUpdate); err != nil {
+	var payload struct {
+		Name     string `json:"name"`
+		Bio      string `json:"bio"`
+		Location struct {
+			Country string `json:"country"`
+			City    string `json:"city"`
+		} `json:"location"`
+	}
+	if err := c.BodyParser(&payload); err != nil {
 		return errors.BadRequest("Invalid user data format")
+	}
+
+	location, err := location.GetFullLocation(payload.Location.Country, payload.Location.City)
+
+	if err != nil {
+		return errors.BadRequest("Invalid location: " + err.Error())
+	}
+
+	userUpdate := lib.UpdateUser{
+		ID:   userId,
+		Name: payload.Name,
+		Bio:  payload.Bio,
 	}
 
 	// Validate the user data
@@ -92,6 +112,16 @@ func UpdateUser(c *fiber.Ctx) error {
 	// Handle empty response
 	if len(data) == 0 || string(data) == "[]" {
 		return errors.NotFound("User not found")
+	}
+
+	data, err = client.PATCH("user_locations", userId, location)
+	if err != nil {
+		return errors.DatabaseError("Failed to update user location: " + err.Error())
+	}
+
+	// Handle empty response for location update
+	if len(data) == 0 || string(data) == "[]" {
+		return errors.NotFound("User location not found")
 	}
 
 	// Parse the updated user data
@@ -123,7 +153,7 @@ func DownloadUserData(c *fiber.Ctx) error {
 	var User []lib.User
 
 	query := fmt.Sprintf("id=eq.%s", claims.UserId)
-	data, err := client.GET("users", query)
+	data, err := client.GET("user_details", query)
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch user: " + err.Error())
 	}
@@ -180,7 +210,7 @@ func DownloadUserData(c *fiber.Ctx) error {
 	// Get User's favorites
 	var Favorites []lib.FetchedFavorite
 	query = fmt.Sprintf("user_id=eq.%s", claims.UserId)
-	data, err = client.GET("user_favorites_view", query)
+	data, err = client.GET("user_favorites", query)
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch favorites: " + err.Error())
 	}

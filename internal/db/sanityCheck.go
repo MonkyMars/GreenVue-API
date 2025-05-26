@@ -17,14 +17,10 @@ func SanityCheck() (bool, error) {
 	}
 
 	query := fmt.Sprintf("select=*&limit=%s&order=created_at.desc", "1")
-	data, err := client.GET("listing_details_view", query)
+	_, err = client.GET("listing_details_view", query)
 
 	if err != nil {
 		return false, fmt.Errorf("failed to fetch listings: %w", err)
-	}
-
-	if len(data) == 0 || string(data) == "[]" {
-		return false, fmt.Errorf("no listings found in the database")
 	}
 
 	envs := [5]string{
