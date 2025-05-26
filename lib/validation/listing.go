@@ -35,8 +35,8 @@ func NewListingValidator() *ListingValidator {
 			"New", "Like New", "Very Good", "Good", "Acceptable", "For Parts/Not Working",
 		},
 		AllowedEcoAttributes: []string{
-			// Resume 
 			"Second-hand", "Upcycled", "Organic Material", "Energy Efficient", "Vegan", "Repaired", "Refurbished",
+			"Locally Made", "Biodegradable", "Plastic-free", "Handmade",
 		},
 	}
 }

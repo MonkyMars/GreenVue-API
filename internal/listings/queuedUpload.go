@@ -48,9 +48,7 @@ func QueuedUploadHandler(c *fiber.Ctx) error {
 				}
 
 				// Generate a unique filename
-				fileName := fmt.Sprintf("%s-%s.webp", lib.SanitizeFilename(listingTitle), uuid.New().String())
-
-				// Need to read the file data completely as we'll need to close the file
+				fileName := fmt.Sprintf("%s-%s.webp", lib.SanitizeFilename(listingTitle), uuid.New().String()) // Need to read the file data completely as we'll need to close the file
 				fileData, err := io.ReadAll(src)
 				src.Close() // Close immediately after reading
 
@@ -59,7 +57,17 @@ func QueuedUploadHandler(c *fiber.Ctx) error {
 					continue
 				}
 
+				// First validate the image format
+				format, err := validateImage(fileData)
+				if err != nil {
+					log.Printf("Invalid image file: %v", err)
+					continue
+				}
+
+				log.Printf("Processing valid %s image", format)
+
 				// Convert image to WebP here so we don't queue massive raw images
+				// This also strips metadata and resizes the image
 				webpData, err := convertToWebP(bytes.NewReader(fileData))
 				if err != nil {
 					log.Printf("Error converting to WebP: %v", err)
@@ -108,9 +116,7 @@ func QueuedUploadHandler(c *fiber.Ctx) error {
 			}
 
 			// Generate a unique filename
-			fileName := fmt.Sprintf("%s-%s.webp", lib.SanitizeFilename(listingTitle), uuid.New().String())
-
-			// Read file data
+			fileName := fmt.Sprintf("%s-%s.webp", lib.SanitizeFilename(listingTitle), uuid.New().String()) // Read file data
 			fileData, err := io.ReadAll(src)
 			src.Close() // Close immediately after reading
 
@@ -119,7 +125,16 @@ func QueuedUploadHandler(c *fiber.Ctx) error {
 				continue
 			}
 
-			// Convert to WebP
+			// First validate the image format
+			format, err := validateImage(fileData)
+			if err != nil {
+				log.Printf("Invalid image file: %v", err)
+				continue
+			}
+
+			log.Printf("Processing valid %s image", format)
+
+			// Convert to WebP (also strips metadata and resizes)
 			webpData, err := convertToWebP(bytes.NewReader(fileData))
 			if err != nil {
 				log.Printf("Error converting to WebP: %v", err)
