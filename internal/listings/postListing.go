@@ -4,6 +4,7 @@ import (
 	"greenvue/internal/db"
 	"greenvue/lib"
 	"greenvue/lib/errors"
+	"greenvue/lib/validation"
 
 	"encoding/json"
 
@@ -35,6 +36,17 @@ func PostListing(c *fiber.Ctx) error {
 		EcoAttributes: listing.EcoAttributes,
 		ImageUrl:      listing.ImageUrl,
 		SellerID:      listing.SellerID,
+	}
+
+	// Validate the listing 
+	result := validation.ValidateListing(listing)
+	
+	if result == nil {
+		return errors.InternalServerError("Failed to validate listing")
+	}
+
+	if !result.Valid {
+		return errors.BadRequest("Invalid listing")
 	}
 
 	// Insert into Supabase using standardized repository method

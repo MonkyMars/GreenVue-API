@@ -200,12 +200,9 @@ func (s *SupabaseClient) DELETE(c *fiber.Ctx, table, conditions string) ([]byte,
 func (s *SupabaseClient) UploadImage(filename, bucket string, image []byte) ([]byte, error) {
 	url := fmt.Sprintf("%s/storage/v1/object/%s/%s", s.URL, bucket, filename)
 	fmt.Printf("Uploading to URL: %s\n", url)
-
 	contentType := "image/jpeg"
 	if strings.HasSuffix(filename, ".png") {
 		contentType = "image/png"
-	} else if strings.HasSuffix(filename, ".gif") {
-		contentType = "image/gif"
 	} else if strings.HasSuffix(filename, ".webp") {
 		contentType = "image/webp"
 	}

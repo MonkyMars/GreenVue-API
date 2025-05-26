@@ -5,6 +5,7 @@ import (
 	"greenvue/internal/db"
 	"greenvue/lib"
 	"greenvue/lib/errors"
+	"greenvue/lib/validation"
 	"log"
 	"net/url"
 	"os"
@@ -32,14 +33,30 @@ func RegisterUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	// No need to validate username and email since it happens on the frontend using zod.
-	// Still we can check if it's empty
 	if payload.Email == "" || payload.Password == "" || payload.Name == "" {
 		return errors.BadRequest("Missing required user registration fields")
 	}
 
-	// Sign up the user (this is a specialized operation that doesn't fit standard CRUD)
-	// We'll continue to use the SignUp method which is kept in the repository for auth operations
+	// Validate required fields
+	validUsername, msg := validation.ValidateUsername(payload.Name)
+	if !validUsername {
+		return errors.BadRequest("Invalid username: " + msg)
+	}
+
+	validEmail, msg := validation.ValidateEmail(payload.Email)
+	if !validEmail {
+		return errors.BadRequest("Invalid email: " + msg)
+	}
+
+	sanitizedName := lib.SanitizeInput(payload.Name)
+	sanitizedEmail := lib.SanitizeInput(payload.Email)
+	sanitizedLocation := lib.SanitizeInput(payload.Location)
+
+	if sanitizedName == "" || sanitizedEmail == "" {
+		return errors.BadRequest("Invalid input: name and email cannot be empty")
+	}
+
+	// Sign up the user with the authentication provider
 	user, err := client.SignUp(lib.SanitizeInput(payload.Email), payload.Password)
 
 	if err != nil {
@@ -58,9 +75,9 @@ func RegisterUser(c *fiber.Ctx) error {
 	// Create a user record using the standardized type lib.User
 	newUser := lib.User{
 		ID:       user.ID,
-		Name:     payload.Name,
-		Email:    payload.Email,
-		Location: payload.Location,
+		Name:     sanitizedName,
+		Email:    sanitizedEmail,
+		Location: sanitizedLocation,
 		Provider: "email",
 	}
 
