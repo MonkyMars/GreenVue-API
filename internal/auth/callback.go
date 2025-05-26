@@ -198,7 +198,7 @@ func handleUserRegistration(supabaseResp SupabaseResp) error {
 
 	// Check if user already exists in our users table
 	query := fmt.Sprintf("id=eq.%s", supabaseResp.UserId.Id)
-	data, err := client.GET("users", query)
+	data, err := client.GET("user_details", query)
 
 	userExists := false
 	if err == nil && len(data) > 0 && string(data) != "[]" {

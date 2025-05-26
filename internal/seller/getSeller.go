@@ -21,7 +21,7 @@ func GetSeller(c *fiber.Ctx) error {
 	query := fmt.Sprintf("select=id,created_at,name,location,bio,rating,verified&"+
 		"id=eq.%s", url.QueryEscape(sellerID))
 
-	data, err := client.GET("users", query)
+	data, err := client.GET("user_details", query)
 
 	if err != nil {
 		return errors.InternalServerError("Failed to fetch seller: " + err.Error())

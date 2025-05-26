@@ -36,7 +36,8 @@ func SetupApp(cfg *config.Config) *fiber.App {
 		WriteTimeout:      cfg.Server.WriteTimeout,
 		IdleTimeout:       cfg.Server.IdleTimeout,
 		ReduceMemoryUsage: true,
-		ErrorHandler:      errors.ErrorHandler(errors.ErrorResponseConfig{DevMode: DevMode, Logger: log.Printf}), // Explicitly set Logger
+		ErrorHandler:      errors.ErrorHandler(errors.ErrorResponseConfig{DevMode: DevMode, Logger: log.Printf}),
+		BodyLimit:         20 * 1024 * 1024, // 20 MB
 	})
 
 	// Setup middleware

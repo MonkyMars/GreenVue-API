@@ -5,6 +5,7 @@ import (
 	"greenvue/internal/db"
 	"greenvue/lib"
 	"greenvue/lib/errors"
+	"greenvue/lib/location"
 	"greenvue/lib/validation"
 	"log"
 	"net/url"
@@ -20,12 +21,17 @@ func RegisterUser(c *fiber.Ctx) error {
 		return errors.InternalServerError("Failed to create database client")
 	}
 
+	type Location struct {
+		Country string `json:"country"`
+		City    string `json:"city"`
+	}
+
 	// Define payload struct
 	var payload struct {
-		Name     string `json:"name"`
-		Email    string `json:"email"`
-		Password string `json:"password"`
-		Location string `json:"location"`
+		Name     string   `json:"name"`
+		Email    string   `json:"email"`
+		Password string   `json:"password"`
+		Location Location `json:"location"`
 	}
 
 	// Parse JSON request body
@@ -50,7 +56,18 @@ func RegisterUser(c *fiber.Ctx) error {
 
 	sanitizedName := lib.SanitizeInput(payload.Name)
 	sanitizedEmail := lib.SanitizeInput(payload.Email)
-	sanitizedLocation := lib.SanitizeInput(payload.Location)
+
+	locationData, err := location.GetFullLocation(payload.Location.Country, payload.Location.City)
+	if err != nil {
+		return errors.BadRequest("Invalid location: " + err.Error())
+	}
+
+	sanitizedLocation := lib.Location{
+		Country:   lib.SanitizeInput(locationData.Country),
+		City:      lib.SanitizeInput(locationData.City),
+		Latitude:  locationData.Latitude,
+		Longitude: locationData.Longitude,
+	}
 
 	if sanitizedName == "" || sanitizedEmail == "" {
 		return errors.BadRequest("Invalid input: name and email cannot be empty")

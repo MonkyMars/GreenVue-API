@@ -6,11 +6,18 @@ import (
 	"github.com/google/uuid"
 )
 
+type Location struct {
+	Country   string  `json:"country"`
+	City      string  `json:"city"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+}
+
 type User struct {
 	ID            uuid.UUID `json:"id"`
 	Email         string    `json:"email"`
 	Name          string    `json:"name"`
-	Location      string    `json:"location"`
+	Location      Location  `json:"location"`
 	Bio           string    `json:"bio"`
 	CreatedAt     time.Time `json:"created_at"`
 	Rating        float32   `json:"rating"`
@@ -23,7 +30,7 @@ type User struct {
 type PublicUser struct {
 	ID        uuid.UUID `json:"id"`
 	Name      string    `json:"name"`
-	Location  string    `json:"location"`
+	Location  Location  `json:"location"`
 	Bio       string    `json:"bio"`
 	CreatedAt time.Time `json:"created_at"`
 	Rating    float32   `json:"rating"`
@@ -38,7 +45,7 @@ type FetchedListing struct {
 	Category      string    `json:"category"`
 	Condition     string    `json:"condition"`
 	Price         float64   `json:"price"`
-	Location      string    `json:"location"`
+	Location      Location  `json:"location"`
 	EcoScore      float32   `json:"eco_score"`
 	EcoAttributes []string  `json:"eco_attributes"`
 	Negotiable    bool      `json:"negotiable"`
@@ -65,7 +72,7 @@ type FetchedFavorite struct {
 	Category      string    `json:"category"`
 	Condition     string    `json:"condition"`
 	Price         float64   `json:"price"`
-	Location      string    `json:"location"`
+	Location      Location  `json:"location"`
 	EcoScore      float32   `json:"ecoScore"`
 	EcoAttributes []string  `json:"eco_attributes"`
 	Negotiable    bool      `json:"negotiable"`

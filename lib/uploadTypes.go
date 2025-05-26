@@ -5,10 +5,9 @@ import (
 )
 
 type UpdateUser struct {
-	ID       uuid.UUID `json:"id"`
-	Name     string    `json:"name"`
-	Bio      string    `json:"bio"`
-	Location string    `json:"location"`
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+	Bio  string    `json:"bio"`
 }
 
 type Favorite struct {

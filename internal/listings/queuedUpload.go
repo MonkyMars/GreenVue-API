@@ -19,11 +19,14 @@ func QueuedUploadHandler(c *fiber.Ctx) error {
 	// Extract listing title from form data
 	listingTitle := c.FormValue("listing_title")
 
+	if listingTitle == "" {
+		return errors.BadRequest("Missing listing title in form data")
+	}
+
 	// Get files from formdata
 	form, err := c.MultipartForm()
 
 	if err != nil {
-		log.Println("Error parsing form data:", err)
 		return errors.BadRequest("Failed to parse form data: " + err.Error())
 	}
 
