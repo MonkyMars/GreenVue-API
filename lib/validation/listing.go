@@ -2,6 +2,7 @@ package validation
 
 import (
 	"fmt"
+	"greenvue/lib"
 	"strings"
 )
 
@@ -11,27 +12,31 @@ type ListingValidator struct {
 	TitleMaxLength       int
 	DescriptionMinLength int
 	DescriptionMaxLength int
-	MinPrice             int64
-	MaxPrice             int64
+	MinPrice             float64
+	MaxPrice             float64
 	AllowedCategories    []string
 	AllowedConditions    []string
+	AllowedEcoAttributes []string
 }
 
 // NewListingValidator creates a validator with default settings
 func NewListingValidator() *ListingValidator {
 	return &ListingValidator{
 		TitleMinLength:       5,
-		TitleMaxLength:       100,
+		TitleMaxLength:       40,
 		DescriptionMinLength: 20,
-		DescriptionMaxLength: 2000,
+		DescriptionMaxLength: 1000,
 		MinPrice:             0,
 		MaxPrice:             1000000,
 		AllowedCategories: []string{
-			"electronics", "clothing", "furniture", "books", "sports",
-			"homegoods", "gardening", "toys", "jewelry", "art", "other",
+			"Home & Garden", "Fashion", "Electronics", "Vehicles", "Books", "Jewelry", "Toys & Games", "Other",
 		},
 		AllowedConditions: []string{
-			"new", "like_new", "good", "fair", "poor",
+			"New", "Like New", "Very Good", "Good", "Acceptable", "For Parts/Not Working",
+		},
+		AllowedEcoAttributes: []string{
+			// Resume 
+			"Second-hand", "Upcycled", "Organic Material", "Energy Efficient", "Vegan", "Repaired", "Refurbished",
 		},
 	}
 }
@@ -57,7 +62,7 @@ func (vr *ValidationResult) AddError(field, message string) {
 }
 
 // ValidateListing validates a listing
-func (v *ListingValidator) ValidateListing(title, description, category, condition string, price int64) *ValidationResult {
+func (v *ListingValidator) ValidateListing(title, description, category, condition string, price float64) *ValidationResult {
 	result := NewValidationResult()
 
 	// Validate title
@@ -72,7 +77,7 @@ func (v *ListingValidator) ValidateListing(title, description, category, conditi
 
 	// Validate price
 	if price < v.MinPrice || price > v.MaxPrice {
-		result.AddError("price", fmt.Sprintf("Price must be between %d and %d", v.MinPrice, v.MaxPrice))
+		result.AddError("price", fmt.Sprintf("Price must be between %f and %f", v.MinPrice, v.MaxPrice))
 	}
 
 	// Validate category
@@ -103,7 +108,13 @@ func (v *ListingValidator) ValidateListing(title, description, category, conditi
 }
 
 // ValidateListing is a convenience function using the default validator
-func ValidateListing(title, description, category, condition string, price int64) *ValidationResult {
+func ValidateListing(listing lib.Listing) *ValidationResult {
 	validator := NewListingValidator()
-	return validator.ValidateListing(title, description, category, condition, price)
+	return validator.ValidateListing(
+		listing.Title,
+		listing.Description,
+		listing.Category,
+		listing.Condition,
+		listing.Price,
+	)
 }
