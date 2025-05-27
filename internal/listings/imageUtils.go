@@ -2,7 +2,10 @@ package listings
 
 import (
 	"bytes"
-	"errors"
+	"fmt"
+	"greenvue/lib"
+	"greenvue/lib/errors"
+	img "greenvue/lib/image"
 	"image"
 	"image/jpeg"
 	_ "image/jpeg" // register JPEG format
@@ -10,11 +13,19 @@ import (
 	_ "image/png" // register PNG format
 	"io"
 	"log"
+	"mime/multipart"
 	"strings"
+	"time"
 
 	"github.com/chai2010/webp"
+	"github.com/google/uuid"
 	"github.com/nfnt/resize"
 )
+
+// ImageProcessor handles bulk image processing
+type ImageProcessor struct {
+	processor *FileProcessor
+}
 
 // validateImage checks if the data is a valid image file
 func validateImage(data []byte) (string, error) {
@@ -24,7 +35,7 @@ func validateImage(data []byte) (string, error) {
 	// Attempt to decode as image
 	_, format, err := image.DecodeConfig(reader)
 	if err != nil {
-		return "", errors.New("invalid image file: failed to decode image")
+		return "", fmt.Errorf("invalid image file: failed to decode image")
 	}
 	// Only allow specific formats
 	format = strings.ToLower(format)
@@ -36,9 +47,9 @@ func validateImage(data []byte) (string, error) {
 	}
 	if !allowedFormats[format] {
 		if format == "gif" {
-			return "", errors.New("GIF format is not supported, please convert to JPG or PNG")
+			return "", fmt.Errorf("GIF format is not supported, please convert to JPG or PNG")
 		}
-		return "", errors.New("unsupported image format: " + format)
+		return "", fmt.Errorf("Unsupported image format: %s", format)
 	}
 
 	return format, nil
@@ -63,7 +74,7 @@ func stripExifMetadata(imgData []byte) []byte {
 	switch strings.ToLower(format) {
 	case "jpeg", "jpg":
 		// Re-encode as JPEG (this drops metadata)
-		err = jpeg.Encode(cleanBuffer, img, &jpeg.Options{Quality: 85})
+		err = jpeg.Encode(cleanBuffer, img, &jpeg.Options{Quality: 100}) // 80% quality is applied when encoding to Webp, keep at 100% to prevent double compression artifacts
 	case "png":
 		// Re-encode as PNG (this drops metadata)
 		err = png.Encode(cleanBuffer, img)
@@ -90,7 +101,7 @@ func convertToWebP(reader io.Reader) (*bytes.Buffer, error) {
 	}
 
 	// Validate that this is a supported image
-	format, err := validateImage(imgData)
+	_, err = validateImage(imgData)
 	if err != nil {
 		log.Println("Image validation failed:", err)
 		return nil, err
@@ -119,8 +130,159 @@ func convertToWebP(reader io.Reader) (*bytes.Buffer, error) {
 		return nil, err
 	}
 
-	log.Printf("Successfully converted %s image to WebP with metadata stripped", format)
-
 	// Return the WebP buffer
 	return webpBuffer, nil
+}
+
+// ProcessFile handles the processing of a single file
+func (fp *FileProcessor) ProcessFile(fileHeader *multipart.FileHeader) (*img.ImageJob, error) {
+	if fileHeader.Size == 0 {
+		return nil, fmt.Errorf("empty file: %s", fileHeader.Filename)
+	}
+
+	if fileHeader.Size > maxFileSize {
+		return nil, fmt.Errorf("file too large: %s (%d bytes)", fileHeader.Filename, fileHeader.Size)
+	}
+
+	// Open and read file
+	src, err := fileHeader.Open()
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file %s: %w", fileHeader.Filename, err)
+	}
+	defer src.Close()
+
+	fileData, err := io.ReadAll(src)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file %s: %w", fileHeader.Filename, err)
+	}
+
+	// Validate image format
+	_, err = validateImage(fileData)
+	if err != nil {
+		return nil, fmt.Errorf("invalid image format for %s: %w", fileHeader.Filename, err)
+	}
+
+	// Convert to WebP
+	webpData, err := convertToWebP(bytes.NewReader(fileData))
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert %s to WebP: %w", fileHeader.Filename, err)
+	}
+
+	// Generate unique filename
+	fileName := fmt.Sprintf("%s-%s.webp", lib.SanitizeFilename(fp.listingTitle), uuid.New().String())
+
+	// Create image job
+	imageJob := &img.ImageJob{
+		ID:           uuid.New().String(),
+		FileName:     fileName,
+		ListingTitle: fp.listingTitle,
+		ImageData:    webpData.Bytes(),
+		CreatedAt:    time.Now(),
+		Status:       "pending",
+		MaxRetries:   3,
+	}
+
+	// Queue the image
+	if err := img.QueueImage(*imageJob); err != nil {
+		return nil, fmt.Errorf("failed to queue image %s: %w", fileName, err)
+	}
+
+	return imageJob, nil
+}
+
+// processFileHeaders processes a slice of file headers
+func (ip *ImageProcessor) processFileHeaders(fileHeaders []*multipart.FileHeader) ([]string, error) {
+	var imageIds []string
+	var lastError error
+
+	for _, fileHeader := range fileHeaders {
+		imageJob, err := ip.processor.ProcessFile(fileHeader)
+		if err != nil {
+			log.Printf("Error processing file %s: %v", fileHeader.Filename, err)
+			lastError = err
+			continue
+		}
+
+		imageIds = append(imageIds, imageJob.ID)
+	}
+
+	// If no files were processed successfully, return the last error
+	if len(imageIds) == 0 && lastError != nil {
+		return nil, lastError
+	}
+
+	return imageIds, nil
+}
+
+// ProcessAllFiles processes all files from the form, checking multiple possible keys
+func (ip *ImageProcessor) ProcessAllFiles(form *multipart.Form) ([]string, error) {
+	var queuedImageIds []string
+	var processedFiles int
+
+	// First, try the expected "file" key
+	if fileHeaders, exists := form.File[fileFormKey]; exists && len(fileHeaders) > 0 {
+		ids, err := ip.processFileHeaders(fileHeaders)
+		if err != nil {
+			log.Printf("Error processing files from '%s' key: %v", fileFormKey, err)
+		} else {
+			queuedImageIds = append(queuedImageIds, ids...)
+			processedFiles += len(ids)
+		}
+	}
+
+	// If no files were processed from the expected key, try all other keys
+	if processedFiles == 0 {
+		for key, fileHeaders := range form.File {
+			if key == fileFormKey {
+				continue // Already processed above
+			}
+
+			ids, err := ip.processFileHeaders(fileHeaders)
+			if err != nil {
+				log.Printf("Error processing files from '%s' key: %v", key, err)
+				continue
+			}
+
+			queuedImageIds = append(queuedImageIds, ids...)
+			processedFiles += len(ids)
+
+			// Limit total files processed
+			if processedFiles >= maxTotalFiles {
+				break
+			}
+		}
+	}
+
+	if len(queuedImageIds) == 0 {
+		if processedFiles == 0 {
+			return nil, errors.BadRequest("No files were submitted. Make sure to include files in your FormData.")
+		}
+		return nil, errors.BadRequest("No valid files were processed. Make sure to provide valid image files.")
+	}
+
+	return queuedImageIds, nil
+}
+
+// buildImageInfos creates ImageInfo slice from image IDs
+func buildImageInfos(imageIds []string) []ImageInfo {
+	imageInfos := make([]ImageInfo, 0, len(imageIds))
+
+	for _, imageID := range imageIds {
+		imageJob, err := img.GetImageJob(imageID)
+		if err != nil {
+			log.Printf("Error retrieving image job %s: %v", imageID, err)
+			continue
+		}
+
+		if imageJob != nil {
+			imageInfos = append(imageInfos, ImageInfo{
+				ID:       imageJob.ID,
+				URL:      imageJob.PublicURL,
+				FileName: imageJob.FileName,
+				Status:   imageJob.Status,
+			})
+		}
+	}
+
+	return imageInfos
 }

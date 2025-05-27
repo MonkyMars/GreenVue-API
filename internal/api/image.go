@@ -11,7 +11,6 @@ import (
 func initImageProcessingQueue() {
 	// Initialize the global image queue
 	image.InitializeImageQueue()
-	log.Printf("Image processing queue initialized")
 }
 
 // setupDefaultImageProcessingJob sets up a background job to process images
@@ -31,7 +30,5 @@ func setupDefaultImageProcessingJob() {
 
 	if err != nil {
 		log.Printf("Warning: Could not add image processing job: %v", err)
-	} else {
-		log.Printf("Image processing background job initialized")
 	}
 }

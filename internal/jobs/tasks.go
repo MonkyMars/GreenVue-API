@@ -57,12 +57,10 @@ func CreateImageProcessingJob(opts *ImageProcessingOptions) JobFunc {
 		// Only process if there are images in the queue
 		if image.GlobalImageQueue.HasPendingImages() {
 			// Process the image queue
-			processedURLs, err := image.GlobalImageQueue.ProcessQueue(opts.BatchSize)
+			_, err := image.GlobalImageQueue.ProcessQueue(opts.BatchSize)
 			if err != nil {
-				log.Printf("Error processing image queue: %v", err)
 				return err
 			}
-			log.Printf("Processed %d images successfully", len(processedURLs))
 		}
 
 		return nil
@@ -77,12 +75,12 @@ type EmailNotificationOptions struct {
 
 // CreateSendEmailNotificationsJob creates a job to send scheduled emails
 func CreateSendEmailNotificationsJob(opts *EmailNotificationOptions) JobFunc {
-	if opts == nil {
-		opts = &EmailNotificationOptions{
-			Template:  "default",
-			BatchSize: 50,
-		}
-	}
+	// if opts == nil {
+	// 	opts = &EmailNotificationOptions{
+	// 		Template:  "default",
+	// 		BatchSize: 50,
+	// 	}
+	// }
 
 	return func(ctx context.Context) error {
 		// Implementation would:

@@ -35,7 +35,6 @@ func main() {
 	supabaseURL := cfg.Database.SupabaseURL
 	supabaseKey := cfg.Database.SupabaseKey
 	email.InitializeEmailService(supabaseURL, supabaseKey)
-	log.Println("Email service initialized")
 
 	// Start server using port from config
 	port := cfg.Server.Port

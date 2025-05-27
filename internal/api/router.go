@@ -193,8 +193,7 @@ func setupPublicListingRoutes(app *fiber.App) {
 
 // setupProtectedListingRoutes configures protected listing routes
 func setupProtectedListingRoutes(router fiber.Router) {
-	router.Post("/listings", listings.PostListing)
-	router.Post("/upload/listing_image", listings.QueuedUploadHandler) // Queued image processing
+	router.Post("/listings", listings.PostListing) // Create a new listing with image upload
 	router.Delete("/listings/:listing_id", listings.DeleteListingById)
 }
 

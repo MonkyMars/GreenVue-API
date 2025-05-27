@@ -30,16 +30,9 @@ func NewListingValidator() *ListingValidator {
 		DescriptionMaxLength: 1000,
 		MinPrice:             0,
 		MaxPrice:             1000000,
-		AllowedCategories: []string{
-			"Home & Garden", "Fashion", "Electronics", "Vehicles", "Books", "Jewelry", "Toys & Games", "Other",
-		},
-		AllowedConditions: []string{
-			"New", "Like New", "Very Good", "Good", "Acceptable", "For Parts/Not Working",
-		},
-		AllowedEcoAttributes: []string{
-			"Second-hand", "Upcycled", "Organic Material", "Energy Efficient", "Vegan", "Repaired", "Refurbished",
-			"Locally Made", "Biodegradable", "Plastic-free", "Handmade",
-		},
+		AllowedCategories:    lib.Categories,
+		AllowedConditions:    lib.Conditions,
+		AllowedEcoAttributes: lib.EcoAttributes,
 	}
 }
 
