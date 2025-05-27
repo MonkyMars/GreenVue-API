@@ -76,7 +76,7 @@ func (v *ListingValidator) ValidateListing(listing lib.Listing) *ValidationResul
 	}
 
 	// Validate eco score
-	if listing.EcoScore < 0 || listing.EcoScore >= 5 {
+	if listing.EcoScore < 0 || listing.EcoScore > 5 {
 		result.AddError("eco_score", "Eco score must be between 0 and 5")
 	}
 
