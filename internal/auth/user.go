@@ -13,6 +13,14 @@ import (
 	"github.com/google/uuid"
 )
 
+type InsertLocation struct {
+	ID        uuid.UUID `json:"id"`
+	Country   string    `json:"country"`
+	City      string    `json:"city"`
+	Latitude  float64   `json:"latitude"`
+	Longitude float64   `json:"longitude"`
+}
+
 func GetUserByAccessToken(c *fiber.Ctx) error {
 	// Get claims from context (set by AuthMiddleware)
 	claims, ok := c.Locals("user").(*Claims)
@@ -78,7 +86,7 @@ func UpdateUser(c *fiber.Ctx) error {
 		return errors.BadRequest("Invalid user data format")
 	}
 
-	location, err := location.GetFullLocation(payload.Location.Country, payload.Location.City)
+	locationData, err := location.GetFullLocation(payload.Location.Country, payload.Location.City)
 
 	if err != nil {
 		return errors.BadRequest("Invalid location: " + err.Error())
@@ -114,14 +122,24 @@ func UpdateUser(c *fiber.Ctx) error {
 		return errors.NotFound("User not found")
 	}
 
-	data, err = client.PATCH("user_locations", userId, location)
+	locationResp, err := client.PATCH("user_locations", userId, locationData)
 	if err != nil {
 		return errors.DatabaseError("Failed to update user location: " + err.Error())
 	}
 
 	// Handle empty response for location update
-	if len(data) == 0 || string(data) == "[]" {
-		return errors.NotFound("User location not found")
+	if len(locationResp) == 0 || string(locationResp) == "[]" {
+		userLocation := InsertLocation{
+			ID:        userId,
+			Country:   locationData.Country,
+			City:      locationData.City,
+			Latitude:  locationData.Latitude,
+			Longitude: locationData.Longitude,
+		}
+		_, err = client.POST("user_locations", userLocation)
+		if err != nil {
+			return errors.DatabaseError("Failed to create user location: " + err.Error())
+		}
 	}
 
 	// Parse the updated user data
