@@ -2,6 +2,7 @@ package lib
 
 import (
 	"html"
+	"math"
 	"regexp"
 	"strings"
 	"unicode"
@@ -43,4 +44,11 @@ func SanitizeInput(input string) string {
 	sanitized = html.EscapeString(sanitized)
 
 	return sanitized
+}
+
+func SanitizePrice(price float64) float64 {
+	if price < 0 {
+		return 0
+	}
+	return math.Round(price*100) / 100 // Round to 2 decimal places
 }

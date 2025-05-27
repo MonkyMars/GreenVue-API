@@ -33,7 +33,7 @@ type Listing struct {
 	Negotiable    bool      `json:"negotiable"`
 	EcoScore      float32   `json:"eco_score"`
 	EcoAttributes []string  `json:"eco_attributes"`
-	ImageUrl      []string  `json:"image_urls"`
+	ImageUrls     []string  `json:"image_urls"`
 	SellerID      uuid.UUID `json:"seller_id"`
 }
 

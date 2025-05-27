@@ -105,7 +105,6 @@ func (q *Queue) AddToQueue(imageJob ImageJob) {
 	}
 
 	q.pendingImages = append(q.pendingImages, imageJob)
-	log.Printf("Added image to processing queue: %s", imageJob.ID)
 }
 
 // HasPendingImages checks if there are any pending images in the queue
@@ -188,7 +187,6 @@ func (q *Queue) ProcessQueue(batchSize int) ([]string, error) {
 			imageJob.ProcessedAt = &now
 			imageJob.PublicURL = publicURL
 			processedURLs = append(processedURLs, publicURL)
-			log.Printf("Successfully processed image %s", imageJob.ID)
 		}
 	}
 

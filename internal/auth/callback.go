@@ -37,13 +37,11 @@ func HandleGoogleCallback(c *fiber.Ctx) error {
 	// Check for error parameter from OAuth provider
 	if errorMsg := c.Query("error"); errorMsg != "" {
 		errorDescription := c.Query("error_description")
-		log.Printf("OAuth error: %s - %s", errorMsg, errorDescription)
 		return errors.BadRequest(fmt.Sprintf("OAuth error: %s", errorDescription))
 	}
 
 	code := c.Query("code")
 	if code == "" {
-		log.Println("Missing code parameter in query")
 		return errors.BadRequest("Missing code parameter")
 	}
 
@@ -203,7 +201,6 @@ func handleUserRegistration(supabaseResp SupabaseResp) error {
 	userExists := false
 	if err == nil && len(data) > 0 && string(data) != "[]" {
 		// User already exists in our database
-		log.Printf("Google user already exists in database: %s", supabaseResp.UserId.Id)
 		userExists = true
 		return nil // Nothing to do if user exists
 	}
@@ -211,7 +208,9 @@ func handleUserRegistration(supabaseResp SupabaseResp) error {
 	// Get user details (email, name) from Supabase user profile
 	userEmail := ""
 	userName := ""
-	picture := "" // Get user profile from Supabase to extract email and name
+	picture := ""
+
+	// Get user profile from Supabase to extract email and name
 	userUrl := fmt.Sprintf("%s/auth/v1/user", os.Getenv("SUPABASE_URL"))
 
 	restyClient := resty.New().SetTimeout(10 * time.Second)
@@ -221,27 +220,22 @@ func handleUserRegistration(supabaseResp SupabaseResp) error {
 		Get(userUrl)
 
 	if err != nil {
-		log.Printf("Failed to get user profile: %v", err)
 		return fmt.Errorf("failed to get user profile: %v", err)
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		log.Printf("Failed to get user profile, status: %d", resp.StatusCode())
 		return fmt.Errorf("failed to get user profile, status: %d", resp.StatusCode())
 	}
 
 	var userProfile map[string]any
 	if err := json.Unmarshal(resp.Body(), &userProfile); err != nil {
-		log.Printf("Failed to decode user profile: %v", err)
 		return fmt.Errorf("failed to decode user profile: %v", err)
 	}
 
 	// Extract email
 	if email, ok := userProfile["email"].(string); ok {
 		userEmail = email
-		log.Printf("Successfully retrieved email %s for Google user", userEmail)
 	} else {
-		log.Printf("No email found in user profile")
 		return fmt.Errorf("no email found in user profile")
 	}
 
@@ -250,16 +244,11 @@ func handleUserRegistration(supabaseResp SupabaseResp) error {
 	if userMetadata, ok := userProfile["user_metadata"].(map[string]any); ok {
 		if fullName, ok := userMetadata["full_name"].(string); ok && fullName != "" {
 			userName = fullName
-			log.Printf("Using full_name from user_metadata: %s", userName)
 		} else if name, ok := userMetadata["name"].(string); ok && name != "" {
 			userName = name
-			log.Printf("Using name from user_metadata: %s", userName)
 		}
 		if userPicture, ok := userMetadata["picture"].(string); ok && userPicture != "" {
 			picture = userPicture
-			log.Printf("User profile picture URL: %s", picture)
-		} else {
-			log.Printf("No profile picture found in user_metadata")
 		}
 	}
 
@@ -267,15 +256,12 @@ func handleUserRegistration(supabaseResp SupabaseResp) error {
 	if userName == "" {
 		if name, ok := userProfile["name"].(string); ok && name != "" {
 			userName = name
-			log.Printf("Using name from root profile: %s", userName)
 		} else {
 			// Use email prefix as fallback
 			if userEmail != "" {
 				userName = strings.Split(userEmail, "@")[0]
-				log.Printf("Using email prefix as name: %s", userName)
 			} else {
 				userName = "User"
-				log.Printf("No name found, using default: %s", userName)
 			}
 		}
 	}
@@ -295,12 +281,9 @@ func handleUserRegistration(supabaseResp SupabaseResp) error {
 		// Insert user into the database
 		_, err = client.POST("users", newUser)
 		if err != nil {
-			log.Printf("Failed to store Google user in database: %v", err)
 			return fmt.Errorf("failed to store user in database: %v", err)
 		}
 
-		log.Printf("Successfully created new Google user in database with ID: %s", supabaseResp.UserId.Id)
 	}
-
 	return nil
 }

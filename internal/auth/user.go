@@ -103,6 +103,7 @@ func UpdateUser(c *fiber.Ctx) error {
 		return errors.BadRequest(err.Error())
 	}
 
+	// Set up a client
 	client := db.GetGlobalClient()
 	if client == nil {
 		return errors.InternalServerError("Failed to create database client")
