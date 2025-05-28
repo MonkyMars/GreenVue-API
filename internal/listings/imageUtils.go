@@ -122,7 +122,7 @@ func convertToWebP(reader io.Reader) (*bytes.Buffer, error) {
 
 	// Encode to WebP
 	webpBuffer := new(bytes.Buffer)
-	webpOptions := &webp.Options{Quality: 80}
+	webpOptions := &webp.Options{Quality: 100} // Experimental
 	err = webp.Encode(webpBuffer, img, webpOptions)
 
 	if err != nil {
