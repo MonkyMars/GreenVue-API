@@ -276,10 +276,7 @@ func handleUserRegistration(supabaseResp SupabaseResp) error {
 			EmailVerified: true,
 			Picture:       picture,
 			Provider:      "google",
-			CreatedAt:     time.Now(),
 		}
-
-		fmt.Println(newUser)
 
 		// Insert user into the database
 		_, err = client.POST("users", newUser)

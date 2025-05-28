@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"encoding/json"
 	"fmt"
 	"greenvue/internal/db"
 	"greenvue/lib"
@@ -9,7 +10,6 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -55,6 +55,21 @@ func RegisterUser(c *fiber.Ctx) error {
 		return errors.BadRequest("Invalid input: name and email cannot be empty")
 	}
 
+	// Check if the email is already registered
+	existingUser, err := client.GET("users", "email=eq."+sanitizedEmail)
+	if err != nil {
+		return errors.DatabaseError("Failed to check existing user: " + err.Error())
+	}
+
+	var users []lib.User
+	if err := json.Unmarshal(existingUser, &users); err != nil {
+		return errors.InternalServerError("Failed to parse existing user data: " + err.Error())
+	}
+
+	if len(users) > 0 {
+		return errors.AlreadyExists("Email is already registered")
+	}
+
 	// Sign up the user with the authentication provider
 	user, err := client.SignUp(lib.SanitizeInput(payload.Email), payload.Password)
 
@@ -73,11 +88,10 @@ func RegisterUser(c *fiber.Ctx) error {
 
 	// Create a user record using the standardized type lib.User
 	newUser := lib.User{
-		ID:        user.ID,
-		Email:     sanitizedEmail,
-		Name:      sanitizedName,
-		Provider:  "email",
-		CreatedAt: time.Now(),
+		ID:       user.ID,
+		Email:    sanitizedEmail,
+		Name:     sanitizedName,
+		Provider: "email",
 	}
 
 	// Insert user into the database using standardized Create operation
@@ -91,7 +105,9 @@ func RegisterUser(c *fiber.Ctx) error {
 	tokens, err := GenerateTokenPair(user.ID, user.Email)
 	if err != nil {
 		return errors.InternalServerError("Failed to generate authentication tokens")
-	} // Set the tokens as secure cookies for web clients
+	}
+
+	// Set the tokens as secure cookies for web clients
 	SetAuthCookies(c, tokens)
 
 	// Return success response with tokens for React Native clients

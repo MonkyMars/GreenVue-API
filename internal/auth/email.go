@@ -23,6 +23,7 @@ func ResendConfirmationEmail(c *fiber.Ctx) error {
 	var requestBody struct {
 		Email string `json:"email"`
 	}
+
 	if err := c.BodyParser(&requestBody); err != nil {
 		return errors.BadRequest("Invalid request body: " + err.Error())
 	}

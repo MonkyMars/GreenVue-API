@@ -46,8 +46,14 @@ func LoginUser(c *fiber.Ctx) error {
 	// We'll continue to use the Login method which is kept in the client for auth operations
 	authResp, err := client.Login(lib.SanitizeInput(payload.Email), lib.SanitizeInput(payload.Password))
 	if err != nil {
-		log.Printf("Login error for email %s: %v", payload.Email, err)
-		return errors.Unauthorized("Invalid credentials")
+		switch err.Error() {
+		case "invalid_credentials":
+			return errors.Unauthorized("Invalid email or password")
+		case "user_not_found":
+			return errors.NotFound("User not found")
+		case "email_not_confirmed":
+			return errors.Forbidden("Email not confirmed")
+		}
 	}
 
 	// Generate JWT tokens

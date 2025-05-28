@@ -181,6 +181,7 @@ func setupAuthRoutes(app *fiber.App) {
 	app.Post("/auth/refresh", auth.RefreshTokenHandler)
 	app.Post("/auth/logout", auth.LogoutUser)
 	app.Get("/auth/confirm_email", auth.VerifyEmailRedirect)
+	app.Post("/auth/resend_email", auth.ResendConfirmationEmail)
 }
 
 // setupPublicListingRoutes configures public listing routes
@@ -205,7 +206,6 @@ func setupSellerRoutes(router fiber.Router) {
 // setupUserRoutes configures user routes
 func setupUserRoutes(router fiber.Router) {
 	router.Get("/auth/me", auth.GetUserByAccessToken)
-	router.Post("/auth/resend_email", auth.ResendConfirmationEmail)
 	router.Patch("/auth/user", auth.UpdateUser)
 	router.Get("/auth/download_user_data", auth.DownloadUserData)
 }

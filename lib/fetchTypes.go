@@ -14,17 +14,17 @@ type Location struct {
 }
 
 type User struct {
-	ID            uuid.UUID `json:"id"`
-	Email         string    `json:"email"`
-	Name          string    `json:"name"`
-	Location      Location  `json:"location"`
-	Bio           string    `json:"bio"`
-	CreatedAt     time.Time `json:"created_at"`
-	Rating        float32   `json:"rating"`
-	Verified      bool      `json:"verified"`
-	EmailVerified bool      `json:"email_verified"`
-	Picture       string    `json:"picture"`
-	Provider      string    `json:"provider"`
+	ID            uuid.UUID  `json:"id"`
+	Email         string     `json:"email"`
+	Name          string     `json:"name"`
+	Location      *Location  `json:"location,omitempty"`
+	Bio           string     `json:"bio"`
+	CreatedAt     *time.Time `json:"created_at,omitempty"`
+	Rating        float32    `json:"rating"`
+	Verified      bool       `json:"verified"`
+	EmailVerified bool       `json:"email_verified"`
+	Picture       string     `json:"picture"`
+	Provider      string     `json:"provider"`
 }
 
 type PublicUser struct {

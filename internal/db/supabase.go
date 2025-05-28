@@ -316,9 +316,32 @@ func (s *SupabaseClient) Login(email, password string) (*lib.AuthResponse, error
 
 	body := resp.Body()
 
+	if strings.Contains(string(body), "error_code") {
+		// Parse the error response
+		var errorResp struct {
+			ErrorCode string `json:"error_code"`
+			Code      int    `json:"code"`
+			Message   string `json:"msg"`
+		}
+		if err := json.Unmarshal(body, &errorResp); err != nil {
+			return nil, fmt.Errorf("failed to parse error response: %w", err)
+		}
+
+		switch errorResp.ErrorCode {
+		case "invalid_credentials":
+			return nil, fmt.Errorf("invalid_credentials")
+		case "email_not_confirmed":
+			return nil, fmt.Errorf("email_not_confirmed")
+		case "user_not_found":
+			return nil, fmt.Errorf("user_not_found")
+		default:
+			return nil, fmt.Errorf("login_failed: %s", errorResp.Message)
+		}
+	}
+
 	// Check for HTTP errors
 	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("login failed: %s", string(body))
+		return nil, fmt.Errorf("login_failed: %s", string(body))
 	}
 
 	// Parse JSON response
