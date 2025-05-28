@@ -5,6 +5,7 @@ import (
 	"greenvue/internal/auth"
 	"greenvue/internal/db"
 	"greenvue/lib/errors"
+	"strings"
 
 	"encoding/json"
 
@@ -54,48 +55,49 @@ func CreateConversation(c *fiber.Ctx) error {
 		return errors.BadRequest("Buyer ID and Seller ID are required")
 	}
 
+	query := fmt.Sprintf("buyer_id=eq.%s&seller_id=eq.%s&listing_id=eq.%s", buyerId, sellerId, listingId)
+	existingData, err := client.GET(viewName, query)
+
+	if err != nil {
+		return errors.InternalServerError("Failed to check existing conversations: " + err.Error())
+	}
+
+	var existingConversations []Conversation
+	if existingData != nil {
+		if err := json.Unmarshal(existingData, &existingConversations); err != nil {
+			return errors.InternalServerError("Failed to decode existing conversations: " + err.Error())
+		}
+	}
+
+	if len(existingConversations) > 0 {
+		return errors.SuccessResponse(c, existingConversations[0])
+	}
+
+	// No existing conversation, try to create one
 	jsonPayload := fmt.Sprintf(`{"buyer_id": "%s", "seller_id": "%s", "listing_id": "%s"}`, buyerId, sellerId, listingId)
 	body, err := client.POST("conversations", []byte(jsonPayload))
 
+	// Optional: handle race condition fallback
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value") {
+			// Another client just created it — fetch it again
+			existingData, err := client.GET(viewName, query)
+			if err == nil && existingData != nil {
+				var fallbackConvos []Conversation
+				if err := json.Unmarshal(existingData, &fallbackConvos); err == nil && len(fallbackConvos) > 0 {
+					return errors.SuccessResponse(c, fallbackConvos[0])
+				}
+			}
+		}
 		return errors.InternalServerError("Failed to create conversation: " + err.Error())
 	}
 
-	if body == nil {
-		return errors.InternalServerError("Failed to create conversation: No response from server")
-	}
-
-	// Parse the response directly into a slice of Conversation
 	var conversations []Conversation
-	err = json.Unmarshal(body, &conversations)
-	if err != nil {
-		return errors.InternalServerError("Failed to decode conversations: " + err.Error())
+	if err := json.Unmarshal(body, &conversations); err != nil || len(conversations) == 0 {
+		return errors.InternalServerError("Failed to decode or create conversation.")
 	}
 
-	// Return the first conversation
-	if len(conversations) > 0 {
-		createdConversation := conversations[0]
-		query := fmt.Sprintf("id=eq.%s", createdConversation.Id)
-		data, err := client.GET(viewName, query)
-		if err != nil {
-			return errors.InternalServerError("Failed to fetch created conversation: " + err.Error())
-		}
-		if data == nil {
-			return errors.InternalServerError("Failed to fetch created conversation: No data returned")
-		}
-		var createdConversations []Conversation
-		err = json.Unmarshal(data, &createdConversations)
-		if err != nil {
-			return errors.InternalServerError("Failed to decode created conversation: " + err.Error())
-		}
-		if len(createdConversations) > 0 {
-			return errors.SuccessResponse(c, createdConversations[0])
-		} else {
-			return errors.InternalServerError("Failed to fetch created conversation: No data returned")
-		}
-	} else {
-		return errors.InternalServerError("No conversation was created")
-	}
+	return errors.SuccessResponse(c, conversations[0])
 }
 
 func GetConversations(c *fiber.Ctx) error {

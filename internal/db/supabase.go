@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
-	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
@@ -173,13 +172,13 @@ func (s *SupabaseClient) PATCH(table string, id uuid.UUID, data any) ([]byte, er
 }
 
 // DELETE removes a record based on condition
-func (s *SupabaseClient) DELETE(c *fiber.Ctx, table, conditions string) ([]byte, error) {
+func (s *SupabaseClient) DELETE(table, conditions string) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?%s", s.URL, table, conditions)
 
 	client := resty.New().
 		SetTimeout(10*time.Second).
 		SetHeader("apikey", s.APIKey).
-		SetHeader("Authorization", c.Get("Authorization")).
+		SetHeader("Authorization", "Bearer "+s.APIKey).
 		SetHeader("Prefer", "return=minimal") // More efficient for DELETE operations
 
 	resp, err := client.R().Delete(url)

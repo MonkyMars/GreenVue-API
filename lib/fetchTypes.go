@@ -62,7 +62,6 @@ type FetchedListing struct {
 }
 
 type FetchedFavorite struct {
-	ID          uuid.UUID `json:"id"`
 	UserID      uuid.UUID `json:"user_id"`
 	ListingID   uuid.UUID `json:"listing_id"`
 	FavoritedAt time.Time `json:"favorited_at"`

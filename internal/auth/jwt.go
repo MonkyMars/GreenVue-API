@@ -455,7 +455,6 @@ func RefreshTokenHandler(c *fiber.Ctx) error {
 
 	// Check for refresh token in cookie first (cookies take precedence)
 	refreshCookie := c.Cookies(RefreshTokenCookieName)
-	log.Println("Refresh token from cookie:", refreshCookie)
 
 	if refreshCookie != "" {
 		refreshToken = refreshCookie

@@ -5,11 +5,11 @@ import (
 	"greenvue/internal/db"
 	"greenvue/lib"
 	"greenvue/lib/errors"
-	"greenvue/lib/location"
 	"greenvue/lib/validation"
 	"log"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -21,17 +21,11 @@ func RegisterUser(c *fiber.Ctx) error {
 		return errors.InternalServerError("Failed to create database client")
 	}
 
-	type Location struct {
-		Country string `json:"country"`
-		City    string `json:"city"`
-	}
-
 	// Define payload struct
 	var payload struct {
-		Name     string   `json:"name"`
-		Email    string   `json:"email"`
-		Password string   `json:"password"`
-		Location Location `json:"location"`
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 
 	// Parse JSON request body
@@ -57,18 +51,6 @@ func RegisterUser(c *fiber.Ctx) error {
 	sanitizedName := lib.SanitizeInput(payload.Name)
 	sanitizedEmail := lib.SanitizeInput(payload.Email)
 
-	locationData, err := location.GetFullLocation(payload.Location.Country, payload.Location.City)
-	if err != nil {
-		return errors.BadRequest("Invalid location: " + err.Error())
-	}
-
-	sanitizedLocation := lib.Location{
-		Country:   lib.SanitizeInput(locationData.Country),
-		City:      lib.SanitizeInput(locationData.City),
-		Latitude:  locationData.Latitude,
-		Longitude: locationData.Longitude,
-	}
-
 	if sanitizedName == "" || sanitizedEmail == "" {
 		return errors.BadRequest("Invalid input: name and email cannot be empty")
 	}
@@ -91,17 +73,15 @@ func RegisterUser(c *fiber.Ctx) error {
 
 	// Create a user record using the standardized type lib.User
 	newUser := lib.User{
-		ID:       user.ID,
-		Name:     sanitizedName,
-		Email:    sanitizedEmail,
-		Location: sanitizedLocation,
-		Provider: "email",
+		ID:        user.ID,
+		Email:     sanitizedEmail,
+		Name:      sanitizedName,
+		Provider:  "email",
+		CreatedAt: time.Now(),
 	}
 
 	// Insert user into the database using standardized Create operation
-	data, err := client.POST("users", newUser)
-
-	log.Println(string(data))
+	_, err = client.POST("users", newUser)
 
 	if err != nil {
 		return errors.DatabaseError("Failed to store user in database: " + err.Error())

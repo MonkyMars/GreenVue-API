@@ -114,12 +114,18 @@ func AddFavorite(c *fiber.Ctx) error {
 }
 
 func DeleteFavorite(c *fiber.Ctx) error {
-	userID := c.Params("user_id")
+	claims, ok := c.Locals("user").(*auth.Claims)
+	if !ok {
+		return errors.Unauthorized("Invalid or missing authentication")
+	}
+
+	userID := claims.UserId
+
 	listingID := c.Params("listing_id")
 
 	// Step 1: Validate params
-	if userID == "" || listingID == "" {
-		return errors.BadRequest("user_id and listing_id are required.")
+	if listingID == "" {
+		return errors.BadRequest("listing_id is required.")
 	}
 
 	client := db.GetGlobalClient()
@@ -129,7 +135,7 @@ func DeleteFavorite(c *fiber.Ctx) error {
 
 	// Step 2: Delete favorite using the standardized DELETE operation
 	query := fmt.Sprintf("user_id=eq.%s&listing_id=eq.%s", userID, listingID)
-	responseData, err := client.DELETE(c, "favorites", query)
+	responseData, err := client.DELETE("favorites", query)
 	if err != nil {
 		return errors.DatabaseError("Failed to delete favorite: " + err.Error())
 	}
