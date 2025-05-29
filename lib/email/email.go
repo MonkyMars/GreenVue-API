@@ -24,20 +24,20 @@ const (
 
 // Email represents an email message to be sent
 type Email struct {
-	ID          string                 `json:"id"`
-	To          string                 `json:"to"`
-	Subject     string                 `json:"subject"`
-	Type        EmailType              `json:"type"`
-	TemplateID  string                 `json:"template_id,omitempty"`
-	Variables   map[string]interface{} `json:"variables,omitempty"`
-	HTMLContent string                 `json:"html_content,omitempty"`
-	TextContent string                 `json:"text_content,omitempty"`
-	CreatedAt   time.Time              `json:"created_at"`
-	SentAt      *time.Time             `json:"sent_at,omitempty"`
-	Status      string                 `json:"status"`
-	Retries     int                    `json:"retries"`
-	MaxRetries  int                    `json:"max_retries"`
-	Error       string                 `json:"error,omitempty"`
+	ID          string         `json:"id"`
+	To          string         `json:"to"`
+	Subject     string         `json:"subject"`
+	Type        EmailType      `json:"type"`
+	TemplateID  string         `json:"template_id,omitempty"`
+	Variables   map[string]any `json:"variables,omitempty"`
+	HTMLContent string         `json:"html_content,omitempty"`
+	TextContent string         `json:"text_content,omitempty"`
+	CreatedAt   time.Time      `json:"created_at"`
+	SentAt      *time.Time     `json:"sent_at,omitempty"`
+	Status      string         `json:"status"`
+	Retries     int            `json:"retries"`
+	MaxRetries  int            `json:"max_retries"`
+	Error       string         `json:"error,omitempty"`
 }
 
 // Service is an interface for sending emails

@@ -13,11 +13,11 @@ import (
 func TestEmailHandler(c *fiber.Ctx) error {
 	// Parse request body
 	var req struct {
-		Email    string                 `json:"email"`
-		Subject  string                 `json:"subject"`
-		Type     string                 `json:"type"`     // confirmation, password_reset, notification, etc.
-		Template string                 `json:"template"` // Only used for certain email types
-		Vars     map[string]interface{} `json:"vars"`     // Template variables
+		Email    string         `json:"email"`
+		Subject  string         `json:"subject"`
+		Type     string         `json:"type"`     // confirmation, password_reset, notification, etc.
+		Template string         `json:"template"` // Only used for certain email types
+		Vars     map[string]any `json:"vars"`     // Template variables
 	}
 
 	if err := c.BodyParser(&req); err != nil {

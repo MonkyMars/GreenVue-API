@@ -19,7 +19,7 @@ type ImageJob struct {
 	ID           string     `json:"id"`
 	FileName     string     `json:"file_name"`
 	ListingTitle string     `json:"listing_title"`
-	ImageData    []byte     `json:"image_data"`
+	ImageData    []byte     `json:"image_data,omitempty"` // Will be cleared after processing to prevent memory leaks
 	CreatedAt    time.Time  `json:"created_at"`
 	ProcessedAt  *time.Time `json:"processed_at,omitempty"`
 	Status       string     `json:"status"`
@@ -31,9 +31,12 @@ type ImageJob struct {
 
 // Queue manages a queue of images to be processed
 type Queue struct {
-	pendingImages []ImageJob
-	mu            sync.Mutex
-	persistPath   string // Path to persist the queue
+	pendingImages   []ImageJob
+	completedImages []ImageJob // Store completed jobs separately for cleanup
+	mu              sync.Mutex
+	persistPath     string    // Path to persist the queue
+	maxCompleted    int       // Maximum number of completed jobs to keep
+	lastCleanup     time.Time // Last time cleanup was performed
 }
 
 // Global image queue
@@ -51,8 +54,11 @@ func InitializeImageQueue() {
 // NewImageQueue creates a new image queue
 func NewImageQueue() *Queue {
 	return &Queue{
-		pendingImages: make([]ImageJob, 0),
-		persistPath:   "image_queue_backup.json", // Default path
+		pendingImages:   make([]ImageJob, 0),
+		completedImages: make([]ImageJob, 0),
+		persistPath:     "image_queue_backup.json", // Default path
+		maxCompleted:    100,                       // Keep max 100 completed jobs for debugging
+		lastCleanup:     time.Now(),
 	}
 }
 
@@ -126,28 +132,42 @@ func (q *Queue) GetJobByID(id string) (*ImageJob, error) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
+	// Check pending jobs first
 	for i, job := range q.pendingImages {
 		if job.ID == id {
-			// Return a pointer to the job in the slice
-			return &q.pendingImages[i], nil
+			// Return a copy to prevent external modification
+			jobCopy := q.pendingImages[i]
+			return &jobCopy, nil
+		}
+	}
+
+	// Check completed jobs
+	for i, job := range q.completedImages {
+		if job.ID == id {
+			// Return a copy to prevent external modification
+			jobCopy := q.completedImages[i]
+			return &jobCopy, nil
 		}
 	}
 
 	return nil, fmt.Errorf("job not found with ID: %s", id)
 }
 
-// ProcessQueue processes the image queue
+// ProcessQueue processes the image queue with memory leak prevention
 func (q *Queue) ProcessQueue(batchSize int) ([]string, error) {
 	q.mu.Lock()
 
 	if len(q.pendingImages) == 0 {
 		q.mu.Unlock()
+		// Perform cleanup if it's been a while
+		q.cleanupCompletedJobs()
 		return nil, nil
 	}
 
 	// Process images in batches
 	endIdx := min(batchSize, len(q.pendingImages))
-	batch := q.pendingImages[:endIdx]
+	batch := make([]ImageJob, endIdx)
+	copy(batch, q.pendingImages[:endIdx])
 	q.pendingImages = q.pendingImages[endIdx:]
 
 	// Release the lock while processing
@@ -175,20 +195,37 @@ func (q *Queue) ProcessQueue(batchSize int) ([]string, error) {
 
 			if imageJob.Retries >= imageJob.MaxRetries {
 				imageJob.Status = "failed"
+				// Clear image data to free memory
+				imageJob.ImageData = nil
 				log.Printf("Failed to process image %s after %d retries: %v",
 					imageJob.ID, imageJob.Retries, err)
 			} else {
 				imageJob.Status = "retry"
 				log.Printf("Image processing for %s failed, will retry (attempt %d/%d)",
 					imageJob.ID, imageJob.Retries, imageJob.MaxRetries)
+				// Re-queue for retry but don't clear image data yet
+				q.mu.Lock()
+				q.pendingImages = append(q.pendingImages, *imageJob)
+				q.mu.Unlock()
+				continue
 			}
 		} else {
 			imageJob.Status = "processed"
 			imageJob.ProcessedAt = &now
 			imageJob.PublicURL = publicURL
+			// Clear image data to free memory after successful upload
+			imageJob.ImageData = nil
 			processedURLs = append(processedURLs, publicURL)
 		}
+
+		// Move completed/failed jobs to completed queue
+		q.mu.Lock()
+		q.completedImages = append(q.completedImages, *imageJob)
+		q.mu.Unlock()
 	}
+
+	// Cleanup old completed jobs periodically
+	q.cleanupCompletedJobs()
 
 	return processedURLs, nil
 }
@@ -216,8 +253,11 @@ func UploadToSupabase(filename string, fileData *bytes.Buffer) (string, error) {
 		ContentType:  &fileType,
 	}
 
+	// Create a reader that will automatically close when upload is done
+	reader := io.NopCloser(bytes.NewReader(fileData.Bytes()))
+
 	// Upload the file to Supabase
-	_, err := client.UploadFile(bucket, filename, io.NopCloser(fileData), fileOptions)
+	_, err := client.UploadFile(bucket, filename, reader, fileOptions)
 	if err != nil {
 		log.Println("Error uploading to Supabase:", err)
 		return "", err
@@ -304,4 +344,67 @@ func (q *Queue) RestoreFromDisk() error {
 	os.Remove(q.persistPath)
 
 	return nil
+}
+
+// cleanupCompletedJobs removes old completed jobs to prevent memory leaks
+func (q *Queue) cleanupCompletedJobs() {
+	// Only cleanup every 5 minutes to avoid excessive work
+	if time.Since(q.lastCleanup) < 5*time.Minute {
+		return
+	}
+
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	// Remove excess completed jobs, keeping only the most recent ones
+	if len(q.completedImages) > q.maxCompleted {
+		// Keep only the last maxCompleted jobs
+		toRemove := len(q.completedImages) - q.maxCompleted
+
+		// Clear image data from jobs being removed to free memory
+		for i := 0; i < toRemove; i++ {
+			q.completedImages[i].ImageData = nil
+		}
+
+		// Keep only recent jobs
+		q.completedImages = q.completedImages[toRemove:]
+		log.Printf("Cleaned up %d old completed image jobs", toRemove)
+	}
+
+	// Also cleanup very old jobs (older than 24 hours) regardless of count
+	cutoffTime := time.Now().Add(-24 * time.Hour)
+	newCompleted := make([]ImageJob, 0, len(q.completedImages))
+	cleanedCount := 0
+
+	for _, job := range q.completedImages {
+		if job.ProcessedAt == nil || job.ProcessedAt.After(cutoffTime) {
+			newCompleted = append(newCompleted, job)
+		} else {
+			// Clear image data before removing
+			job.ImageData = nil
+			cleanedCount++
+		}
+	}
+
+	if cleanedCount > 0 {
+		q.completedImages = newCompleted
+		log.Printf("Cleaned up %d jobs older than 24 hours", cleanedCount)
+	}
+
+	q.lastCleanup = time.Now()
+}
+
+// GetCompletedJobsCount returns the number of completed jobs
+func (q *Queue) GetCompletedJobsCount() int {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	return len(q.completedImages)
+}
+
+// ForceCleanup manually triggers cleanup of completed jobs
+func (q *Queue) ForceCleanup() {
+	q.mu.Lock()
+	q.lastCleanup = time.Time{} // Reset to force cleanup
+	q.mu.Unlock()
+	q.cleanupCompletedJobs()
 }

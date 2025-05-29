@@ -17,7 +17,7 @@ func GetImageQueueStatusHandler(c *fiber.Ctx) error {
 
 	return errors.SuccessResponse(c, fiber.Map{
 		"pending_count": pendingCount,
-		"queue_status": map[string]interface{}{
+		"queue_status": map[string]any{
 			"initialized": image.GlobalImageQueue != nil,
 			"status":      "active",
 		},

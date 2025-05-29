@@ -110,6 +110,9 @@ func convertToWebP(reader io.Reader) (*bytes.Buffer, error) {
 	// Strip EXIF metadata
 	cleanImgData := stripExifMetadata(imgData)
 
+	// Clear original image data to free memory
+	imgData = nil
+
 	// Decode the cleaned image
 	img, _, err := image.Decode(bytes.NewReader(cleanImgData))
 	if err != nil {
@@ -117,13 +120,22 @@ func convertToWebP(reader io.Reader) (*bytes.Buffer, error) {
 		return nil, err
 	}
 
+	// Clear cleaned image data to free memory
+	cleanImgData = nil
+
 	// Resize while maintaining aspect ratio (max 640px)
-	img = resize.Resize(0, 640, img, resize.Lanczos3)
+	resizedImg := resize.Resize(0, 640, img, resize.Lanczos3)
+
+	// Clear original image to free memory
+	img = nil
 
 	// Encode to WebP
 	webpBuffer := new(bytes.Buffer)
-	webpOptions := &webp.Options{Quality: 100} // Experimental
-	err = webp.Encode(webpBuffer, img, webpOptions)
+	webpOptions := &webp.Options{Quality: 80} // Reduced from 100 to save memory and bandwidth
+	err = webp.Encode(webpBuffer, resizedImg, webpOptions)
+
+	// Clear resized image to free memory
+	resizedImg = nil
 
 	if err != nil {
 		log.Println("Error encoding WebP:", err)
@@ -151,19 +163,8 @@ func (fp *FileProcessor) ProcessFile(fileHeader *multipart.FileHeader) (*img.Ima
 	}
 	defer src.Close()
 
-	fileData, err := io.ReadAll(src)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read file %s: %w", fileHeader.Filename, err)
-	}
-
-	// Validate image format
-	_, err = validateImage(fileData)
-	if err != nil {
-		return nil, fmt.Errorf("invalid image format for %s: %w", fileHeader.Filename, err)
-	}
-
-	// Convert to WebP
-	webpData, err := convertToWebP(bytes.NewReader(fileData))
+	// Convert to WebP directly from the reader to avoid keeping original data in memory
+	webpData, err := convertToWebP(src)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert %s to WebP: %w", fileHeader.Filename, err)
 	}
@@ -181,6 +182,9 @@ func (fp *FileProcessor) ProcessFile(fileHeader *multipart.FileHeader) (*img.Ima
 		Status:       "pending",
 		MaxRetries:   3,
 	}
+
+	// Clear webpData buffer to free memory
+	webpData = nil
 
 	// Queue the image
 	if err := img.QueueImage(*imageJob); err != nil {

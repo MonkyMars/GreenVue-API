@@ -2,6 +2,7 @@ package api
 
 import (
 	"greenvue/internal/auth"
+	"greenvue/internal/bids"
 	"greenvue/internal/chat"
 	"greenvue/internal/config"
 	"greenvue/internal/favorites"
@@ -154,9 +155,11 @@ func setupRoutes(app *fiber.App, cfg *config.Config) {
 
 	// Seller routes (public), doesn't need auth since info is not sensitive.
 	setupSellerRoutes(app)
-
 	// Public review routes
 	setupPublicReviewRoutes(app)
+
+	// Public bidding routes (for viewing bids)
+	setupPublicBiddingRoutes(app)
 
 	chat.RegisterWebsocketRoutes(app)
 
@@ -169,6 +172,7 @@ func setupRoutes(app *fiber.App, cfg *config.Config) {
 	setupFavoritesRoutes(api)
 	setupHealthRoutes(api)
 	setupJobRoutes(api)
+	setupProtectedBidRoutes(api)
 }
 
 // setupAuthRoutes configures authentication routes
@@ -260,4 +264,19 @@ func setupDebugRoutes(app *fiber.App) {
 	debug.Get("/email-queue-status", GetEmailQueueStatusHandler)
 	debug.Get("/image-queue-status", GetImageQueueStatusHandler)
 	debug.Post("/upload-test-image", TestImageQueueHandler)
+
+	// Memory monitoring routes
+	debug.Get("/memory-stats", GetMemoryStats)
+	debug.Post("/memory/cleanup-images", ForceImageCleanup)
+}
+
+func setupPublicBiddingRoutes(app *fiber.App) {
+	// Public routes for viewing bids (no auth required)
+	app.Get("/listings/:listing_id/bids", bids.GetBids)
+}
+
+func setupProtectedBidRoutes(router fiber.Router) {
+	// Protected routes requiring authentication
+	router.Post("/listings/:listing_id/bids", bids.UploadBid)
+	router.Delete("/bids/:bid_id", bids.DeleteBid)
 }

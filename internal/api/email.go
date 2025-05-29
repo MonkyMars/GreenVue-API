@@ -69,7 +69,7 @@ func QueuePasswordResetEmail(recipient string) error {
 }
 
 // QueueNotificationEmail queues a generic notification email
-func QueueNotificationEmail(recipient, subject, template string, variables map[string]interface{}) error {
+func QueueNotificationEmail(recipient, subject, template string, variables map[string]any) error {
 	// Create a new email object
 	e := email.Email{
 		ID:         lib.GenerateUUID(),

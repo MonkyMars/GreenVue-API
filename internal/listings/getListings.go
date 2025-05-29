@@ -12,7 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-const viewName string = "listing_details_view"
+const viewName string = "listing_details"
 
 func GetListings(c *fiber.Ctx) error {
 	client := db.GetGlobalClient()

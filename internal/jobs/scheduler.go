@@ -27,16 +27,23 @@ type Job struct {
 
 // Scheduler manages background jobs
 type Scheduler struct {
-	jobs     map[string]*Job
-	mu       sync.RWMutex
-	shutdown chan struct{}
+	jobs          map[string]*Job
+	mu            sync.RWMutex
+	shutdown      chan struct{}
+	isShutdown    bool
+	maxConcurrent int           // Limit concurrent job executions
+	semaphore     chan struct{} // Semaphore for controlling concurrency
 }
 
 // NewScheduler creates a new job scheduler
 func NewScheduler() *Scheduler {
+	maxConcurrent := 5 // Limit to 5 concurrent jobs to prevent resource exhaustion
 	return &Scheduler{
-		jobs:     make(map[string]*Job),
-		shutdown: make(chan struct{}),
+		jobs:          make(map[string]*Job),
+		shutdown:      make(chan struct{}),
+		isShutdown:    false,
+		maxConcurrent: maxConcurrent,
+		semaphore:     make(chan struct{}, maxConcurrent),
 	}
 }
 
@@ -44,6 +51,10 @@ func NewScheduler() *Scheduler {
 func (s *Scheduler) AddJob(id, name, description string, fn JobFunc, interval time.Duration) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	if s.isShutdown {
+		return errors.BadRequest("Scheduler is shutdown")
+	}
 
 	if _, exists := s.jobs[id]; exists {
 		return errors.BadRequest("Job with this ID already exists")
@@ -105,28 +116,67 @@ func (s *Scheduler) GetJob(id string) (*Job, error) {
 	return job, nil
 }
 
-// runJob executes a job on its schedule
+// runJob executes a job on its schedule with concurrency control
 func (s *Scheduler) runJob(job *Job) {
+	defer func() {
+		// Ensure we clean up if there's a panic
+		if r := recover(); r != nil {
+			log.Printf("Job %s panicked: %v", job.ID, r)
+		}
+	}()
+
 	for {
 		select {
 		case <-job.ctx.Done():
 			return // Exit if job is cancelled
+		case <-s.shutdown:
+			return // Exit if scheduler is shutting down
 		case <-time.After(time.Until(job.NextRun)):
-			func() {
-				s.mu.Lock()
-				job.IsRunning = true
-				job.LastRun = time.Now()
-				s.mu.Unlock() // Execute the job
-				err := job.Func(job.ctx)
-				if err != nil {
-					log.Printf("Error executing job %s: %v", job.ID, err)
-				}
+			// Acquire semaphore before executing job
+			select {
+			case s.semaphore <- struct{}{}:
+				// Got semaphore, execute job
+				func() {
+					defer func() {
+						// Always release semaphore
+						<-s.semaphore
 
-				s.mu.Lock()
-				job.IsRunning = false
-				job.NextRun = time.Now().Add(job.Interval)
-				s.mu.Unlock()
-			}()
+						// Handle panics in job execution
+						if r := recover(); r != nil {
+							log.Printf("Job %s execution panicked: %v", job.ID, r)
+						}
+					}()
+
+					s.mu.Lock()
+					if s.isShutdown {
+						s.mu.Unlock()
+						return
+					}
+					job.IsRunning = true
+					job.LastRun = time.Now()
+					s.mu.Unlock()
+
+					// Execute the job with timeout context
+					jobCtx, cancel := context.WithTimeout(job.ctx, 30*time.Minute) // 30 minute timeout
+					defer cancel()
+
+					err := job.Func(jobCtx)
+					if err != nil {
+						log.Printf("Error executing job %s: %v", job.ID, err)
+					}
+
+					s.mu.Lock()
+					if !s.isShutdown {
+						job.IsRunning = false
+						job.NextRun = time.Now().Add(job.Interval)
+					}
+					s.mu.Unlock()
+				}()
+			case <-job.ctx.Done():
+				return // Exit if job is cancelled while waiting for semaphore
+			case <-s.shutdown:
+				return // Exit if scheduler is shutting down while waiting for semaphore
+			}
 		}
 	}
 }
@@ -136,10 +186,22 @@ func (s *Scheduler) Shutdown() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if s.isShutdown {
+		return // Already shutdown
+	}
+
+	s.isShutdown = true
+
 	// Cancel all jobs
 	for _, job := range s.jobs {
 		job.cancel()
 	}
 
+	// Signal shutdown to all goroutines
 	close(s.shutdown)
+
+	// Give jobs a moment to finish gracefully
+	time.Sleep(1 * time.Second)
+
+	log.Printf("Scheduler shutdown complete, %d jobs stopped", len(s.jobs))
 }

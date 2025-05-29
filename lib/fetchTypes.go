@@ -52,13 +52,12 @@ type FetchedListing struct {
 	Title         string    `json:"title"`
 	ImageUrl      []string  `json:"image_urls"`
 
-	SellerID        uuid.UUID    `json:"seller_id"`
-	SellerUsername  string       `json:"seller_username"`
-	SellerBio       string       `json:"seller_bio"`
-	SellerCreatedAt time.Time    `json:"seller_created_at"`
-	SellerRating    float32      `json:"seller_rating"`
-	SellerVerified  bool         `json:"seller_verified"`
-	Bids            []FetchedBid `json:"bids"`
+	SellerID        uuid.UUID `json:"seller_id"`
+	SellerUsername  string    `json:"seller_username"`
+	SellerBio       string    `json:"seller_bio"`
+	SellerCreatedAt time.Time `json:"seller_created_at"`
+	SellerRating    float32   `json:"seller_rating"`
+	SellerVerified  bool      `json:"seller_verified"`
 }
 
 type FetchedFavorite struct {

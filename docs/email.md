@@ -48,7 +48,7 @@ e := email.Email{
     Subject:    "Welcome to GreenVue",
     Type:       email.WelcomeEmail,
     TemplateID: "welcome_template",
-    Variables: map[string]interface{}{
+    Variables: map[string]any{
         "username": "JohnDoe",
     },
     CreatedAt:  time.Now(),
@@ -74,7 +74,7 @@ err := api.QueueConfirmationEmail("user@example.com", "signup")
 err := api.QueuePasswordResetEmail("user@example.com")
 
 // Queue a notification email
-variables := map[string]interface{}{
+variables := map[string]any{
     "listingName": "Vintage Chair",
     "sellerName": "Jane Doe",
 }

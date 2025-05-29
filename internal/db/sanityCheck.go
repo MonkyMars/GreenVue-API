@@ -17,7 +17,7 @@ func SanityCheck() (bool, error) {
 	}
 
 	query := fmt.Sprintf("select=*&limit=%s&order=created_at.desc", "1")
-	_, err = client.GET("listing_details_view", query)
+	_, err = client.GET("listing_details", query)
 
 	if err != nil {
 		return false, fmt.Errorf("failed to fetch listings: %w", err)

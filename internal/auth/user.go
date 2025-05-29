@@ -191,7 +191,7 @@ func DownloadUserData(c *fiber.Ctx) error {
 	var Listings []lib.FetchedListing
 
 	query = fmt.Sprintf("seller_id=eq.%s", claims.UserId)
-	data, err = client.GET("listing_details_view", query)
+	data, err = client.GET("listing_details", query)
 	if err != nil {
 		return errors.DatabaseError("Failed to fetch listings: " + err.Error())
 	}

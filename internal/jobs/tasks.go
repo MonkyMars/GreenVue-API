@@ -46,7 +46,7 @@ type ImageProcessingOptions struct {
 // CreateImageProcessingJob creates a job to process the image queue
 func CreateImageProcessingJob(opts *ImageProcessingOptions) JobFunc {
 	if opts == nil {
-		opts = &ImageProcessingOptions{BatchSize: 10} // Default to processing 10 images at a time
+		opts = &ImageProcessingOptions{BatchSize: 5} // Reduced from 10 to prevent memory spikes
 	}
 
 	return func(ctx context.Context) error {
@@ -56,10 +56,20 @@ func CreateImageProcessingJob(opts *ImageProcessingOptions) JobFunc {
 
 		// Only process if there are images in the queue
 		if image.GlobalImageQueue.HasPendingImages() {
+			pendingCount := image.GlobalImageQueue.PendingCount()
+			completedCount := image.GlobalImageQueue.GetCompletedJobsCount()
+
+			log.Printf("Processing image queue: %d pending, %d completed", pendingCount, completedCount)
+
 			// Process the image queue
-			_, err := image.GlobalImageQueue.ProcessQueue(opts.BatchSize)
+			processedURLs, err := image.GlobalImageQueue.ProcessQueue(opts.BatchSize)
 			if err != nil {
+				log.Printf("Error processing image queue: %v", err)
 				return err
+			}
+
+			if len(processedURLs) > 0 {
+				log.Printf("Successfully processed %d images", len(processedURLs))
 			}
 		}
 
