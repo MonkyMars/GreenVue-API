@@ -16,8 +16,6 @@ require (
 
 require github.com/golang-jwt/jwt/v5 v5.2.2 // direct
 
-require golang.org/x/crypto v0.38.0 // direct
-
 require (
 	github.com/chai2010/webp v1.4.0 // direct
 	github.com/philhofer/fwd v1.1.3-0.20240916144458-20a13a1f6b7c // indirect

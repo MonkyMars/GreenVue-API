@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"html"
 	"math"
 	"regexp"
 	"strings"
@@ -25,25 +24,75 @@ func SanitizeFilename(filename string) string {
 }
 
 func SanitizeInput(input string) string {
-	// Trim whitespace
-	sanitized := strings.TrimSpace(input)
+	// Step 1: Enforce maximum length to prevent DoS attacks
+	maxLength := 10000 // Adjust based on your needs
+	if len(input) > maxLength {
+		input = input[:maxLength]
+	}
 
-	// Replace multiple spaces with a single space
-	multipleSpaces := regexp.MustCompile(`\s+`)
-	sanitized = multipleSpaces.ReplaceAllString(sanitized, " ")
-
-	// Remove non-printable/control characters (e.g., \n, \t, etc.)
-	sanitized = strings.Map(func(r rune) rune {
-		if unicode.IsControl(r) && r != '\n' && r != '\r' {
-			return -1
+	// Step 2: Remove unsafe control characters but keep printable, \n, \r, \t
+	cleaned := strings.Map(func(r rune) rune {
+		if unicode.IsPrint(r) || r == '\n' || r == '\r' || r == '\t' {
+			return r
 		}
-		return r
-	}, sanitized)
+		return -1
+	}, input)
 
-	// Escape HTML to prevent XSS
-	sanitized = html.EscapeString(sanitized)
+	// Step 3: Remove HTML tags but keep inner text
+	cleaned = regexp.MustCompile(`<[^>]*>`).ReplaceAllString(cleaned, "")
 
-	return sanitized
+	// Step 4: Remove potentially dangerous sequences
+	// Remove javascript: protocol
+	cleaned = regexp.MustCompile(`(?i)javascript:`).ReplaceAllString(cleaned, "")
+	// Remove data: protocol (can be used for XSS)
+	cleaned = regexp.MustCompile(`(?i)data:`).ReplaceAllString(cleaned, "")
+	// Remove on* event handlers (onclick, onload, etc.)
+	cleaned = regexp.MustCompile(`(?i)on\w+\s*=`).ReplaceAllString(cleaned, "")
+
+	// Step 5: Normalize multiple spaces and tabs (but not newlines)
+	cleaned = regexp.MustCompile(` {2,}`).ReplaceAllString(cleaned, " ")
+	cleaned = regexp.MustCompile(`\t{2,}`).ReplaceAllString(cleaned, "\t")
+
+	// Step 6: Trim only leading/trailing spaces (preserve \n, \t)
+	cleaned = strings.Trim(cleaned, " ")
+
+	return cleaned
+}
+
+// SanitizeInputStrict provides stricter sanitization for sensitive contexts
+func SanitizeInputStrict(input string) string {
+	// Use basic sanitization first
+	cleaned := SanitizeInput(input)
+
+	// Additional strict measures
+	// Remove all angle brackets to prevent any HTML/XML
+	cleaned = strings.ReplaceAll(cleaned, "<", "")
+	cleaned = strings.ReplaceAll(cleaned, ">", "")
+
+	// Remove quotes that could break out of attributes
+	cleaned = strings.ReplaceAll(cleaned, "\"", "")
+	cleaned = strings.ReplaceAll(cleaned, "'", "")
+
+	// Remove backslashes that could be used for escaping
+	cleaned = strings.ReplaceAll(cleaned, "\\", "")
+
+	return cleaned
+}
+
+// SanitizeInputForDisplay prepares user input for safe HTML display
+// This preserves formatting while preventing XSS
+func SanitizeInputForDisplay(input string) string {
+	// Use basic sanitization
+	cleaned := SanitizeInput(input)
+
+	// Escape HTML entities for safe display
+	cleaned = strings.ReplaceAll(cleaned, "&", "&amp;")
+	cleaned = strings.ReplaceAll(cleaned, "<", "&lt;")
+	cleaned = strings.ReplaceAll(cleaned, ">", "&gt;")
+	cleaned = strings.ReplaceAll(cleaned, "\"", "&quot;")
+	cleaned = strings.ReplaceAll(cleaned, "'", "&#x27;")
+
+	return cleaned
 }
 
 func SanitizePrice(price float64) float64 {

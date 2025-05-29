@@ -1,9 +1,12 @@
 package reviews
 
 import (
+	"fmt"
+	"greenvue/internal/auth"
 	"greenvue/internal/db"
 	"greenvue/lib"
 	"greenvue/lib/errors"
+	"greenvue/lib/validation"
 
 	"encoding/json"
 
@@ -17,19 +20,54 @@ func PostReview(c *fiber.Ctx) error {
 		return errors.InternalServerError("Failed to create client")
 	}
 
-	var review lib.Review
-	if err := c.BodyParser(&review); err != nil {
+	claims, ok := c.Locals("user").(*auth.Claims)
+	if !ok || claims == nil {
+		return errors.Unauthorized("User not authenticated")
+	}
+
+	var payload struct {
+		Rating           int       `json:"rating"`
+		Title            string    `json:"title"`
+		Content          string    `json:"content"`
+		SellerID         uuid.UUID `json:"seller_id"`
+		VerifiedPurchase bool      `json:"verified_purchase"`
+	}
+	if err := c.BodyParser(&payload); err != nil {
 		return errors.BadRequest("Invalid request body: " + err.Error())
 	}
 
-	// Validate required fields
-	if review.UserID == uuid.Nil || review.SellerID == uuid.Nil {
-		return errors.BadRequest("UserID, SellerID, and ListingID are required")
+	review := lib.Review{
+		Rating:           payload.Rating,
+		Title:            lib.SanitizeInput(payload.Title),
+		Content:          lib.SanitizeInput(payload.Content),
+		SellerID:         payload.SellerID,
+		VerifiedPurchase: payload.VerifiedPurchase,
+		UserID:           claims.UserId,
+	}
+	// Validate the review using the validation package
+	validationResult := validation.ValidateReview(review)
+	if !validationResult.Valid {
+		// Return the first validation error
+		for _, message := range validationResult.Errors {
+			return errors.BadRequest(message)
+		}
 	}
 
-	// Validate rating
-	if review.Rating < 1 || review.Rating > 5 {
-		return errors.BadRequest("Rating must be between 1 and 5")
+	// Check if the user has already reviewed this seller
+	query := fmt.Sprintf("reviews?user_id=%s&seller_id=%s", claims.UserId.String(), payload.SellerID.String())
+	existingReview, err := client.GET("reviews", query)
+	if err != nil {
+		return errors.DatabaseError("Failed to check existing reviews: " + err.Error())
+	}
+
+	var reviews []lib.Review
+	if err := json.Unmarshal(existingReview, &reviews); err != nil {
+		return errors.InternalServerError("Failed to parse existing review data: " + err.Error())
+	}
+
+	// If the user has already reviewed this seller, return an error
+	if len(reviews) > 0 {
+		return errors.AlreadyExists("You have already reviewed this seller")
 	}
 
 	// Use standardized POST operation

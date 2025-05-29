@@ -16,12 +16,13 @@ type Favorite struct {
 }
 
 type Review struct {
-	Rating           int       `json:"rating"`
-	UserID           uuid.UUID `json:"user_id"`
-	SellerID         uuid.UUID `json:"seller_id"`
-	Title            string    `json:"title"`
-	Content          string    `json:"content"`
-	VerifiedPurchase bool      `json:"verified_purchase"`
+	ID               *uuid.UUID `json:"id,omitempty"`
+	Rating           int        `json:"rating"`
+	UserID           uuid.UUID  `json:"user_id"`
+	SellerID         uuid.UUID  `json:"seller_id"`
+	Title            string     `json:"title"`
+	Content          string     `json:"content"`
+	VerifiedPurchase bool       `json:"verified_purchase"`
 }
 
 type Listing struct {
