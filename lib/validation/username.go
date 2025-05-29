@@ -45,9 +45,9 @@ func (v *UsernameValidator) Validate(username string) (bool, string) {
 	}
 
 	// Character validation
-	validChars := regexp.MustCompile(`^[a-zA-Z0-9_ ]+$`)
+	validChars := regexp.MustCompile(`^[a-zA-Z0-9_. ]+$`)
 	if !validChars.MatchString(username) {
-		return false, "Username can only contain letters, numbers, and underscores"
+		return false, "Username can only contain letters, numbers, underscores, and periods"
 	}
 
 	return true, ""

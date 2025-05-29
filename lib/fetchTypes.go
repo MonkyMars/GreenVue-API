@@ -72,7 +72,7 @@ type FetchedFavorite struct {
 	Condition     string    `json:"condition"`
 	Price         float64   `json:"price"`
 	Location      Location  `json:"location"`
-	EcoScore      float32   `json:"ecoScore"`
+	EcoScore      float32   `json:"eco_score"`
 	EcoAttributes []string  `json:"eco_attributes"`
 	Negotiable    bool      `json:"negotiable"`
 	Title         string    `json:"title"`

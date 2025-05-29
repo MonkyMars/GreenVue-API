@@ -505,7 +505,6 @@ func getDomainFromHost(host string) string {
 	if strings.Contains(host, "localhost") ||
 		strings.Contains(host, "127.0.0.1") ||
 		strings.HasPrefix(host, "192.168.") {
-		log.Println("Using default domain for development host:", host)
 		return "" // Empty domain works better for local development
 	}
 
