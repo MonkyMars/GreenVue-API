@@ -1,6 +1,7 @@
 package bids
 
 import (
+	"greenvue/internal/auth"
 	"greenvue/lib"
 	"greenvue/lib/errors"
 	"log"
@@ -12,6 +13,12 @@ import (
 
 // UploadBid handles the creation of a new bid with comprehensive validation
 func UploadBid(c *fiber.Ctx) error {
+
+	claims, ok := c.Locals("user").(*auth.Claims)
+	if !ok || claims == nil {
+		return errors.Unauthorized("User not authenticated")
+	}
+
 	bidService := NewBidService()
 	if bidService.client == nil {
 		return errors.InternalServerError("Failed to get database client")
@@ -29,9 +36,28 @@ func UploadBid(c *fiber.Ctx) error {
 		return errors.BadRequest("Invalid listing ID format")
 	}
 
-	var bid lib.Bid
-	if err := c.BodyParser(&bid); err != nil {
+	var payload struct {
+		Price     float64 `json:"price"`
+		ListingID string  `json:"listing_id"`
+	}
+
+	if err := c.BodyParser(&payload); err != nil {
 		return errors.BadRequest("Failed to parse bid data: " + err.Error())
+	}
+
+	if payload.ListingID != listingID {
+		return errors.BadRequest("Listing ID in payload does not match URL parameter")
+	}
+
+	if payload.Price <= 0 {
+		return errors.BadRequest("Bid price must be greater than zero")
+	}
+
+	// Create the bid object
+	bid := lib.Bid{
+		Price:     payload.Price,
+		UserID:    claims.UserId,
+		ListingID: listingUUID,
 	}
 
 	// Set the listing ID from URL parameter

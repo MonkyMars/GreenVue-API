@@ -115,7 +115,7 @@ func (bs *BidService) PlaceBid(bid lib.Bid) (*lib.FetchedBid, error) {
 	bidData, err := bs.client.POST("bids", map[string]any{
 		"listing_id": bid.ListingID,
 		"user_id":    bid.UserID,
-		"bid":        bid.Price,
+		"price":      bid.Price,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to store bid: %w", err)
