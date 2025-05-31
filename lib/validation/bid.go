@@ -69,12 +69,6 @@ func (v *BidValidator) ValidateBid(bid lib.Bid, context *BidValidationContext) *
 			if bid.Price > context.Listing.Price {
 				result.AddError("price", fmt.Sprintf("Bid amount cannot exceed the listing price of %.2f", context.Listing.Price))
 			}
-
-			// Minimum bid should be reasonable percentage of listing price
-			minReasonableBid := context.Listing.Price * 0.1 // 10% of listing price
-			if bid.Price < minReasonableBid {
-				result.AddError("price", fmt.Sprintf("Bid amount should be at least %.2f (10%% of listing price)", minReasonableBid))
-			}
 		}
 
 		// Validate against existing bids
