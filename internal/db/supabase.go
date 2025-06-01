@@ -86,7 +86,8 @@ func NewSupabaseClient(useServiceKey ...bool) *SupabaseClient {
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
 		SetHeader("apikey", apiKey).
-		SetHeader("Authorization", "Bearer "+apiKey)
+		SetHeader("Authorization", "Bearer "+apiKey).
+		SetHeader("Prefer", "return=representation")
 
 	return &SupabaseClient{
 		URL:    url,

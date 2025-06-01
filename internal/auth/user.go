@@ -113,14 +113,9 @@ func UpdateUser(c *fiber.Ctx) error {
 	userUpdate.ID = userId
 
 	// Update user using the standardized PATCH operation
-	data, err := client.PATCH("users", userId, userUpdate)
+	_, err = client.PATCH("users", userId, userUpdate)
 	if err != nil {
 		return errors.DatabaseError("Failed to update user: " + err.Error())
-	}
-
-	// Handle empty response
-	if len(data) == 0 || string(data) == "[]" {
-		return errors.NotFound("User not found")
 	}
 
 	locationResp, err := client.PATCH("user_locations", userId, locationData)
@@ -143,17 +138,9 @@ func UpdateUser(c *fiber.Ctx) error {
 		}
 	}
 
-	// Parse the updated user data
-	var updatedUsers []lib.UpdateUser
-	if err := json.Unmarshal(data, &updatedUsers); err != nil {
-		return errors.InternalServerError("Failed to parse updated user data")
-	}
-
-	if len(updatedUsers) == 0 {
-		return errors.NotFound("User not found")
-	}
-
-	return errors.SuccessResponse(c, updatedUsers[0])
+	return errors.SuccessResponse(c, fiber.Map{
+		"message": "User updated successfully",
+	})
 }
 
 func DownloadUserData(c *fiber.Ctx) error {
