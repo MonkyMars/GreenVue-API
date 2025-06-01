@@ -69,3 +69,10 @@ func CalculateEcoScore(attributes []string) float32 {
 	// Round to 1 decimal place
 	return float32(math.Round(float64(ecoScore*10)) / 10)
 }
+
+func Min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}

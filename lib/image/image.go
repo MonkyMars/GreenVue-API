@@ -276,14 +276,6 @@ func GenerateImageURL(filename string) string {
 	return fmt.Sprintf("%s/storage/v1/object/public/%s/%s", supabaseUrl, bucket, filename)
 }
 
-// min returns the smaller of x or y
-func min(x, y int) int {
-	if x < y {
-		return x
-	}
-	return y
-}
-
 // PersistToDisk saves the current queue state to a JSON file
 func (q *Queue) PersistToDisk() error {
 	q.mu.Lock()

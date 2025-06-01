@@ -24,6 +24,7 @@ var (
 type SupabaseClient struct {
 	URL    string
 	APIKey string
+	Client *resty.Client
 }
 
 // InitGlobalClient initializes the global Supabase client if it doesn't exist yet
@@ -79,9 +80,18 @@ func NewSupabaseClient(useServiceKey ...bool) *SupabaseClient {
 		return nil
 	}
 
+	client := resty.New().
+		SetBaseURL(url).
+		SetTimeout(10*time.Second).
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		SetHeader("apikey", apiKey).
+		SetHeader("Authorization", "Bearer "+apiKey)
+
 	return &SupabaseClient{
 		URL:    url,
 		APIKey: apiKey,
+		Client: client,
 	}
 }
 
@@ -89,13 +99,7 @@ func NewSupabaseClient(useServiceKey ...bool) *SupabaseClient {
 func (s *SupabaseClient) GET(table, query string) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?%s", s.URL, table, query)
 
-	client := resty.New().
-		SetTimeout(10*time.Second).
-		SetHeader("apikey", s.APIKey).
-		SetHeader("Authorization", s.APIKey).
-		SetHeader("Accept", "application/json")
-
-	resp, err := client.R().Get(url)
+	resp, err := s.Client.R().Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -113,14 +117,7 @@ func (s *SupabaseClient) GET(table, query string) ([]byte, error) {
 func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?select=*", s.URL, table)
 
-	client := resty.New().
-		SetTimeout(10*time.Second).
-		SetHeader("apikey", s.APIKey).
-		SetHeader("Authorization", "Bearer "+s.APIKey).
-		SetHeader("Prefer", "return=representation").
-		SetHeader("Content-Type", "application/json")
-
-	resp, err := client.R().
+	resp, err := s.Client.R().
 		SetBody(data).
 		Post(url)
 
@@ -147,14 +144,7 @@ func (s *SupabaseClient) POST(table string, data any) ([]byte, error) {
 func (s *SupabaseClient) PATCH(table string, id uuid.UUID, data any) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?id=eq.%s", s.URL, table, id)
 
-	client := resty.New().
-		SetTimeout(10*time.Second).
-		SetHeader("apikey", s.APIKey).
-		SetHeader("Authorization", "Bearer "+s.APIKey).
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Prefer", "return=representation") // Ensures Supabase returns the updated record
-
-	resp, err := client.R().
+	resp, err := s.Client.R().
 		SetBody(data).
 		Patch(url)
 
@@ -175,13 +165,7 @@ func (s *SupabaseClient) PATCH(table string, id uuid.UUID, data any) ([]byte, er
 func (s *SupabaseClient) DELETE(table, conditions string) ([]byte, error) {
 	url := fmt.Sprintf("%s/rest/v1/%s?%s", s.URL, table, conditions)
 
-	client := resty.New().
-		SetTimeout(10*time.Second).
-		SetHeader("apikey", s.APIKey).
-		SetHeader("Authorization", "Bearer "+s.APIKey).
-		SetHeader("Prefer", "return=minimal") // More efficient for DELETE operations
-
-	resp, err := client.R().Delete(url)
+	resp, err := s.Client.R().Delete(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute DELETE request: %w", err)
 	}
@@ -208,13 +192,7 @@ func (s *SupabaseClient) UploadImage(filename, bucket string, image []byte) ([]b
 
 	fmt.Printf("Using content type: %s\n", contentType)
 
-	client := resty.New().
-		SetTimeout(30*time.Second).
-		SetHeader("Content-Type", contentType).
-		SetHeader("apikey", s.APIKey).
-		SetHeader("Authorization", "Bearer "+s.APIKey)
-
-	resp, err := client.R().
+	resp, err := s.Client.R().
 		SetBody(image).
 		Post(url)
 
@@ -244,14 +222,7 @@ func (s *SupabaseClient) SignUp(email, password string) (*lib.User, error) {
 		"password": password,
 	}
 
-	client := resty.New().
-		SetTimeout(10*time.Second).
-		SetHeader("Content-Type", "application/json").
-		SetHeader("apikey", s.APIKey).
-		SetHeader("Authorization", "Bearer "+s.APIKey).
-		SetHeader("Prefer", "return=representation")
-
-	resp, err := client.R().
+	resp, err := s.Client.R().
 		SetBody(payload).
 		Post(url)
 
@@ -300,13 +271,7 @@ func (s *SupabaseClient) Login(email, password string) (*lib.AuthResponse, error
 		"password": password,
 	}
 
-	client := resty.New().
-		SetTimeout(10*time.Second).
-		SetHeader("Content-Type", "application/json").
-		SetHeader("apikey", s.APIKey).
-		SetHeader("Authorization", "Bearer "+s.APIKey)
-
-	resp, err := client.R().
+	resp, err := s.Client.R().
 		SetBody(payload).
 		Post(url)
 
@@ -353,33 +318,27 @@ func (s *SupabaseClient) Login(email, password string) (*lib.AuthResponse, error
 	return &authResp, nil
 }
 
-func (s *SupabaseClient) ResendConfirmationEmail(email, resend_type string) error {
-	url := fmt.Sprintf("%s/auth/v1/resend", s.URL)
+func (s *SupabaseClient) UpdateUser(id uuid.UUID, data map[string]any) (*lib.User, error) {
+	url := fmt.Sprintf("%s/auth/v1/admin/users/%s", s.URL, id)
 
-	// Create request payload
-	payload := map[string]string{
-		"type":  resend_type,
-		"email": email,
-	}
-
-	client := resty.New().
-		SetTimeout(10*time.Second).
-		SetHeader("Content-Type", "application/json").
-		SetHeader("apikey", s.APIKey).
-		SetHeader("Authorization", "Bearer "+s.APIKey)
-
-	resp, err := client.R().
-		SetBody(payload).
-		Post(url)
+	resp, err := s.Client.R().
+		SetBody(data).
+		Put(url)
 
 	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
+		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 
-	// Check for HTTP errors
+	body := resp.Body()
+
 	if resp.StatusCode() != http.StatusOK {
-		return fmt.Errorf("resend confirmation email failed: %s", string(resp.Body()))
+		return nil, fmt.Errorf("update user failed: %s", string(body))
 	}
 
-	return nil
+	var user lib.User
+	if err := json.Unmarshal(body, &user); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &user, nil
 }
