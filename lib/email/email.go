@@ -3,8 +3,11 @@ package email
 import (
 	"encoding/json"
 	"fmt"
+	"greenvue/lib"
 	"log"
 	"net/http"
+	"net/url"
+	"os"
 	"sync"
 	"time"
 
@@ -50,13 +53,21 @@ type Service interface {
 type SupabaseEmailService struct {
 	BaseURL string
 	APIKey  string
+	Client  *resty.Client
 }
 
 // NewSupabaseEmailService creates a new email service
 func NewSupabaseEmailService(baseURL, apiKey string) *SupabaseEmailService {
+	client := resty.New().
+		SetTimeout(10*time.Second).
+		SetHeader("Content-Type", "application/json").
+		SetHeader("apikey", apiKey).
+		SetHeader("Authorization", "Bearer "+apiKey)
+
 	return &SupabaseEmailService{
 		BaseURL: baseURL,
 		APIKey:  apiKey,
+		Client:  client,
 	}
 }
 
@@ -108,20 +119,18 @@ func (s *SupabaseEmailService) SendConfirmationEmail(email string, resendType st
 
 // SendPasswordResetEmail sends a password reset email
 func (s *SupabaseEmailService) SendPasswordResetEmail(email string) error {
-	url := fmt.Sprintf("%s/auth/v1/recover", s.BaseURL)
+	redirectUrl := os.Getenv("URL") + "/reset_password"
+	url := fmt.Sprintf("%s/auth/v1/recover?redirect_to=%s", s.BaseURL, url.QueryEscape(redirectUrl))
+
+	log.Println(url)
+	fmt.Println(url)
 
 	// Create request payload
 	payload := map[string]string{
 		"email": email,
 	}
 
-	client := resty.New().
-		SetTimeout(10*time.Second).
-		SetHeader("Content-Type", "application/json").
-		SetHeader("apikey", s.APIKey).
-		SetHeader("Authorization", "Bearer "+s.APIKey)
-
-	resp, err := client.R().
+	resp, err := s.Client.R().
 		SetBody(payload).
 		Post(url)
 
@@ -131,7 +140,7 @@ func (s *SupabaseEmailService) SendPasswordResetEmail(email string) error {
 
 	// Check for HTTP errors
 	if resp.StatusCode() != http.StatusOK {
-		return fmt.Errorf("password reset email failed: %s", string(resp.Body()))
+		return fmt.Errorf("send reset password email failed: %s", string(resp.Body()))
 	}
 
 	return nil
@@ -202,7 +211,7 @@ func (q *Queue) ProcessQueue(batchSize int) error {
 	}
 
 	// Process emails in batches
-	endIdx := min(batchSize, len(q.pendingEmails))
+	endIdx := lib.Min(batchSize, len(q.pendingEmails))
 	batch := q.pendingEmails[:endIdx]
 	q.pendingEmails = q.pendingEmails[endIdx:]
 	// Release the lock while processing
@@ -239,14 +248,6 @@ func (q *Queue) ProcessQueue(batchSize int) error {
 	}
 
 	return nil
-}
-
-// min returns the smaller of x or y
-func min(x, y int) int {
-	if x < y {
-		return x
-	}
-	return y
 }
 
 // Global instances for the application to use
