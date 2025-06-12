@@ -4,14 +4,19 @@ go 1.24.3
 
 require (
 	github.com/go-resty/resty/v2 v2.16.5
-	github.com/gofiber/fiber/v2 v2.52.7
+	github.com/gofiber/fiber/v2 v2.52.8
+)
+
+require (
+	golang.org/x/mod v0.18.0 // indirect
+	golang.org/x/tools v0.22.0 // indirect
 )
 
 require (
 	github.com/fasthttp/websocket v1.5.12 // indirect
 	github.com/gofiber/contrib/websocket v1.3.4 // direct
 	github.com/savsgio/gotils v0.0.0-20250408102913-196191ec6287 // indirect
-	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
 )
 
 require github.com/golang-jwt/jwt/v5 v5.2.2 // direct
