@@ -70,9 +70,15 @@ func CalculateEcoScore(attributes []string) float32 {
 	return float32(math.Round(float64(ecoScore*10)) / 10)
 }
 
-func Min(a, b int) int {
-	if a < b {
-		return a
+func Min(a []int) int {
+	if len(a) == 0 {
+		return 0
 	}
-	return b
+	min := a[0]
+	for _, v := range a {
+		if v < min {
+			min = v
+		}
+	}
+	return min
 }

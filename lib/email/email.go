@@ -211,7 +211,7 @@ func (q *Queue) ProcessQueue(batchSize int) error {
 	}
 
 	// Process emails in batches
-	endIdx := lib.Min(batchSize, len(q.pendingEmails))
+	endIdx := lib.Min([]int{batchSize, len(q.pendingEmails)})
 	batch := q.pendingEmails[:endIdx]
 	q.pendingEmails = q.pendingEmails[endIdx:]
 	// Release the lock while processing
