@@ -4,13 +4,7 @@ go 1.24.3
 
 require (
 	github.com/go-resty/resty/v2 v2.16.5
-	github.com/gofiber/fiber/v2 v2.52.8
-)
-
-require (
-	golang.org/x/mod v0.25.0 // indirect
-	golang.org/x/sync v0.15.0 // indirect
-	golang.org/x/tools v0.34.0 // indirect
+	github.com/gofiber/fiber/v2 v2.52.9
 )
 
 require (
